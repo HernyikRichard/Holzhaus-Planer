@@ -2,6 +2,7 @@ import type { InsulationType, Mm, Plan } from '../model/types';
 import { BUNDLED_PRICE_LIST } from '../prices';
 import type { PriceList, Product } from '../prices/types';
 import type { Supply } from './supplyTypes';
+import { timberFor } from './timber';
 
 export type { Supply } from './supplyTypes';
 
@@ -16,12 +17,10 @@ export function supplyFromPriceList(pl: PriceList): Supply {
     return p?.sheet ? { w: p.sheet.w, l: p.sheet.l } : null;
   };
   return {
+    // pontos szelvény, vagy a legközelebbi helyettesítő (a párosítás ugyanígy választ)
     stockLengths(_category, section) {
-      const lens = ps
-        .filter(p => p.kind === 'timber' && p.section && p.length
-          && ((p.section.t === section.t && p.section.w === section.w) || (p.section.t === section.w && p.section.w === section.t)))
-        .map(p => p.length as number);
-      return lens.length ? [...new Set(lens)].sort((a, b) => a - b) : null;
+      const r = timberFor(ps, section);
+      return r ? [...new Set(r.products.map(p => p.length as number))].sort((a, b) => a - b) : null;
     },
     osbSheet: t => sheet(t, false),
     osbTgSheet: t => sheet(t, true),

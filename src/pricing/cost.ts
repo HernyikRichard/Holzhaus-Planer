@@ -18,6 +18,10 @@ export interface CostLine {
   choiceGone?: boolean;
   /** Miért nincs Káplár-termék (hiányzó párosításnál). */
   reason?: string;
+  /** A párosítás figyelmeztetése (pl. helyettesítő szelvény). */
+  warning?: string;
+  /** Az egységátváltás magyarázata (pl. tetődeszka m² → szál). */
+  note?: string;
 }
 
 export interface CostSummary {
@@ -54,7 +58,11 @@ export function costOf(plan: Plan, output: CalcOutput, pl: PriceList): CostSumma
     if (isInformational(line.id)) {
       return { ...base, qty: line.quantity, unit: line.unit as string, source: 'missing', otherSource: true, informational: true };
     }
-    const flags = { ...('choiceGone' in m && m.choiceGone ? { choiceGone: true } : {}) };
+    const flags = {
+      ...('choiceGone' in m && m.choiceGone ? { choiceGone: true } : {}),
+      ...('productId' in m && m.warning ? { warning: m.warning } : {}),
+      ...('productId' in m && m.note ? { note: m.note } : {}),
+    };
     const other = 'missing' in m && m.otherSource === true;
     const reason = 'missing' in m ? m.reason : undefined;
 

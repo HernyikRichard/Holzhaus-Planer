@@ -127,6 +127,8 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
                   </summary>
                   <p class="explanation">{l.explanation}</p>
                   {c?.source === 'missing' && !c.informational && c.reason && <p class="explanation">{c.reason}</p>}
+                  {c?.note && <p class="explanation price-note">{c.note}</p>}
+                  {c?.warning && <p class="line-warning">{c.warning}</p>}
                   {c && kind && pl && (
                     <ProductPicker lineId={l.id} products={pl.products.filter(p => p.kind === kind)}
                       current={plan.pricing.productChoice[l.id] ? c.productName ?? '' : ''}

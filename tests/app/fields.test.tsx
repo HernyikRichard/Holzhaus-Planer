@@ -173,7 +173,8 @@ describe('Árak beállítások', () => {
 
   test('the supply toggle sets pricing.useSupply and changes timber line ids', () => {
     const { store, root } = setup('materials');
-    const ids = () => store.get().output.lines.filter(l => /^timber\.[^.]+\.50x1(00|50)\./.test(l.id)).map(l => l.id).sort();
+    // a 24×48-as léc a kínálatban csak 4 m-es (23×48 helyettesítő), a katalógus szerint 3–6 m-es
+    const ids = () => store.get().output.lines.filter(l => /^timber\.[^.]+\.24x48\./.test(l.id)).map(l => l.id).sort();
     const box = root.querySelector<HTMLInputElement>('[data-pricing="useSupply"]')!;
     expect(box.checked).toBe(true);
     const on = ids();

@@ -147,6 +147,20 @@ describe('beépített árlista, alaptervvel', () => {
   });
 });
 
+describe('helyettesítő termék és tetődeszka a költségsorban', () => {
+  it('a helyettesítő figyelmeztetés és a deszka-átváltás a költségsoron is látszik', () => {
+    const pl = BUNDLED_PRICE_LIST!;
+    const plan = createDefaultPlan();
+    const s = costOf(plan, calculate(plan, supplyFromPriceList(pl)), pl);
+    const lec = s.lines.find(l => l.lineId.startsWith('timber.Fal.24x48.'))!;
+    expect(lec.source).toBe('kaplar');
+    expect(lec.warning).toBe('Helyettesítő termék: 23×48 (a tervezett 24×48 helyett)');
+    const deck = s.lines.find(l => l.lineId === 'roof.decking')!;
+    expect(deck).toMatchObject({ source: 'kaplar', unit: 'szál' });
+    expect(deck.note).toMatch(/^Deszka: 21,1 m² \/ \(0,15 m × 6 m\) = [\d,]+ → \d+ szál$/);
+  });
+});
+
 describe('informational foundation lines', () => {
   const ids = ['foundation.concrete', 'foundation.cement', 'foundation.water'];
   it('beton, cement és víz tájékoztató: nincs ár, nem hiányzó, nincs a végösszegben', () => {

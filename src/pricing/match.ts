@@ -2,9 +2,17 @@ import type { MaterialLine } from '../calc/types';
 import { DOWNPIPE_EXTRA, TRAPEZOID_END_OVERLAP, TRAPEZOID_SIDE_OVERLAP } from '../catalog';
 import type { InsulationType, Plan } from '../model/types';
 import type { PriceList, Product } from '../prices/types';
+import { hu } from '../calc/util';
+import { substituteWarning, timberFor } from './timber';
 
 export type Match =
-  | { productId: string; qtyInProductUnit: number; choiceGone?: boolean }
+  | {
+    productId: string; qtyInProductUnit: number; choiceGone?: boolean;
+    /** Figyelmeztetés (pl. helyettesítő szelvény). */
+    warning?: string;
+    /** Az átváltás magyarázata (pl. tetődeszka m² → szál). */
+    note?: string;
+  }
   | { missing: true; reason: string; otherSource?: boolean; choiceGone?: boolean };
 
 const MANUAL = 'kézi ár szükséges';
@@ -167,7 +175,14 @@ const INFORMATIONAL = new Set(['foundation.concrete', 'foundation.cement', 'foun
 export const isInformational = (lineId: string): boolean => INFORMATIONAL.has(lineId);
 
 /** A szabály szerint választott termék, vagy a hiány oka. */
-function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan): Product | { reason: string } {
+/** Tetődeszkának való deszka: kisebbik oldala 20–30 mm, nagyobbik ≥ 100 mm, ismert hosszal. */
+const isDeckBoard = (p: Product): boolean => p.kind === 'timber' && !!p.section && !!p.length
+  && Math.min(p.section.t, p.section.w) >= 20 && Math.min(p.section.t, p.section.w) <= 30 && Math.max(p.section.t, p.section.w) >= 100;
+/** Egy szál deszka fedése (m²): szélesség × hossz. */
+const boardM2 = (p: Product): number => (Math.max(p.section!.t, p.section!.w) / 1000) * (p.length! / 1000);
+
+/** A szabály szerint választott termék, vagy a hiány oka; a figyelmeztetést a meta kapja. */
+function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan, meta: { warning?: string }): Product | { reason: string } {
   const ps = pl.products;
   const none = (reason: string): { reason: string } => ({ reason });
   const id = line.id;
@@ -177,9 +192,11 @@ function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan): Product | { 
     const [, , sec, stock] = id.split('.');
     const s = sectionOf(sec ?? '');
     const len = Number(stock);
-    const p = s && cheapest(ps.filter(x => x.kind === 'timber' && x.section && x.length === len
-      && ((x.section.t === s.t && x.section.w === s.w) || (x.section.t === s.w && x.section.w === s.t))), x => x.price);
-    return p || none(`Nincs Káplár-termék ${sec} × ${stock} mm méretben`);
+    const r = s ? timberFor(ps, s) : null;
+    const p = r && cheapest(r.products.filter(x => x.length === len), x => x.price);
+    if (!p) return none(`Nincs Káplár-termék ${sec} × ${stock} mm méretben`);
+    if (!r.exact) meta.warning = substituteWarning(s!, r.section);
+    return p;
   }
 
   switch (id) {
@@ -195,6 +212,13 @@ function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan): Product | { 
       return osbPick(pl, layer.thickness, false) || none(`Nincs ${layer.thickness} mm-es OSB az árlistában`);
     }
     case 'roof.decking': {
+      if (line.unit === 'm²') {
+        // deszkázat: a leghosszabb kapható deszkából, a legolcsóbb m²-áron
+        const c = ps.filter(isDeckBoard);
+        if (!c.length) return none('Nincs deszka az árlistában');
+        const longest = Math.max(...c.map(p => p.length!));
+        return cheapest(c.filter(p => p.length === longest), p => p.price / boardM2(p))!;
+      }
       if (line.unit !== 'tábla') return none('Tetődeszkázat nincs az árlistában');
       const c = ps.filter(p => p.kind === 'osb' && p.thickness && p.sheet && !isTg(p));
       if (!c.length) return none('Nincs OSB az árlistában');
@@ -290,12 +314,24 @@ function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan): Product | { 
 }
 
 /** A sor mennyisége a termék egységében; a trapézlemez táblakiosztásból, a többi az egységátváltásból. */
-function quantity(line: MaterialLine, p: Product, unconvertible: string): number | { reason: string } {
-  if (line.id === 'roof.trapezoid' && p.kind === 'roofing' && p.unit !== 'm²') return trapezoidQty(line, p);
-  return convert(line, p) ?? { reason: unconvertible };
+type Qty = { qty: number; note?: string } | { reason: string };
+function quantity(line: MaterialLine, p: Product, unconvertible: string): Qty {
+  if (line.id === 'roof.trapezoid' && p.kind === 'roofing' && p.unit !== 'm²') {
+    const q = trapezoidQty(line, p);
+    return typeof q === 'number' ? { qty: q } : q;
+  }
+  if (line.id === 'roof.decking' && line.unit === 'm²' && p.kind === 'timber' && p.section && p.length) {
+    const per = boardM2(p);
+    const qty = Math.ceil(line.quantity / per - EPS);
+    const w = Math.max(p.section.t, p.section.w) / 1000;
+    return { qty, note: `Deszka: ${hu(line.quantity)} m² / (${hu(w)} m × ${hu(p.length / 1000)} m) = ${hu(line.quantity / per)} → ${qty} szál` };
+  }
+  const q = convert(line, p);
+  return q === null ? { reason: unconvertible } : { qty: q };
 }
-const toMatch = (p: Product, q: number | { reason: string }): Match =>
-  typeof q === 'number' ? { productId: p.id, qtyInProductUnit: q } : miss(q.reason);
+const toMatch = (p: Product, q: Qty, warning?: string): Match =>
+  'reason' in q ? miss(q.reason)
+    : { productId: p.id, qtyInProductUnit: q.qty, ...(q.note ? { note: q.note } : {}), ...(warning ? { warning } : {}) };
 
 export function matchLine(line: MaterialLine, pl: PriceList, plan: Plan): Match {
   if (FOUNDATION.test(line.id)) {
@@ -308,12 +344,13 @@ export function matchLine(line: MaterialLine, pl: PriceList, plan: Plan): Match 
     if (p) return toMatch(p, quantity(line, p, 'A kiválasztott termék egysége nem váltható át'));
     choiceGone = true;
   }
-  const picked = pickByRule(line, pl, plan);
+  const meta: { warning?: string } = {};
+  const picked = pickByRule(line, pl, plan, meta);
   let m: Match;
   if ('reason' in picked && !('id' in picked)) m = miss(picked.reason);
   else {
     const p = picked as Product;
-    m = toMatch(p, quantity(line, p, 'Az egység nem váltható át'));
+    m = toMatch(p, quantity(line, p, 'Az egység nem váltható át'), meta.warning);
   }
   return choiceGone ? { ...m, choiceGone: true } : m;
 }

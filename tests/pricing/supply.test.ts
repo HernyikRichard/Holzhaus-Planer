@@ -28,6 +28,19 @@ describe('supplyFromPriceList', () => {
     expect(b.stockLengths('Fal', { t: 50, w: 100 })).toEqual([2000, 3000, 4000, 5000, 6000]);
     expect(b.foilRoll('breather')).toBe(75);
   });
+  it('pontos szelvény hiányában a legközelebbi (oldalanként ≤ 2 mm) helyettesítő hosszai', () => {
+    const b = supplyFromPriceList(BUNDLED_PRICE_LIST!);
+    expect(b.stockLengths('Fal', { t: 24, w: 48 })).toEqual([4000]); // 23×48
+    expect(b.stockLengths('Tető', { t: 50, w: 50 })).toEqual([4000]); // 48×48
+    expect(b.stockLengths('Kiegészítők', { t: 24, w: 150 })).toEqual([4000, 5000, 6000]); // 25×150 (több hossz, mint 23×150)
+    expect(b.stockLengths('Fal', { t: 24, w: 60 })).toBeNull();
+  });
+  it('a pontos szelvény mindig nyer a helyettesítővel szemben', () => {
+    const pl = { ...FIXTURE, products: [...FIXTURE.products,
+      { id: 'x-49x100-5000', name: 'x', url: 'u', kind: 'timber' as const, unit: 'db' as const, price: 1, section: { t: 49, w: 100 }, length: 5000 }] };
+    expect(supplyFromPriceList(pl).stockLengths('Fal', { t: 50, w: 100 })).toEqual([4000, 6000]);
+    expect(supplyFromPriceList(pl).stockLengths('Fal', { t: 51, w: 100 })).toEqual([4000, 6000]); // 50×100: 1 mm, 49×100: 2 mm
+  });
 });
 
 describe('supplyFor', () => {
@@ -68,6 +81,22 @@ describe('calculate kínálattal', () => {
     const vapor = out.lines.find(l => l.id === 'wall.vaporBarrier')!;
     expect(vapor.explanation).toContain('60 m²');
   });
+  test('a szálhosszak a beállítás hosszaival metszve (alapból 3–6 m: nincs 7 m-es szál)', () => {
+    const plan = createDefaultPlan();
+    const out = calculate(plan, supplyFromPriceList(BUNDLED_PRICE_LIST!));
+    const lens = out.lines.filter(l => l.id.startsWith('timber.')).map(l => Number(l.id.split('.').pop()));
+    expect(lens.length).toBeGreaterThan(0);
+    for (const x of lens) expect(plan.settings.stockLengths).toContain(x);
+    expect(out.lines.some(l => /^timber\.[^.]+\.50x150\.6000$/.test(l.id))).toBe(true);
+  });
+  test('üres metszetnél a kínálat hosszai maradnak', () => {
+    const plan = createDefaultPlan();
+    plan.settings.stockLengths = [2500];
+    const out = calculate(plan, supplyFromPriceList(FIXTURE));
+    const lens = out.lines.filter(l => l.id.startsWith('timber.Fal.50x100.')).map(l => Number(l.id.split('.').pop()));
+    expect(lens.length).toBeGreaterThan(0);
+    for (const x of lens) expect([4000, 6000]).toContain(x);
+  });
   test('useSupply false keeps snapshots', () => {
     const p = { ...createDefaultPlan(), pricing: { ...DEFAULT_PRICING, useSupply: false } };
     expect(calculate(p, supplyFor(p, FIXTURE))).toEqual(calculate(createDefaultPlan()));
@@ -88,5 +117,12 @@ describe('buildScene kínálattal', () => {
     const ids50x100 = sc.elements.filter(e => e.group.startsWith('wall') && e.section?.t === 50 && e.section?.w === 100).map(e => e.id);
     expect(ids50x100.length).toBeGreaterThan(0);
     for (const id of ids50x100) if (sc.cut[id]) expect([4000, 6000]).toContain(sc.cut[id].stockLength);
+  });
+  test('the scene cut plan uses the same intersected lengths as the material list', () => {
+    const plan = createDefaultPlan();
+    const sc = buildScene(plan, supplyFromPriceList(BUNDLED_PRICE_LIST!));
+    const stocks = Object.values(sc.cut).map(c => c.stockLength);
+    expect(stocks.length).toBeGreaterThan(0);
+    for (const x of stocks) expect(plan.settings.stockLengths).toContain(x);
   });
 });

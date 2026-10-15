@@ -171,7 +171,48 @@ describe('bitumenes alátét', () => {
   });
 });
 
+describe('helyettesítő szelvény és tetődeszka', () => {
+  const t = (id: string, t: number, w: number, length: number, price = 1000) =>
+    ({ id, name: id, url: 'u', kind: 'timber' as const, unit: 'db' as const, price, section: { t, w }, length });
+  it('faanyag: legközelebbi szelvény (≤ 2 mm), figyelmeztetéssel; pontos egyezés nyer', () => {
+    const pl = { ...PL, products: [...PL.products, t('lec-23x48-4000', 23, 48, 4000), t('lec-28x48-4000', 28, 48, 4000)] };
+    const { plan } = setup();
+    const l: MaterialLine = { id: 'timber.Fal.24x48.4000', category: 'Fal', name: 'léc', quantity: 7, unit: 'szál', explanation: '' };
+    expect(matchLine(l, pl, plan)).toEqual({
+      productId: 'lec-23x48-4000', qtyInProductUnit: 7, warning: 'Helyettesítő termék: 23×48 (a tervezett 24×48 helyett)',
+    });
+    const exact = { ...pl, products: [...pl.products, t('lec-24x48-4000', 24, 48, 4000)] };
+    expect(matchLine(l, exact, plan)).toEqual({ productId: 'lec-24x48-4000', qtyInProductUnit: 7 });
+    expect(matchLine({ ...l, id: 'timber.Fal.24x48.5000' }, pl, plan)).toMatchObject({ missing: true });
+  });
+  it('tetődeszkázat (m²): deszka a leghosszabb hosszból, szál = ⌈m² / (szélesség × hossz)⌉', () => {
+    const pl = { ...PL, products: [...PL.products, t('deszka-25x150-6000', 25, 150, 6000, 4000),
+      t('deszka-25x150-4000', 25, 150, 4000, 2000), t('deszka-18x96-6000', 18, 96, 6000, 10)] };
+    const { plan } = setup();
+    const l: MaterialLine = { id: 'roof.decking', category: 'Tető', name: 'Tetődeszkázat', quantity: 21.1, unit: 'm²', explanation: '' };
+    expect(matchLine(l, pl, plan)).toEqual({
+      productId: 'deszka-25x150-6000', qtyInProductUnit: 24,
+      note: 'Deszka: 21,1 m² / (0,15 m × 6 m) = 23,44 → 24 szál',
+    });
+    expect(matchLine(l, PL, plan)).toMatchObject({ missing: true });
+  });
+});
+
 describe('beépített árlista', () => {
+  it('alapterv: a 24×48, 50×50, 24×150 és a tetődeszkázat is árazott, helyettesítő figyelmeztetéssel', () => {
+    const pl = BUNDLED_PRICE_LIST!;
+    const plan = createDefaultPlan();
+    const out = calculate(plan, supplyFromPriceList(pl));
+    const ids = out.lines.filter(l => /^timber\.[^.]+\.(24x48|50x50|24x150)\./.test(l.id) || l.id === 'roof.decking');
+    expect(ids.length).toBeGreaterThanOrEqual(4);
+    for (const l of ids) {
+      const m = matchLine(l, pl, plan);
+      expect(m, l.id).toHaveProperty('productId');
+      if (l.id.startsWith('timber.')) expect((m as { warning?: string }).warning, l.id).toMatch(/^Helyettesítő termék: /);
+    }
+    const wall = out.lines.find(l => l.id.startsWith('timber.Fal.24x48.'))!;
+    expect((matchLine(wall, pl, plan) as { warning: string }).warning).toBe('Helyettesítő termék: 23×48 (a tervezett 24×48 helyett)');
+  });
   it('trapézlemez az alaptervhez: 1180×2000-es tábla, 20 db', () => {
     const pl = BUNDLED_PRICE_LIST!;
     const plan = createDefaultPlan();

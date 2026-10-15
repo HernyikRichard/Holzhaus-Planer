@@ -125,6 +125,12 @@ test('product chooser writes productChoice; "automatikus" removes it', () => {
   expect(store.get().plan.pricing.productChoice[l.lineId]).toBeUndefined();
 });
 
+test('substitute product warning and the decking conversion note are shown on the row', () => {
+  const { cost, row } = setup();
+  const lec = cost().lines.find(l => l.lineId.startsWith('timber.Fal.24x48.'))!;
+  expect(row(lec.lineId).textContent).toContain('Helyettesítő termék: 23×48 (a tervezett 24×48 helyett)');
+  expect(row('roof.decking').textContent).toContain(cost().lines.find(l => l.lineId === 'roof.decking')!.note!);
+});
 test('gone choice shows a warning', () => {
   const { store, timberLine, row } = setup();
   const l = timberLine();
