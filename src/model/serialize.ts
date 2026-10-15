@@ -1,0 +1,146 @@
+import type { Plan } from './types';
+import { createDefaultPlan } from './defaults';
+
+export const CURRENT_VERSION = 1;
+
+/** MIGRATIONS[v] a v verziójú nyers adatot v+1 verzióra alakítja. Az 1-es verzióhoz nincs lépés. */
+export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {};
+
+export type ParseResult = { ok: true; plan: Plan } | { ok: false; error: string };
+
+export function serializePlan(plan: Plan): string {
+  return JSON.stringify(plan, null, 2);
+}
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+class FieldError extends Error {}
+
+// A nullable mezők (az alapértelmezett érték objektum, de a fájlban null is lehet).
+const NULLABLE_PATHS = new Set(['floor.insulation']);
+
+function merge(def: unknown, src: unknown, path: string): unknown {
+  if (NULLABLE_PATHS.has(path) && src === null) return null;
+  if (Array.isArray(def)) {
+    if (!Array.isArray(src)) throw new FieldError(`A(z) „${path}” mező értéke nem lista.`);
+    return structuredClone(src);
+  }
+  if (isPlainObject(def)) {
+    if (!isPlainObject(src)) throw new FieldError(`A(z) „${path}” mező értéke nem objektum.`);
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(def)) {
+      const p = path ? `${path}.${key}` : key;
+      out[key] = key in src ? merge(def[key], src[key], p) : structuredClone(def[key]);
+    }
+    return out;
+  }
+  if (typeof src !== typeof def || (typeof src === 'number' && !Number.isFinite(src))) {
+    throw new FieldError(`A(z) „${path}” mező értéke érvénytelen típusú.`);
+  }
+  return src;
+}
+
+const oneOf = (v: unknown, set: readonly unknown[]): boolean => set.includes(v);
+const isNum = (v: unknown): boolean => typeof v === 'number' && Number.isFinite(v);
+
+const WALL_KINDS = ['interiorCladding', 'vaporBarrier', 'insulation', 'osb', 'breatherMembrane', 'battens', 'exteriorCladding'];
+const ROOF_KINDS = ['decking', 'underlay', 'counterBatten', 'batten'];
+const WALL_MATERIALS: Record<string, string[]> = {
+  interiorCladding: ['osb', 'gypsum', 'paneling'], exteriorCladding: ['paneling', 'boards', 'cementBoard'],
+  osb: ['osb12', 'osb15'], insulation: ['mineralWool', 'xps'],
+  vaporBarrier: ['default'], breatherMembrane: ['default'], battens: ['default'],
+};
+const ROOF_MATERIALS: Record<string, string[]> = {
+  decking: ['osb', 'boards'], underlay: ['foil', 'bitumen'], counterBatten: ['default'], batten: ['default'],
+};
+
+type LayerCheck = { ok: true; sorted: unknown[] } | { ok: false; path: string };
+
+function checkLayers(path: string, list: unknown[], kinds: string[], mats: Record<string, string[]>,
+  thickness: boolean): LayerCheck {
+  const byKind = new Map<string, Record<string, unknown>>();
+  for (let i = 0; i < list.length; i++) {
+    const l = list[i];
+    const p = `${path}[${i}]`;
+    if (!isPlainObject(l)) return { ok: false, path: p };
+    if (typeof l.kind !== 'string' || !kinds.includes(l.kind) || byKind.has(l.kind)) return { ok: false, path: `${p}.kind` };
+    if (typeof l.enabled !== 'boolean') return { ok: false, path: `${p}.enabled` };
+    if (typeof l.material !== 'string' || !mats[l.kind].includes(l.material)) return { ok: false, path: `${p}.material` };
+    if (thickness && !isNum(l.thickness)) return { ok: false, path: `${p}.thickness` };
+    byKind.set(l.kind, l);
+  }
+  if (byKind.size !== kinds.length) return { ok: false, path };
+  return { ok: true, sorted: kinds.map(k => byKind.get(k)) };
+}
+
+/** Felsorolások, tömbelemek ellenőrzése; az első hibás mező útvonalát adja, vagy null-t. A rétegeket az alap sorrendbe rendezi. */
+function checkShape(plan: Plan): string | null {
+  const checks: [string, boolean][] = [
+    ['foundation.concreteGrade', oneOf(plan.foundation.concreteGrade, ['C16', 'C20'])],
+    ['foundation.meshType', oneOf(plan.foundation.meshType, ['d4_150', 'd5_150', 'd6_150'])],
+    ['floor.osbThickness', oneOf(plan.floor.osbThickness, [18, 22])],
+    ['walls.topPlate', oneOf(plan.walls.topPlate, ['single', 'double'])],
+    ['roof.shape', oneOf(plan.roof.shape, ['flat', 'mono', 'gable'])],
+    ['roof.covering', oneOf(plan.roof.covering, ['tile', 'trapezoid', 'shingle', 'epdm'])],
+    ['roof.ridgeDirection', oneOf(plan.roof.ridgeDirection, ['x', 'y'])],
+  ];
+  const ins = plan.floor.insulation;
+  if (ins !== null) {
+    checks.push(['floor.insulation.type', oneOf(ins.type, ['mineralWool', 'xps'])]);
+    checks.push(['floor.insulation.thickness', oneOf(ins.thickness, [50, 100, 150])]);
+  }
+  for (const [path, ok] of checks) if (!ok) return path;
+
+  const sl = plan.settings.stockLengths;
+  if (sl.length === 0 || !sl.every(v => isNum(v) && v >= 500)) return 'settings.stockLengths';
+
+  for (let i = 0; i < plan.openings.length; i++) {
+    const o = plan.openings[i] as unknown;
+    const p = `openings[${i}]`;
+    if (!isPlainObject(o)) return p;
+    if (typeof o.id !== 'string') return `${p}.id`;
+    if (!oneOf(o.type, ['door', 'window'])) return `${p}.type`;
+    if (!oneOf(o.wall, ['N', 'E', 'S', 'W'])) return `${p}.wall`;
+    if (!oneOf(o.swing, ['left', 'right'])) return `${p}.swing`;
+    for (const k of ['offset', 'width', 'height', 'sillHeight']) if (!isNum(o[k])) return `${p}.${k}`;
+  }
+
+  const wl = checkLayers('walls.layers', plan.walls.layers, WALL_KINDS, WALL_MATERIALS, true);
+  if (!wl.ok) return wl.path;
+  const rl = checkLayers('roof.layers', plan.roof.layers, ROOF_KINDS, ROOF_MATERIALS, false);
+  if (!rl.ok) return rl.path;
+  plan.walls.layers = wl.sorted as Plan['walls']['layers'];
+  plan.roof.layers = rl.sorted as Plan['roof']['layers'];
+  return null;
+}
+
+export function parsePlan(text: string): ParseResult {
+  let raw: unknown;
+  try { raw = JSON.parse(text); } catch { return { ok: false, error: 'A fájl nem érvényes JSON.' }; }
+  if (!isPlainObject(raw)) return { ok: false, error: 'A fájl nem érvényes tervfájl.' };
+  let version = raw.version;
+  if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) {
+    return { ok: false, error: 'A fájlból hiányzik a verziószám.' };
+  }
+  if (version > CURRENT_VERSION) {
+    return { ok: false, error: `A fájl egy újabb programverzióval készült (v${version}), ezt a verziót nem tudom betölteni.` };
+  }
+  let data: Record<string, unknown> = raw;
+  while (version < CURRENT_VERSION) {
+    const step = MIGRATIONS[version];
+    if (!step) return { ok: false, error: `A fájl verziója (v${version}) nem támogatott.` };
+    data = step(data);
+    version += 1;
+    data.version = version;
+  }
+  try {
+    const plan = merge(createDefaultPlan(), data, '') as Plan;
+    const bad = checkShape(plan);
+    if (bad) return { ok: false, error: `Hibás érték: ${bad}` };
+    return { ok: true, plan };
+  } catch (e) {
+    if (e instanceof FieldError) return { ok: false, error: e.message };
+    throw e;
+  }
+}

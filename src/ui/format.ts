@@ -1,0 +1,22 @@
+export function parseNumberInput(text: string): number | null {
+  const t = text.trim();
+  if (!/^-?(\d+([.,]\d*)?|[.,]\d+)$/.test(t)) return null;
+  const n = Number(t.replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
+export function formatQty(n: number, maxDecimals?: number): string {
+  return new Intl.NumberFormat('hu-HU', { maximumFractionDigits: maxDecimals ?? 2, useGrouping: true })
+    .format(n)
+    .replace(/[   ]/g, ' ');
+}
+
+/** Keresztmetszet-felirat: mm, ha a kisebbik oldal 30 mm alatti (pl. 24×48), egyébként cm (pl. 5×10). */
+export function sectionLabel(t: number, w: number): string {
+  return Math.min(t, w) < 30 ? `${formatQty(t, 1)}×${formatQty(w, 1)}` : `${formatQty(t / 10, 1)}×${formatQty(w / 10, 1)}`;
+}
+
+/** Keresztmetszet mértékegységgel: "24×48 mm" / "5×10 cm". */
+export function sectionLabelWithUnit(t: number, w: number): string {
+  return `${sectionLabel(t, w)} ${Math.min(t, w) < 30 ? 'mm' : 'cm'}`;
+}

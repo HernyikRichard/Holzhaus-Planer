@@ -1,0 +1,30 @@
+{
+  "name": "tervezo",
+  "version": "1.0.0",
+  "description": "",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@testing-library/preact": "3.2.4",
+    "jsdom": "26.1.0",
+    "typescript": "5.8.3",
+    "vite": "6.3.5",
+    "vitest": "3.2.4"
+  },
+  "dependencies": {
+    "dejavu-fonts-ttf": "2.37.3",
+    "jspdf": "3.0.1",
+    "preact": "10.26.4",
+    "svg2pdf.js": "2.5.0"
+  }
+}

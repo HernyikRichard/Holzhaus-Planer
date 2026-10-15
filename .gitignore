@@ -1,0 +1,7 @@
+node_modules
+dist
+
+# AI-eszközök munkafájljai
+.superpowers/
+.claude/
+docs/superpowers/
