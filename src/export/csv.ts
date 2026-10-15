@@ -2,7 +2,7 @@ import type { MaterialLine } from '../calc/types';
 import { orderList, type CostLine, type CostSummary } from '../pricing/cost';
 
 const HEADER = ['Kategória', 'Anyag', 'Mennyiség', 'Egység', 'Kiegészítő', 'Számítás'];
-const COST_HEADER = ['Egységár', 'Összeg', 'Forrás', 'Káplár-termék'];
+const COST_HEADER = ['Káplár-mennyiség', 'Káplár-egység', 'Egységár', 'Összeg', 'Forrás', 'Káplár-termék'];
 const ORDER_HEADER = ['Termék', 'Mennyiség', 'Egység', 'Egységár', 'Összeg', 'Link'];
 
 function num(n: number): string {
@@ -24,9 +24,12 @@ function sourceLabel(c: CostLine): string {
 }
 
 function costCells(c: CostLine | undefined): string[] {
-  if (!c) return ['', '', '', ''];
+  if (!c) return ['', '', '', '', '', ''];
   const priced = !c.informational && c.unitPrice !== undefined && c.total !== undefined;
+  // a Káplár-termék egységében (pl. m² helyett csomag): csak párosított terméknél
+  const product = !c.informational && c.productId !== undefined;
   return [
+    product ? num(c.qty) : '', product ? c.unit : '',
     priced ? String(Math.round(c.unitPrice!)) : '', priced ? String(Math.round(c.total!)) : '',
     sourceLabel(c), c.productName ?? '',
   ];

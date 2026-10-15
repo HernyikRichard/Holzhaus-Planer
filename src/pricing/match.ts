@@ -1,7 +1,7 @@
 import type { MaterialLine } from '../calc/types';
 import { DOWNPIPE_EXTRA, TRAPEZOID_END_OVERLAP, TRAPEZOID_SIDE_OVERLAP } from '../catalog';
 import type { InsulationType, Plan } from '../model/types';
-import type { PriceList, Product } from '../prices/types';
+import type { PriceList, Product, ProductKind } from '../prices/types';
 import { hu } from '../calc/util';
 import { substituteWarning, timberFor } from './timber';
 
@@ -180,6 +180,25 @@ function chooseGutterSystem(ps: Product[]): string | null {
 }
 
 const FOUNDATION = /^foundation\./;
+
+const KIND_BY_ID: Record<string, ProductKind> = {
+  'wall.osb': 'osb', 'floor.osb': 'osb', 'wall.interiorCladding': 'osb',
+  'wall.vaporBarrier': 'foil', 'floor.vaporBarrier': 'foil', 'wall.breatherMembrane': 'foil', 'roof.underlay': 'foil',
+  'wall.exteriorCladding': 'cladding',
+  'roof.tiles': 'roofing', 'roof.trapezoid': 'roofing', 'roof.shingles': 'roofing', 'acc.ridgeTiles': 'roofing',
+};
+
+/** A sorhoz várt termékfajta (a termékválasztóhoz, ha nincs párosított termék); az alapozásnál nincs. */
+export function expectedKind(line: Pick<MaterialLine, 'id' | 'unit'>): ProductKind | undefined {
+  const id = line.id;
+  if (FOUNDATION.test(id)) return undefined;
+  if (id.startsWith('timber.')) return 'timber';
+  if (id === 'roof.decking') return line.unit === 'tábla' ? 'osb' : 'timber';
+  if (id.endsWith('.insulation')) return 'insulation';
+  if (/^acc\.(gutter|downpipe)/.test(id)) return 'gutter';
+  if (id.startsWith('fix.')) return 'fastener';
+  return KIND_BY_ID[id];
+}
 
 /** Az alap tájékoztató sorai: származtatott / duplikált mennyiségek (a zsák és a sóder a rendelendő), nem árazandók. */
 const INFORMATIONAL = new Set(['foundation.concrete', 'foundation.cement', 'foundation.water']);

@@ -3,7 +3,7 @@ import type { MaterialLine } from '../../src/calc/types';
 import { createDefaultPlan, DEFAULT_PRICING } from '../../src/model/defaults';
 import type { Plan } from '../../src/model/types';
 import { BUNDLED_PRICE_LIST } from '../../src/prices';
-import { gutterSystemKey, matchLine } from '../../src/pricing/match';
+import { expectedKind, gutterSystemKey, matchLine } from '../../src/pricing/match';
 import { supplyFromPriceList } from '../../src/pricing/supply';
 import { MATCH_FIXTURE as PL } from '../fixtures/priceList';
 
@@ -116,6 +116,30 @@ describe('matchLine', () => {
   it('eltűnt kézi termék: szabály szerinti párosítás, jelzővel', () => {
     const { plan, line } = setup(p => { p.pricing = { ...DEFAULT_PRICING, productChoice: { 'wall.osb': 'nincs-ilyen' } }; });
     expect(matchLine(line('wall.osb'), PL, plan)).toMatchObject({ productId: 'osb-12', choiceGone: true });
+  });
+});
+
+describe('expectedKind', () => {
+  it('a sor azonosítójából a várt termékfajta (a választóhoz)', () => {
+    const k = (id: string, unit: MaterialLine['unit'] = 'db') => expectedKind({ id, unit });
+    expect(k('timber.Fal.24x48.4000', 'szál')).toBe('timber');
+    expect(k('roof.decking', 'm²')).toBe('timber');
+    expect(k('roof.decking', 'tábla')).toBe('osb');
+    expect(k('wall.osb')).toBe('osb');
+    expect(k('floor.osb')).toBe('osb');
+    expect(k('wall.interiorCladding')).toBe('osb');
+    expect(k('wall.insulation')).toBe('insulation');
+    expect(k('floor.insulation')).toBe('insulation');
+    expect(k('wall.vaporBarrier')).toBe('foil');
+    expect(k('floor.vaporBarrier')).toBe('foil');
+    expect(k('wall.breatherMembrane')).toBe('foil');
+    expect(k('roof.underlay')).toBe('foil');
+    expect(k('wall.exteriorCladding')).toBe('cladding');
+    for (const id of ['roof.tiles', 'roof.trapezoid', 'roof.shingles', 'acc.ridgeTiles']) expect(k(id)).toBe('roofing');
+    for (const id of ['acc.gutter', 'acc.gutterEnds', 'acc.gutterJoiners', 'acc.gutterBrackets', 'acc.downpipe', 'acc.downpipeElbows', 'acc.downpipeClips']) expect(k(id)).toBe('gutter');
+    expect(k('fix.anchors')).toBe('fastener');
+    expect(k('foundation.cementBags')).toBeUndefined();
+    expect(k('foundation.concrete')).toBeUndefined();
   });
 });
 

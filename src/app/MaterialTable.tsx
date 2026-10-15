@@ -7,6 +7,7 @@ import { useMemo, useState } from 'preact/hooks';
 import { formatFt, formatQty } from '../ui/format';
 import { BUNDLED_PRICE_LIST } from '../prices';
 import { type CostLine } from '../pricing/cost';
+import { expectedKind } from '../pricing/match';
 import { useCost, setLinePrice, resetLinePrice } from './useCost';
 import { PriceCell } from './PriceCell';
 import { sceneFor } from './selection';
@@ -99,7 +100,8 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
               const drawable = target(l) !== null;
               const c = costById.get(l.id);
               const kind = c ? (c.productId ? pl?.products.find(p => p.id === c.productId)?.kind : undefined)
-                ?? pl?.products.find(p => p.id === plan.pricing.productChoice[l.id])?.kind : undefined;
+                ?? pl?.products.find(p => p.id === plan.pricing.productChoice[l.id])?.kind
+                ?? (c.informational ? undefined : expectedKind(l)) : undefined;
               return (
                 <details key={l.id} class="line" data-id={l.id} open={openLines.includes(l.id)}>
                   <summary onClick={e => { e.preventDefault(); ui.set({ matOpen: toggle(ui.get().matOpen, l.id, !openLines.includes(l.id)) }); }}>

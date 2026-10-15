@@ -131,6 +131,23 @@ test('substitute product warning and the decking conversion note are shown on th
   expect(row(lec.lineId).textContent).toContain('Helyettesítő termék: 23×48 (a tervezett 24×48 helyett)');
   expect(row('roof.decking').textContent).toContain(cost().lines.find(l => l.lineId === 'roof.decking')!.note!);
 });
+test('missing lines get a product chooser of the expected kind; foundation lines get none', () => {
+  const { store, row, cost } = setup();
+  const kinds = (id: string) => {
+    const input = row(id).querySelector('input.product-choice') as HTMLInputElement | null;
+    if (!input) return null;
+    const opts = Array.from(row(id).querySelectorAll('datalist option')).map(o => (o as HTMLOptionElement).value).filter(v => v !== 'automatikus');
+    return new Set(opts.map(n => BUNDLED_PRICE_LIST!.products.find(p => p.name === n)!.kind));
+  };
+  expect(cost().lines.find(l => l.lineId === 'roof.tiles')!.source).toBe('missing');
+  expect(kinds('roof.tiles')).toEqual(new Set(['roofing']));
+  expect(kinds('fix.anchors')).toEqual(new Set(['fastener']));
+  expect(kinds('acc.downpipe')).toEqual(new Set(['gutter']));
+  expect(kinds('foundation.cementBags')).toBeNull();
+  const tile = BUNDLED_PRICE_LIST!.products.find(p => p.kind === 'roofing')!;
+  fireEvent.change(row('roof.tiles').querySelector('input.product-choice')!, { target: { value: tile.name } });
+  expect(store.get().plan.pricing.productChoice['roof.tiles']).toBe(tile.id);
+});
 test('gone choice shows a warning', () => {
   const { store, timberLine, row } = setup();
   const l = timberLine();
