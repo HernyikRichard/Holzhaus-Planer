@@ -3,13 +3,21 @@
 // Ha a hibás oldalak aránya > 20%, nem ír fájlt, és 1-es kóddal kilép.
 // Hibás oldal = hálózati/HTTP hiba vagy feldolgozhatatlan HTML. Az ár nélküli oldal és a
 // parseProduct null eredménye nem hiba, hanem a kihagyott tételek jelentésébe kerül.
+// Védelem: ha az új lista < 150 termék, vagy a meglévő kaplar.json termékszámának < 70%-a,
+// nem ír fájlt (pl. oldalszerkezet-változás), 1-es kóddal kilép.
+// ARAK_LIMIT=N: csak az első N oldalt tölti le, és a src/prices/kaplar.partial.json-ba ír
+// (git-ignorált), a termelési fájlt és a védelmet nem érinti.
 import { gunzipSync } from 'node:zlib';
-import { writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseProduct, parseHuNumber, cleanName, slug } from './parse.mjs';
 
 const BASE = 'https://kaplarfatelep.hu';
 const OUT = fileURLToPath(new URL('../src/prices/kaplar.json', import.meta.url));
+const OUT_PARTIAL = fileURLToPath(new URL('../src/prices/kaplar.partial.json', import.meta.url));
+const TIMEOUT_MS = 20000;
+const MIN_PRODUCTS = 150;
+const MIN_KEEP_RATIO = 0.7;
 const DELAY_MS = 800;
 const MAX_FAIL_RATIO = 0.2;
 const KEYWORDS = ['fenyo-fureszaru', 'pallo', 'lec', 'deszk', 'szaruf', 'gerend', 'tetolec', 'osb', 'hoszigetel',
@@ -39,7 +47,7 @@ async function get(url) {
     if (u.includes('/shop_ajax/')) throw new Error('shop_ajax tiltott');
     const headers = { ...HEADERS };
     if (jar.size) headers.Cookie = [...jar].map(([k, v]) => `${k}=${v}`).join('; ');
-    const res = await fetch(u, { headers, redirect: 'manual' });
+    const res = await fetch(u, { headers, redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT_MS) });
     storeCookies(res);
     if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
       u = new URL(res.headers.get('location'), u).href;
@@ -50,6 +58,18 @@ async function get(url) {
     return Buffer.from(await res.arrayBuffer());
   }
   throw new Error('túl sok átirányítás');
+}
+
+/** get() egyszeri újrapróbálással: 429/503 -> 5 s várakozás, hálózati hiba/időtúllépés/5xx -> 2 s; egyéb 4xx azonnali hiba. */
+async function getRetry(url) {
+  try { return await get(url); } catch (e) {
+    const m = /^HTTP (\d+)/.exec(e.message);
+    const code = m ? Number(m[1]) : 0;
+    if (code === 429 || code === 503) await sleep(5000);
+    else if (code >= 400 && code < 500) throw e;
+    else await sleep(2000);
+    return await get(url);
+  }
 }
 
 const locs = (xml) => [...xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => m[1].replace(/&amp;/g, '&'));
@@ -88,7 +108,7 @@ const PIECE = new Set(['db', 'csomag', 'tekercs', 'doboz', 'tabla', 'tábla', 'c
 const isPiece = (u) => PIECE.has(u.toLowerCase());
 const isM2 = (u) => /^m[²2]$/i.test(u);
 
-function extract(html) {
+export function extract(html) {
   const h1 = /<h1(?![^>]*hidden)[^>]*>([\s\S]*?)<\/h1>/i.exec(html) ?? /<h1[^>]*>([\s\S]*?)<\/h1>/i.exec(html);
   if (!h1) return { error: 'nincs <h1>' };
   const name = cleanName(h1[1].replace(/<[^>]*>/g, ' '));
@@ -125,7 +145,7 @@ function extract(html) {
 }
 
 /** A névből nem kinyerhető jellemzők az oldalról. Visszaadja, mi lett alapértékkel pótolva. */
-function enrich(p, text, areaPerPiece) {
+export function enrich(p, text, areaPerPiece) {
   const notes = [];
   const n = (m) => parseHuNumber(m[1]);
   if (p.kind === 'osb' && !p.sheet) {
@@ -155,10 +175,20 @@ function enrich(p, text, areaPerPiece) {
   return notes;
 }
 
+/** Termékszám-védelem: hibaüzenet, ha az új lista gyanúsan kicsi, különben null. */
+export function floorProblem(newCount, oldCount) {
+  if (newCount < MIN_PRODUCTS) return `csak ${newCount} termék lett (minimum ${MIN_PRODUCTS}).`;
+  if (oldCount && newCount < oldCount * MIN_KEEP_RATIO) {
+    return `${newCount} termék lett, a meglévő ${oldCount} termék ${MIN_KEEP_RATIO * 100}%-a alatt.`;
+  }
+  return null;
+}
+
 async function main() {
   let urls = await collectUrls();
   const limit = Number(process.env.ARAK_LIMIT);
-  if (limit > 0) urls = urls.slice(0, limit);
+  const partial = limit > 0;
+  if (partial) urls = urls.slice(0, limit);
 
   const products = [];
   const failures = []; const noPrice = []; const unparsed = []; const defaults = [];
@@ -168,10 +198,7 @@ async function main() {
     await sleep(DELAY_MS);
     let html;
     try {
-      try { html = (await get(url)).toString('utf8'); } catch (e) {
-        if (/^HTTP 4/.test(e.message)) throw e;
-        await sleep(2000); html = (await get(url)).toString('utf8'); // egyszeri újrapróbálás hálózati hibára
-      }
+      html = (await getRetry(url)).toString('utf8');
     } catch (e) { failures.push(`${url}: ${e.message}`); continue; }
     const r = extract(html);
     if (r.error) { failures.push(`${url}: ${r.error}`); continue; }
@@ -216,11 +243,22 @@ async function main() {
     shipping: { fee: 14990, freeAbove: 500000 },
     products: list,
   };
-  writeFileSync(OUT, JSON.stringify(out, null, 2) + '\n', 'utf8');
+  if (!partial) {
+    let oldCount = null;
+    try { if (existsSync(OUT)) oldCount = JSON.parse(readFileSync(OUT, 'utf8')).products.length; } catch { /* sérült régi fájl: nincs viszonyítás */ }
+    const problem = floorProblem(list.length, oldCount);
+    if (problem) {
+      console.error(`HIBA: ${problem} A meglévő fájlt nem írom felül.`);
+      console.error(`  ár nélkül: ${noPrice.length}, nem értelmezhető: ${unparsed.length}, hibás: ${failures.length}`);
+      process.exit(1);
+    }
+  }
+  const target = partial ? OUT_PARTIAL : OUT;
+  writeFileSync(target, JSON.stringify(out, null, 2) + '\n', 'utf8');
 
   const counts = {};
   for (const p of list) counts[p.kind] = (counts[p.kind] ?? 0) + 1;
-  console.log(`\nKész: ${list.length} termék -> ${OUT}`);
+  console.log(`\nKész: ${list.length} termék -> ${target}`);
   console.log('Kategóriánként:');
   for (const k of Object.keys(counts).sort()) console.log(`  ${k}: ${counts[k]}`);
   console.log(`Hibás oldal: ${failures.length}/${urls.length}`);
@@ -234,4 +272,6 @@ async function main() {
   dupes.forEach((f) => console.log('  ' + f));
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}
