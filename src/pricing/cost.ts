@@ -1,7 +1,6 @@
 import type { CalcOutput } from '../calc';
 import { CATEGORY_ORDER } from '../calc';
 import type { Category } from '../calc/types';
-import { DEFAULT_PRICING } from '../model/defaults';
 import type { Plan, PlanPricing } from '../model/types';
 import type { PriceList, Product } from '../prices/types';
 import { matchLine } from './match';
@@ -44,7 +43,7 @@ export function shippingCost(
 }
 
 export function costOf(plan: Plan, output: CalcOutput, pl: PriceList): CostSummary {
-  const pricing = plan.pricing ?? DEFAULT_PRICING;
+  const pricing = plan.pricing;
   const byId = new Map(pl.products.map(p => [p.id, p]));
   const lines: CostLine[] = output.lines.map(line => {
     const m = matchLine(line, pl, plan);

@@ -4,7 +4,7 @@ export function createDefaultPlan(): Plan {
   const width = 3000;
   const length = 4000;
   return {
-    version: 1,
+    version: 2,
     name: 'Új terv',
     building: { width, length, wallHeight: 2400 },
     foundation: {
@@ -50,6 +50,7 @@ export function createDefaultPlan(): Plan {
       waste: { timber: 0.10, sheet: 0.10, foil: 0.10, tile: 0.05 },
       stockLengths: [3000, 4000, 5000, 6000],
     },
+    pricing: structuredClone(DEFAULT_PRICING),
   };
 }
 

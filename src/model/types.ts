@@ -34,7 +34,7 @@ export interface Plan {
   accessories: { gutter: boolean; downpipe: boolean; fascia: boolean; bargeBoard: boolean;
     ridgeTiles: boolean; ridgeVent: boolean };
   settings: { waste: { timber: number; sheet: number; foil: number; tile: number }; stockLengths: Mm[] };
-  pricing?: PlanPricing;
+  pricing: PlanPricing;
 }
 
 export interface PlanPricing {

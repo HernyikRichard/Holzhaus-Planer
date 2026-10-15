@@ -259,7 +259,7 @@ export function matchLine(line: MaterialLine, pl: PriceList, plan: Plan): Match 
   if (FOUNDATION.test(line.id)) {
     return { missing: true, reason: 'Nincs Káplár-termék, máshonnan beszerzendő', otherSource: true };
   }
-  const choice = plan.pricing?.productChoice?.[line.id];
+  const choice = plan.pricing.productChoice[line.id];
   let choiceGone = false;
   if (choice !== undefined) {
     const p = pl.products.find(x => x.id === choice);

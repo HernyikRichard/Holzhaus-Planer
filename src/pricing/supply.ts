@@ -56,7 +56,7 @@ const cache = new WeakMap<PriceList, Supply>();
 
 /** A tervhez tartozó kínálat; undefined, ha ki van kapcsolva vagy nincs árlista. */
 export function supplyFor(plan: Plan, pl: PriceList | null = BUNDLED_PRICE_LIST): Supply | undefined {
-  if (!pl || plan.pricing?.useSupply === false) return undefined;
+  if (!pl || !plan.pricing.useSupply) return undefined;
   let s = cache.get(pl);
   if (!s) { s = supplyFromPriceList(pl); cache.set(pl, s); }
   return s;
