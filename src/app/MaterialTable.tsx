@@ -61,7 +61,7 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
 
   const q = fold(query.trim());
   const matches = (l: MaterialLine) => (q === '' || fold(l.name).includes(q))
-    && (!onlyMissing || costById.get(l.id)?.source === 'missing');
+    && (!onlyMissing || (() => { const c = costById.get(l.id); return c?.source === 'missing' && !c.informational; })());
 
   return (
     <div class="material-table">
@@ -80,6 +80,7 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
           <ul>{output.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
         </div>
       )}
+      {onlyMissing && q === '' && !output.lines.some(matches) && <p class="no-results">Nincs hiányzó árú tétel.</p>}
       {q !== '' && !output.lines.some(matches) && <p class="no-results">Nincs találat a(z) „{query.trim()}” keresésre.</p>}
       {cost && (
         <div class="cols" aria-hidden="true">
@@ -113,11 +114,11 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
                     </span>
                     <span class="qty">{formatQty(l.quantity)}</span>
                     <span class="unit">{l.unit}</span>
-                    {c && <PriceCell line={c} label={l.name}
+                    {c && !c.informational && <PriceCell line={c} label={l.name}
                       caption={c.productId !== undefined && c.unitPrice !== undefined && (c.qty !== l.quantity || c.unit !== l.unit)
                         ? `${formatQty(c.qty)} ${c.unit} × ${formatFt(c.unitPrice)}` : undefined}
                       onCommit={v => setPrice(c, v)} onReset={() => resetPrice(c)} />}
-                    {c && <span class="total">{c.total === undefined ? '—' : formatFt(c.total)}</span>}
+                    {c && !c.informational && <span class="total">{c.total === undefined ? '—' : formatFt(c.total)}</span>}
                     {c && <SourceTag line={c} />}
                     {drawable ? (
                       <button type="button" class="show" aria-label="Mutasd a rajzon" title="Mutasd a rajzon"
@@ -125,7 +126,7 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
                     ) : <span class="show-slot" />}
                   </summary>
                   <p class="explanation">{l.explanation}</p>
-                  {c?.source === 'missing' && c.reason && <p class="explanation">{c.reason}</p>}
+                  {c?.source === 'missing' && !c.informational && c.reason && <p class="explanation">{c.reason}</p>}
                   {c && kind && pl && (
                     <ProductPicker lineId={l.id} products={pl.products.filter(p => p.kind === kind)}
                       current={plan.pricing.productChoice[l.id] ? c.productName ?? '' : ''}
@@ -171,6 +172,7 @@ function ProductPicker({ lineId, products, current, onChoose }: {
 
 function SourceTag({ line }: { line: CostLine }) {
   const [cls, label] = line.source === 'kaplar' ? ['ok', 'Káplár']
+    : line.informational ? ['info', 'tájékoztató']
     : line.source === 'missing' ? ['miss', 'nincs ár'] : ['manual', 'kézi'];
   return (
     <span class="source">

@@ -136,6 +136,10 @@ function chooseGutterSystem(ps: Product[]): string | null {
 
 const FOUNDATION = /^foundation\./;
 
+/** Az alap tájékoztató sorai: származtatott / duplikált mennyiségek (a zsák és a sóder a rendelendő), nem árazandók. */
+const INFORMATIONAL = new Set(['foundation.concrete', 'foundation.cement', 'foundation.water']);
+export const isInformational = (lineId: string): boolean => INFORMATIONAL.has(lineId);
+
 /** A szabály szerint választott termék, vagy a hiány oka. */
 function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan): Product | { reason: string } {
   const ps = pl.products;

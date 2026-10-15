@@ -259,3 +259,4 @@ button.cutstrip-piece:hover:not(:disabled) { background: #4a90d9; }
 .other-list .total { width: 6rem; text-align: right; font-weight: 600; }
 .cost-note, .cost-view .muted, .no-prices { color: var(--muted); font-size: 0.8rem; }
 .missing-filter { display: flex; gap: 0.6rem; align-items: center; margin: 0.4rem 0; color: var(--warn); font-size: 0.85rem; }
+.tag.info { font-size: 0.75rem; border: 1px solid var(--muted); border-radius: 3px; padding: 0 0.35rem; color: var(--muted); }

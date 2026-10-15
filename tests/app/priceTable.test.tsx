@@ -97,7 +97,7 @@ test('Escape cancels the edit, blur commits', () => {
 
 test('other-source line (foundation) saves to pricing.custom', () => {
   const { store, cost, row } = setup();
-  const l = cost().lines.find(x => x.otherSource)!;
+  const l = cost().lines.find(x => x.otherSource && !x.informational)!;
   expect(within(row(l.lineId)).getByText('nincs ár')).toBeTruthy();
   expect(within(row(l.lineId)).getByText('máshonnan')).toBeTruthy();
   fireEvent.click(row(l.lineId).querySelector('button.price-btn')!);

@@ -21,11 +21,11 @@ describe('costOf', () => {
 
   it('alapozási sorok máshonnan: nincs ár -> missing, kézi ár -> custom, mindkettő otherSource', () => {
     const plain = cost(createDefaultPlan());
-    const c = plain.lines.find(l => l.lineId === 'foundation.cement')!;
+    const c = plain.lines.find(l => l.lineId === 'foundation.cementBags')!;
     expect(c).toMatchObject({ source: 'missing', otherSource: true });
     expect(c.reason).toContain('máshonnan');
-    const priced = cost(withPricing(createDefaultPlan(), { custom: { 'foundation.cement': 100 } }));
-    const c2 = priced.lines.find(l => l.lineId === 'foundation.cement')!;
+    const priced = cost(withPricing(createDefaultPlan(), { custom: { 'foundation.cementBags': 100 } }));
+    const c2 = priced.lines.find(l => l.lineId === 'foundation.cementBags')!;
     expect(c2).toMatchObject({ source: 'custom', otherSource: true, unitPrice: 100, total: Math.round(c2.qty * 100) });
   });
 
@@ -101,7 +101,7 @@ describe('costOf', () => {
   it('a végösszeg egész forint, a hiányzók száma stimmel', () => {
     const s = cost(createDefaultPlan());
     expect(Number.isInteger(s.total)).toBe(true);
-    expect(s.missingCount).toBe(s.lines.filter(l => l.source === 'missing').length);
+    expect(s.missingCount).toBe(s.lines.filter(l => l.source === 'missing' && !l.informational).length);
     expect(s.missingCount).toBeGreaterThan(0);
     const sum = s.lines.reduce((a, l) => a + (l.total ?? 0), 0);
     expect(s.kaplarSubtotal + s.otherSubtotal).toBe(sum);
@@ -112,8 +112,8 @@ describe('costOf', () => {
   });
 
   it('tört forintos kézi ár is egész sorösszeget ad', () => {
-    const s = cost(withPricing(createDefaultPlan(), { custom: { 'foundation.cement': 12.5 } }));
-    const c = s.lines.find(l => l.lineId === 'foundation.cement')!;
+    const s = cost(withPricing(createDefaultPlan(), { custom: { 'foundation.cementBags': 12.5 } }));
+    const c = s.lines.find(l => l.lineId === 'foundation.cementBags')!;
     expect(c.total).toBe(Math.round(c.qty * 12.5));
   });
 
@@ -144,5 +144,36 @@ describe('beépített árlista, alaptervvel', () => {
     expect(f.length).toBeGreaterThan(0);
     for (const l of f) expect(l.otherSource).toBe(true);
     expect(orderList(s).length).toBeGreaterThan(0);
+  });
+});
+
+describe('informational foundation lines', () => {
+  const ids = ['foundation.concrete', 'foundation.cement', 'foundation.water'];
+  it('beton, cement és víz tájékoztató: nincs ár, nem hiányzó, nincs a végösszegben', () => {
+    const plan = createDefaultPlan();
+    const base = cost(plan);
+    for (const id of ids) {
+      const l = base.lines.find(x => x.lineId === id)!;
+      expect(l.informational).toBe(true);
+      expect(l.total).toBeUndefined();
+      expect(l.unitPrice).toBeUndefined();
+    }
+    const out = calculate(plan, supply);
+    const foundationIds = out.lines.filter(l => l.id.startsWith('foundation.')).map(l => l.id);
+    const custom = Object.fromEntries(foundationIds.map(id => [id, 100]));
+    const priced = cost(withPricing(plan, { custom }));
+    const counted = priced.lines.filter(l => l.lineId.startsWith('foundation.') && l.total !== undefined).map(l => l.lineId).sort();
+    const expected = foundationIds.filter(id => !ids.includes(id)).sort();
+    expect(counted).toEqual(expected);
+    expect(priced.byCategory.Alap).toBe(priced.lines.filter(l => l.category === 'Alap').reduce((a, l) => a + (l.total ?? 0), 0));
+    // elavult kézi ár a tájékoztató soron sem számít
+    expect(priced.lines.find(l => l.lineId === 'foundation.concrete')!.total).toBeUndefined();
+  });
+  it('az alapértelmezett terv hiányzó darabszáma 3-mal kevesebb', () => {
+    const plan = createDefaultPlan();
+    const s = cost(plan);
+    const infoMissing = s.lines.filter(l => l.informational).length;
+    expect(infoMissing).toBe(3);
+    expect(s.missingCount).toBe(s.lines.filter(l => l.total === undefined).length - 3);
   });
 });

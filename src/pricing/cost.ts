@@ -3,7 +3,7 @@ import { CATEGORY_ORDER } from '../calc';
 import type { Category } from '../calc/types';
 import type { Plan, PlanPricing } from '../model/types';
 import type { PriceList, Product } from '../prices/types';
-import { matchLine } from './match';
+import { matchLine, isInformational } from './match';
 
 export interface CostLine {
   lineId: string; category: Category; name: string;
@@ -12,6 +12,8 @@ export interface CostLine {
   source: 'kaplar' | 'override' | 'custom' | 'missing';
   /** A tétel mindig máshonnan beszerzendő (alap). */
   otherSource: boolean;
+  /** Tájékoztató sor: nincs ára, nem számít bele az összegekbe és a hiányzók közé. */
+  informational: boolean;
   /** A kézzel választott termék már nincs az árlistában, a szabály szerinti párosítás él. */
   choiceGone?: boolean;
   /** Miért nincs Káplár-termék (hiányzó párosításnál). */
@@ -49,6 +51,9 @@ export function costOf(plan: Plan, output: CalcOutput, pl: PriceList): CostSumma
     const m = matchLine(line, pl, plan);
     const product = 'productId' in m ? byId.get(m.productId) : undefined;
     const base = { lineId: line.id, category: line.category, name: line.name };
+    if (isInformational(line.id)) {
+      return { ...base, qty: line.quantity, unit: line.unit as string, source: 'missing', otherSource: true, informational: true };
+    }
     const flags = { ...('choiceGone' in m && m.choiceGone ? { choiceGone: true } : {}) };
     const other = 'missing' in m && m.otherSource === true;
     const reason = 'missing' in m ? m.reason : undefined;
@@ -58,7 +63,7 @@ export function costOf(plan: Plan, output: CalcOutput, pl: PriceList): CostSumma
       : { qty: line.quantity, unit: line.unit as string };
     const priced = (source: CostLine['source'], unitPrice: number): CostLine => ({
       ...base, ...matched, unitPrice, total: Math.round(matched.qty * unitPrice), source,
-      otherSource: other, ...flags,
+      otherSource: other, informational: false, ...flags,
     });
 
     const override = pricing.overrides[line.id];
@@ -66,7 +71,7 @@ export function costOf(plan: Plan, output: CalcOutput, pl: PriceList): CostSumma
     if (product) return priced('kaplar', product.price);
     const custom = pricing.custom[line.id];
     if (custom !== undefined) return priced('custom', custom);
-    return { ...base, ...matched, source: 'missing', otherSource: other, ...flags, ...(reason ? { reason } : {}) };
+    return { ...base, ...matched, source: 'missing', otherSource: other, informational: false, ...flags, ...(reason ? { reason } : {}) };
   });
 
   const byCategory = Object.fromEntries(CATEGORY_ORDER.map(c => [c, 0])) as Record<Category, number>;
@@ -74,6 +79,7 @@ export function costOf(plan: Plan, output: CalcOutput, pl: PriceList): CostSumma
   let otherSubtotal = 0;
   let missingCount = 0;
   for (const l of lines) {
+    if (l.informational) continue;
     if (l.total === undefined) { missingCount++; continue; }
     byCategory[l.category] += l.total;
     if (isCart(l)) kaplarSubtotal += l.total;
@@ -91,7 +97,7 @@ export interface OrderRow {
 }
 
 /** Káplár-termékhez tartozó sor (kézi áras is: ugyanaz a termék, más ár) – a kosárba és a Káplár-részösszegbe tartozik. */
-const isCart = (l: CostLine): boolean => l.productId !== undefined && (l.source === 'kaplar' || l.source === 'override');
+export const isCart = (l: CostLine): boolean => l.productId !== undefined && (l.source === 'kaplar' || l.source === 'override');
 
 /**
  * A Káplár-kosár: azonos termékek összevonva. Különböző egységáraknál a mennyiség és az összeg összeadódik,

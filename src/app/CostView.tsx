@@ -2,7 +2,7 @@ import type { Store } from '../ui/store';
 import type { UiStore } from './uiStore';
 import { CATEGORY_ORDER } from '../calc';
 import { BUNDLED_PRICE_LIST } from '../prices';
-import { orderList } from '../pricing/cost';
+import { orderList, isCart } from '../pricing/cost';
 import { formatFt, formatQty } from '../ui/format';
 import { PriceCell, parsePrice } from './PriceCell';
 import { useCost, setLinePrice, resetLinePrice } from './useCost';
@@ -23,7 +23,7 @@ export function CostView({ store, ui }: { store: Store; ui: UiStore }) {
   const catOf = (productId: string) => cost.lines.find(l => l.productId === productId)!.category;
   const kaplarCart = orderList(cost).sort((a, b) =>
     CATEGORY_ORDER.indexOf(catOf(a.productId)) - CATEGORY_ORDER.indexOf(catOf(b.productId)) || a.name.localeCompare(b.name, 'hu'));
-  const others = cost.lines.filter(l => l.otherSource || l.productId === undefined);
+  const others = cost.lines.filter(l => l.otherSource || !isCart(l));
   const materialTotal = cost.kaplarSubtotal + cost.otherSubtotal;
   const bars = CATEGORY_ORDER.filter(c => cost.byCategory[c] > 0);
   const sum = bars.reduce((a, c) => a + cost.byCategory[c], 0);
@@ -117,8 +117,9 @@ export function CostView({ store, ui }: { store: Store; ui: UiStore }) {
               <li key={l.lineId} data-id={l.lineId}>
                 <span class="name">{l.name}</span>
                 <span class="qty">{formatQty(l.qty)} {l.unit}</span>
-                <PriceCell line={l} label={l.name} onCommit={v => setLinePrice(store, l, v)} onReset={() => resetLinePrice(store, l)} />
-                <span class="total">{l.total === undefined ? '—' : formatFt(l.total)}</span>
+                {l.informational ? <span class="tag info">tájékoztató</span> : (<>
+                  <PriceCell line={l} label={l.name} onCommit={v => setLinePrice(store, l, v)} onReset={() => resetLinePrice(store, l)} />
+                  <span class="total">{l.total === undefined ? '—' : formatFt(l.total)}</span></>)}
               </li>
             ))}
           </ul>

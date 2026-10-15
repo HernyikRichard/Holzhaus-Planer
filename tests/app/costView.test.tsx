@@ -79,7 +79,7 @@ test('missing items warning and the Mutasd button', () => {
 
 test('other-source lines get a PriceCell; entering a price lowers the missing count', () => {
   const { view, cost } = setup();
-  const miss = cost().lines.find(l => l.source === 'missing');
+  const miss = cost().lines.find(l => l.source === 'missing' && !l.informational);
   expect(miss).toBeTruthy();
   const li = view.container.querySelector(`.other-list li[data-id="${miss!.lineId}"]`)!;
   expect(li.textContent).toContain('—');
@@ -99,4 +99,31 @@ test('category bars only for categories with a total and the footer note has the
   expect(view.container.querySelector(".bar-label")!.textContent).toMatch(/\sFt \(\d+%\)$/);
   const [y, m, d] = BUNDLED_PRICE_LIST!.fetchedAt.slice(0, 10).split('-');
   expect(view.container.querySelector('.cost-note')!.textContent).toContain(`Káplár Fatelep, ${y}. ${m}. ${d}. – bruttó, tájékoztató jellegű.`);
+});
+
+test('informational foundation rows show a tag instead of a price cell and are not counted missing', () => {
+  const { view, cost } = setup();
+  const li = view.container.querySelector('.other-list li[data-id="foundation.concrete"]')!;
+  expect(li.textContent).toContain('tájékoztató');
+  expect(li.querySelector('button.price-btn')).toBeNull();
+  const c = cost();
+  expect(c.missingCount).toBe(c.lines.filter(l => l.total === undefined && !l.informational).length);
+});
+
+test('without a price list only the "Nincs árlista" message shows', async () => {
+  vi.resetModules();
+  vi.doMock('../../src/prices', () => ({ BUNDLED_PRICE_LIST: null }));
+  const { CostView: CV } = await import('../../src/app/CostView');
+  const store = createStore(createDefaultPlan());
+  const ui = createUiStore();
+  const { container } = render(<CV store={store} ui={ui} />);
+  expect(container.textContent).toBe('Nincs árlista');
+  vi.doUnmock('../../src/prices');
+});
+
+test('matOnlyMissing resets on step change', () => {
+  const ui = createUiStore();
+  ui.set({ matOnlyMissing: true });
+  ui.set({ step: 'roof' });
+  expect(ui.get().matOnlyMissing).toBe(false);
 });
