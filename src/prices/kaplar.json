@@ -1,0 +1,3306 @@
+{
+  "source": "Káplár Fatelep",
+  "fetchedAt": "2026-10-15",
+  "shipping": {
+    "fee": 14990,
+    "freeAbove": 500000
+  },
+  "products": [
+    {
+      "id": "cladding-lamberia-12.5x96-4000-lamberia-lucfenyo-12-5x96x4000mm-a-b",
+      "name": "Lambéria lucfenyő 12,5x96x4000mm \"A/B\"",
+      "url": "https://kaplarfatelep.hu/gyalult-termekek/lamberiak/lamberia-125x96x4000mm",
+      "kind": "cladding",
+      "price": 17243,
+      "unit": "csomag",
+      "material": "lambéria",
+      "section": {
+        "t": 12.5,
+        "w": 96
+      },
+      "length": 4000,
+      "thickness": 12.5,
+      "packM2": 3.84
+    },
+    {
+      "id": "cladding-lamberia-12.5x96-4000-lamberia-lucfenyo-12-5x96x4000mm-b-c",
+      "name": "Lambéria lucfenyő 12,5x96x4000mm \"B/C\"",
+      "url": "https://kaplarfatelep.hu/Gyalult-termekek/Lamberiak/Lamberia-lucfenyo-125x9",
+      "kind": "cladding",
+      "price": 12258,
+      "unit": "csomag",
+      "material": "lambéria",
+      "section": {
+        "t": 12.5,
+        "w": 96
+      },
+      "length": 4000,
+      "thickness": 12.5,
+      "packM2": 3.84
+    },
+    {
+      "id": "cladding-lamberia-14x121-3000",
+      "name": "Lambéria lucfenyő 14x121x3000mm \"A/B\" 7 szál/csomag",
+      "url": "https://kaplarfatelep.hu/gyalult-termekek/lamberiak/lamberia-14x121x3000mm",
+      "kind": "cladding",
+      "price": 11673,
+      "unit": "csomag",
+      "material": "lambéria",
+      "section": {
+        "t": 14,
+        "w": 121
+      },
+      "length": 3000,
+      "thickness": 14,
+      "packM2": 2.54
+    },
+    {
+      "id": "cladding-lamberia-14x121-4000-lamberia-lucfenyo-14x121x4000mm-a-b-7-szal-csoma",
+      "name": "Lambéria lucfenyő 14x121x4000mm \"A/B\" 7 szál/csomag",
+      "url": "https://kaplarfatelep.hu/gyalult-termekek/lamberiak/lamberia-14x121x4000mm",
+      "kind": "cladding",
+      "price": 17245,
+      "unit": "csomag",
+      "material": "lambéria",
+      "section": {
+        "t": 14,
+        "w": 121
+      },
+      "length": 4000,
+      "thickness": 14,
+      "packM2": 3.39
+    },
+    {
+      "id": "cladding-lamberia-14x121-4000-lamberia-lucfenyo-14x121x4000mm-a-b-8-szal-csoma",
+      "name": "Lambéria lucfenyő 14x121x4000mm \"A/B\" 8 szál/csomag",
+      "url": "https://kaplarfatelep.hu/Gyalult-termekek/Lamberiak/Lamberia-lucfenyo-14x12",
+      "kind": "cladding",
+      "price": 19708,
+      "unit": "csomag",
+      "material": "lambéria",
+      "section": {
+        "t": 14,
+        "w": 121
+      },
+      "length": 4000,
+      "thickness": 14,
+      "packM2": 3.87
+    },
+    {
+      "id": "fastener-alapcsavar-gerendatalphoz-10x80mm",
+      "name": "Alapcsavar gerendatalphoz 10x80mm",
+      "url": "https://kaplarfatelep.hu/egyeb-anyagok/szegek-vasanyagok/alapcsavar-gerenda",
+      "kind": "fastener",
+      "price": 250,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-fogopar-osszekoto-csavar-12x250mm-anya-alatet",
+      "name": "Fogópár összekötő csavar 12x250mm (anya, alátét)",
+      "url": "https://kaplarfatelep.hu/spd/tkmenfcs1225k/Fogopar-osszekoto-csavar-12x250mm-anya-alatet",
+      "kind": "fastener",
+      "price": 650,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-aluminium-szegecs-3-2x0-8",
+      "name": "Galeco alumínium szegecs 3,2x0,8",
+      "url": "https://kaplarfatelep.hu/spd/csgalszeg/Galeco-aluminium-szegecs-32x08",
+      "kind": "fastener",
+      "price": 818,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-pvc-100-belso-szeglet-90-gumitomitessel",
+      "name": "Galeco PVC (100) belső szeglet, 90° gumitömítéssel",
+      "url": "https://kaplarfatelep.hu/spd/csgalpvc90belszegrez/Galeco-PVC-100-belso-szeglet-90-gumitomitessel",
+      "kind": "fastener",
+      "price": 3712,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-pvc-100-kulso-szeglet-90-gumitomitessel",
+      "name": "Galeco PVC (100) külső szeglet, 90° gumitömítéssel",
+      "url": "https://kaplarfatelep.hu/spd/csgalpvc90kulszegrez/Galeco-PVC-100-kulso-szeglet-90-gumitomitessel",
+      "kind": "fastener",
+      "price": 3712,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-pvc-125-belso-szeglet-90-gumitomitessel",
+      "name": "Galeco PVC (125) belső szeglet, 90° gumitömítéssel",
+      "url": "https://kaplarfatelep.hu/spd/csgalpvc110belszegrez/Galeco-PVC-125-belso-szeglet-90-gumitomitessel",
+      "kind": "fastener",
+      "price": 4098,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-pvc-125-kulso-szeglet-90-gumitomitessel",
+      "name": "Galeco PVC (125) külső szeglet, 90° gumitömítéssel",
+      "url": "https://kaplarfatelep.hu/spd/csgalpvc110kulszegrez/Galeco-PVC-125-kulso-szeglet-90-gumitomitessel",
+      "kind": "fastener",
+      "price": 4098,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-stal-150-belso-szeglet-90-gumitomitessel",
+      "name": "Galeco Stal (150) belső szeglet, 90° gumitömítéssel",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150belszeglecsok/Galeco-Stal-150-belso-szeglet-90-gumitomitessel",
+      "kind": "fastener",
+      "price": 10347,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-stal-150-kapocs-zaras-osszekoto-idom",
+      "name": "Galeco Stal (150) kapocs-zárás összekötő idom",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150osszidcsoki/Galeco-Stal-150-kapocs-zaras-osszekoto-idom",
+      "kind": "fastener",
+      "price": 2542,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-stal-150-kulso-szeglet-90-gumitomitessel",
+      "name": "Galeco Stal (150) külső szeglet, 90° gumitömítéssel",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150kulszeglecsok/Galeco-Stal-150-kulso-szeglet-90-gumitomitessel",
+      "kind": "fastener",
+      "price": 10347,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-stal-metal-150-belso-szeglet-90-gumitomit",
+      "name": "Galeco Stal, Metál (150) belső szeglet, 90° gumitömítéssel",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150belszeglerez/Galeco-Stal-Metal-150-belso-szeglet-90-gumitomites",
+      "kind": "fastener",
+      "price": 11179,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-stal-metal-150-kapocs-zaras-osszekoto-ido",
+      "name": "Galeco Stal, Metál (150) kapocs-zárás összekötő idom",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150osszidrez/Galeco-Stal-Metal-150-kapocs-zaras-osszekoto-idom",
+      "kind": "fastener",
+      "price": 2655,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-stal-metal-150-kulso-szeglet-90-gumitomit",
+      "name": "Galeco Stal, Metál (150) külső szeglet, 90° gumitömítéssel",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150kulszeglerez/Galeco-Stal-Metal-150-kulso-szeglet-90-gumitomites",
+      "kind": "fastener",
+      "price": 11179,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-stal2-belso-szeglet-90",
+      "name": "Galeco STAL² belső szeglet 90°",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal2150belszeg/Galeco-STAL-belso-szeglet-90",
+      "kind": "fastener",
+      "price": 11696,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-galeco-stal2-kulso-szeglet-90",
+      "name": "Galeco STAL² külső szeglet 90°",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal2150kulszeg/Galeco-STAL-kulso-szeglet-90",
+      "kind": "fastener",
+      "price": 11696,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-huzalszeg-100mm-1kg",
+      "name": "Huzalszeg 100mm 1kg",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/huzalszeg-42x100-1kg",
+      "kind": "fastener",
+      "price": 1990,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-huzalszeg-100mm-5kg",
+      "name": "Huzalszeg 100mm 5kg",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/huzalszeg-42x100-5kg",
+      "kind": "fastener",
+      "price": 6490,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-huzalszeg-120mm-1kg",
+      "name": "Huzalszeg 120mm 1kg",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/huzalszeg-42x120-1kg",
+      "kind": "fastener",
+      "price": 1990,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-huzalszeg-120mm-5kg",
+      "name": "Huzalszeg 120mm 5kg",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/huzalszeg-42x120-5kg",
+      "kind": "fastener",
+      "price": 6490,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-huzalszeg-160mm-5kg",
+      "name": "Huzalszeg 160mm 5kg",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/huzalszeg-50x160-5kg",
+      "kind": "fastener",
+      "price": 6490,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-huzalszeg-200mm-5kg",
+      "name": "Huzalszeg 200mm 5kg",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/huzalszeg-70x200-5kg",
+      "kind": "fastener",
+      "price": 6490,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-huzalszeg-230mm-5kg",
+      "name": "Huzalszeg 230mm 5kg",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/huzalszeg-70x230-5kg",
+      "kind": "fastener",
+      "price": 6490,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-huzalszeg-65-mm-1kg",
+      "name": "Huzalszeg 65 mm 1kg",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/huzalszeg-28x65-1kg",
+      "kind": "fastener",
+      "price": 1990,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-huzalszeg-65-mm-5kg",
+      "name": "Huzalszeg 65 mm 5kg",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/huzalszeg-28x65-5kg",
+      "kind": "fastener",
+      "price": 6490,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-huzalszeg-80mm-1kg",
+      "name": "Huzalszeg 80mm 1kg",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/huzalszeg-31x80-1kg",
+      "kind": "fastener",
+      "price": 1990,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-huzalszeg-80mm-5kg",
+      "name": "Huzalszeg 80mm 5kg",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/huzalszeg-31x80-5kg",
+      "kind": "fastener",
+      "price": 6490,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-lamberiakapocs-3mm",
+      "name": "Lambériakapocs 3mm",
+      "url": "https://kaplarfatelep.hu/spd/lamkap3/Lamberiakapocs-3mm",
+      "kind": "fastener",
+      "price": 3199,
+      "unit": "doboz"
+    },
+    {
+      "id": "fastener-lamberiakapocs-4mm",
+      "name": "Lambériakapocs 4mm",
+      "url": "https://kaplarfatelep.hu/spd/lamkap4/Lamberiakapocs-4mm",
+      "kind": "fastener",
+      "price": 3199,
+      "unit": "doboz"
+    },
+    {
+      "id": "fastener-lamberiakapocs-5mm",
+      "name": "Lambériakapocs 5mm",
+      "url": "https://kaplarfatelep.hu/egyeb-anyagok/csavarok-platocsavarok/lamberiakapoc",
+      "kind": "fastener",
+      "price": 3199,
+      "unit": "doboz"
+    },
+    {
+      "id": "fastener-mdf-szegolec-kiegeszito",
+      "name": "MDF szegőléc kiegészítő",
+      "url": "https://kaplarfatelep.hu/MDF-szegolec-kulso-sarokelem",
+      "kind": "fastener",
+      "price": 549,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-onfuro-csavar-alatettel-4-8x55-mm-25db-csomag",
+      "name": "Önfúró csavar,alátéttel 4,8x55 mm (25db/csomag)",
+      "url": "https://kaplarfatelep.hu/Polikarbonatok/Szerelesi-tartozekok/Csavar-es-alat",
+      "kind": "fastener",
+      "price": 2750,
+      "unit": "csomag",
+      "boxQty": 25
+    },
+    {
+      "id": "fastener-onmetszo-platocsavar-5-5x38mm",
+      "name": "Önmetsző platócsavar 5,5x38mm",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/csavarok-platocsavarok/platocsavar-55x",
+      "kind": "fastener",
+      "price": 40,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-parkettaszegolec-mart",
+      "name": "Parkettaszegőléc, mart",
+      "url": "https://kaplarfatelep.hu/spd/alecpar/Parkettaszegolec-mart",
+      "kind": "fastener",
+      "price": 1990,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-platocsavar-tks30-6-3x55mm",
+      "name": "Platócsavar TKS30 6,3x55mm",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/csavarok-platocsavarok/platocsavar-63x",
+      "kind": "fastener",
+      "price": 80,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-qstalyo-pro-univerzalis-szeglet-90",
+      "name": "Qstalyo Pro univerzális szeglet 90°",
+      "url": "https://kaplarfatelep.hu/spd/csqstalpr125uvszeg/Qstalyo-Pro-univerzalis-szeglet-90",
+      "kind": "fastener",
+      "price": 14232,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-dns-plus-duplamenetes-facsavar-rm.-5x100",
+      "name": "Reisser DNS PLUS duplamenetes facsavar, Rm. 5x100mm(200db/doboz)",
+      "url": "https://kaplarfatelep.hu/DNS-PLUS-facsavar/Reisser-DNS-PLUS-duplamenetes-facsavar-5x100mm",
+      "kind": "fastener",
+      "price": 7000,
+      "unit": "doboz",
+      "boxQty": 200
+    },
+    {
+      "id": "fastener-reisser-dns-plus-duplamenetes-facsavar-rm.-5x120",
+      "name": "Reisser DNS PLUS duplamenetes facsavar, Rm. 5x120mm(200db/doboz)",
+      "url": "https://kaplarfatelep.hu/DNS-PLUS-facsavar/Reisser-DNS-PLUS-duplamenetes-facsavar-5x120mm",
+      "kind": "fastener",
+      "price": 7500,
+      "unit": "doboz",
+      "boxQty": 200
+    },
+    {
+      "id": "fastener-reisser-dns-plus-duplamenetes-facsavar-rm.-5x80m",
+      "name": "Reisser DNS PLUS duplamenetes facsavar, Rm., 5x80mm(200db/doboz)",
+      "url": "https://kaplarfatelep.hu/DNS-PLUS-facsavar/Reisser-DNS-PLUS-duplamenetes-facsavar-5x80mm",
+      "kind": "fastener",
+      "price": 4200,
+      "unit": "doboz",
+      "boxQty": 200
+    },
+    {
+      "id": "fastener-reisser-dns-plus-duplamenetes-facsavar-rm.-5x90m",
+      "name": "Reisser DNS PLUS duplamenetes facsavar, Rm. 5x90mm(200db/doboz)",
+      "url": "https://kaplarfatelep.hu/DNS-PLUS-facsavar/Reisser-DNS-PLUS-duplamenetes-facsavar-5x90mm",
+      "kind": "fastener",
+      "price": 5100,
+      "unit": "doboz",
+      "boxQty": 200
+    },
+    {
+      "id": "fastener-reisser-dns-plus-duplamenetes-facsavar-rm.-6x140",
+      "name": "Reisser DNS PLUS duplamenetes facsavar, Rm. 6x140mm(100db/doboz)",
+      "url": "https://kaplarfatelep.hu/DNS-PLUS-facsavar/Reisser-DNS-PLUS-duplamenetes-facsavar-6x140mm",
+      "kind": "fastener",
+      "price": 6350,
+      "unit": "doboz",
+      "boxQty": 100
+    },
+    {
+      "id": "fastener-reisser-dns-plus-duplamenetes-facsavar-rm.-6x160",
+      "name": "Reisser DNS PLUS duplamenetes facsavar, Rm. 6x160mm(100db/doboz)",
+      "url": "https://kaplarfatelep.hu/DNS-PLUS-facsavar/Reisser-DNS-PLUS-duplamenetes-facsavar-6x160mm",
+      "kind": "fastener",
+      "price": 7500,
+      "unit": "doboz",
+      "boxQty": 100
+    },
+    {
+      "id": "fastener-reisser-fa-burkololap-rogzito-csavar-4-5x50mm-25",
+      "name": "Reisser Fa burkolólap rögzítő csavar 4,5x50mm(250db/doboz)",
+      "url": "https://kaplarfatelep.hu/spd/reosb50mm/Reisser-Fa-burkololap-rogzito-csavar-45x50mm250db",
+      "kind": "fastener",
+      "price": 5500,
+      "unit": "doboz",
+      "boxQty": 250
+    },
+    {
+      "id": "fastener-reisser-fa-burkololap-rogzito-csavar-4-5x60mm-20",
+      "name": "Reisser Fa burkolólap rögzítő csavar 4,5x60mm(200db/doboz)",
+      "url": "https://kaplarfatelep.hu/spd/reosb60mm/Reisser-Fa-burkololap-rogzito-csavar-45x60mm200db",
+      "kind": "fastener",
+      "price": 5500,
+      "unit": "doboz",
+      "boxQty": 200
+    },
+    {
+      "id": "fastener-reisser-fa-burkololap-rogzito-csavar-4-5x70mm-14",
+      "name": "Reisser Fa burkolólap rögzítő csavar 4,5x70mm(140db/doboz)",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/csavarok-platocsavarok/reisser-fa-burk",
+      "kind": "fastener",
+      "price": 5500,
+      "unit": "doboz",
+      "boxQty": 140
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-3-5x45mm-50db-cs.",
+      "name": "Reisser Forgácslapcsavar 3,5x45mm 50db/cs.",
+      "url": "https://kaplarfatelep.hu/spd/re354550/Reisser-Forgacslapcsavar-35x45mm-50db-cs",
+      "kind": "fastener",
+      "price": 750,
+      "unit": "csomag",
+      "boxQty": 50
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-3-5x50mm-50db-cs.",
+      "name": "Reisser Forgácslapcsavar 3,5x50mm 50db/cs.",
+      "url": "https://kaplarfatelep.hu/spd/re355050/Reisser-Forgacslapcsavar-35x50mm-50db-cs",
+      "kind": "fastener",
+      "price": 800,
+      "unit": "csomag",
+      "boxQty": 50
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-4x50mm-50db-cs.",
+      "name": "Reisser Forgácslapcsavar 4x50mm 50db/cs.",
+      "url": "https://kaplarfatelep.hu/spd/re45050/Reisser-Forgacslapcsavar-4x50mm-50db-cs",
+      "kind": "fastener",
+      "price": 850,
+      "unit": "csomag",
+      "boxQty": 50
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-4x60mm-500db-dob",
+      "name": "Reisser Forgácslapcsavar 4x60mm 500db/dob",
+      "url": "https://kaplarfatelep.hu/spd/re460500/Reisser-Forgacslapcsavar-4x60mm-500db-dob",
+      "kind": "fastener",
+      "price": 6900,
+      "unit": "doboz",
+      "boxQty": 500
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-4x60mm-50db-cs.",
+      "name": "Reisser Forgácslapcsavar 4x60mm 50db/cs.",
+      "url": "https://kaplarfatelep.hu/spd/re46050/Reisser-Forgacslapcsavar-4x60mm-50db-cs",
+      "kind": "fastener",
+      "price": 1150,
+      "unit": "csomag",
+      "boxQty": 50
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-5x100mm-25db-cs",
+      "name": "Reisser Forgácslapcsavar 5x100mm 25db/cs",
+      "url": "https://kaplarfatelep.hu/spd/re510025/Reisser-Forgacslapcsavar-5x100mm-25db-cs",
+      "kind": "fastener",
+      "price": 1550,
+      "unit": "csomag",
+      "boxQty": 25
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-5x60mm-50db-cs.",
+      "name": "Reisser Forgácslapcsavar 5x60mm 50db/cs.",
+      "url": "https://kaplarfatelep.hu/spd/re56025/Reisser-Forgacslapcsavar-5x60mm-50db-cs",
+      "kind": "fastener",
+      "price": 1400,
+      "unit": "csomag",
+      "boxQty": 50
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-5x80mm-200db-dob",
+      "name": "Reisser Forgácslapcsavar 5x80mm 200db/dob",
+      "url": "https://kaplarfatelep.hu/spd/re580200/Reisser-Forgacslapcsavar-5x80mm-200db-dob",
+      "kind": "fastener",
+      "price": 4900,
+      "unit": "doboz",
+      "boxQty": 200
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-5x80mm-25db-cs.",
+      "name": "Reisser Forgácslapcsavar 5x80mm 25db/cs.",
+      "url": "https://kaplarfatelep.hu/spd/re58025/Reisser-Forgacslapcsavar-5x80mm-25db-cs",
+      "kind": "fastener",
+      "price": 980,
+      "unit": "csomag",
+      "boxQty": 25
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-6x100mm-100db-dob",
+      "name": "Reisser Forgácslapcsavar 6x100mm 100db/dob",
+      "url": "https://kaplarfatelep.hu/spd/re6100100/Reisser-Forgacslapcsavar-6x100mm-100db-dob",
+      "kind": "fastener",
+      "price": 3450,
+      "unit": "doboz",
+      "boxQty": 100
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-6x100mm-25db-cs.",
+      "name": "Reisser Forgácslapcsavar 6x100mm 25db/cs.",
+      "url": "https://kaplarfatelep.hu/spd/re610025/Reisser-Forgacslapcsavar-6x100mm-25db-cs",
+      "kind": "fastener",
+      "price": 1650,
+      "unit": "csomag",
+      "boxQty": 25
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-6x120mm-100db-dob",
+      "name": "Reisser Forgácslapcsavar 6x120mm 100db/dob",
+      "url": "https://kaplarfatelep.hu/spd/re6120100/Reisser-Forgacslapcsavar-6x120mm-100db-dob",
+      "kind": "fastener",
+      "price": 5500,
+      "unit": "doboz",
+      "boxQty": 100
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-6x140mm-100db-dob",
+      "name": "Reisser Forgácslapcsavar 6x140mm 100db/dob",
+      "url": "https://kaplarfatelep.hu/spd/re6140100/Reisser-Forgacslapcsavar-6x140mm-100db-dob",
+      "kind": "fastener",
+      "price": 7000,
+      "unit": "doboz",
+      "boxQty": 100
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-6x160mm-100db-dob",
+      "name": "Reisser Forgácslapcsavar 6x160mm 100db/dob",
+      "url": "https://kaplarfatelep.hu/spd/re6160100/Reisser-Forgacslapcsavar-6x160mm-100db-dob",
+      "kind": "fastener",
+      "price": 8150,
+      "unit": "doboz",
+      "boxQty": 100
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-6x180mm-100db-dob",
+      "name": "Reisser Forgácslapcsavar 6x180mm 100db/dob",
+      "url": "https://kaplarfatelep.hu/spd/re6180100/Reisser-Forgacslapcsavar-6x180mm-100db-dob",
+      "kind": "fastener",
+      "price": 13600,
+      "unit": "doboz",
+      "boxQty": 100
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-6x200mm-100db-dob",
+      "name": "Reisser Forgácslapcsavar 6x200mm 100db/dob",
+      "url": "https://kaplarfatelep.hu/spd/re6200100/Reisser-Forgacslapcsavar-6x200mm-100db-dob",
+      "kind": "fastener",
+      "price": 18800,
+      "unit": "doboz",
+      "boxQty": 100
+    },
+    {
+      "id": "fastener-reisser-forgacslapcsavar-6x90mm-25db-cs.",
+      "name": "Reisser Forgácslapcsavar 6x90mm 25db/cs.",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/csavarok-platocsavarok/reisser-forgacs",
+      "kind": "fastener",
+      "price": 1330,
+      "unit": "csomag",
+      "boxQty": 25
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x100mm",
+      "name": "Reisser gyorsépítő csavar (8x100mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor100/Reisser-gyorsepito-csavar-8x100mm",
+      "kind": "fastener",
+      "price": 120,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x120mm",
+      "name": "Reisser gyorsépítő csavar (8x120mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor120/Reisser-gyorsepito-csavar-8x120mm",
+      "kind": "fastener",
+      "price": 140,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x140mm",
+      "name": "Reisser gyorsépítő csavar (8x140mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor140/Reisser-gyorsepito-csavar-8x140mm",
+      "kind": "fastener",
+      "price": 160,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x160mm",
+      "name": "Reisser gyorsépítő csavar (8x160mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor160/Reisser-gyorsepito-csavar-8x160mm",
+      "kind": "fastener",
+      "price": 190,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x180mm",
+      "name": "Reisser gyorsépítő csavar (8x180mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor180/Reisser-gyorsepito-csavar-8x180mm",
+      "kind": "fastener",
+      "price": 210,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x200mm",
+      "name": "Reisser gyorsépítő csavar (8x200mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor200/Reisser-gyorsepito-csavar-8x200mm",
+      "kind": "fastener",
+      "price": 250,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x220mm",
+      "name": "Reisser gyorsépítő csavar (8x220mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor220/Reisser-gyorsepito-csavar-8x220mm",
+      "kind": "fastener",
+      "price": 270,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x240mm",
+      "name": "Reisser gyorsépítő csavar (8x240mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor240/Reisser-gyorsepito-csavar-8x240mm",
+      "kind": "fastener",
+      "price": 290,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x260mm",
+      "name": "Reisser gyorsépítő csavar (8x260mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor260/Reisser-gyorsepito-csavar-8x260mm",
+      "kind": "fastener",
+      "price": 320,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x280mm",
+      "name": "Reisser gyorsépítő csavar (8x280mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor280/Reisser-gyorsepito-csavar-8x280mm",
+      "kind": "fastener",
+      "price": 350,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x300mm",
+      "name": "Reisser gyorsépítő csavar (8x300mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor300/Reisser-gyorsepito-csavar-8x300mm",
+      "kind": "fastener",
+      "price": 380,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-reisser-gyorsepito-csavar-8x80mm",
+      "name": "Reisser gyorsépítő csavar (8x80mm)",
+      "url": "https://kaplarfatelep.hu/egyeb-anyagok/csavarok-platocsavarok/gyorsepito-cs",
+      "kind": "fastener",
+      "price": 100,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-sik-szeglemez-60x140x2mm",
+      "name": "Sík szeglemez 60x140x2mm",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/szegekvasanyagok-/sik-szeglemez-60x140",
+      "kind": "fastener",
+      "price": 325,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-talpszelemen-csavar-tartozekokkal-12x350mm",
+      "name": "Talpszelemen csavar tartozékokkal 12x350mm",
+      "url": "https://kaplarfatelep.hu/spd/tktalp12tart/Talpszelemen-csavar-tartozekokkal-12x350mm",
+      "kind": "fastener",
+      "price": 750,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-talpszelemen-csavar-tartozekokkal-16x350mm",
+      "name": "Talpszelemen csavar tartozékokkal 16x350mm",
+      "url": "https://kaplarfatelep.hu/Egyeb-anyagok/Szegek-vasanyagok/Fogopar-talpszelem",
+      "kind": "fastener",
+      "price": 960,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-trapezlemez-csavar-fahoz-ral-3009-4-8x35-mm-25db",
+      "name": "Trapézlemez csavar fához RAL 3009 - 4,8x35 mm - 25db/csomag",
+      "url": "https://kaplarfatelep.hu/Trapezlemez-csavar-fahoz-RAL3009-48x35mm",
+      "kind": "fastener",
+      "price": 749,
+      "unit": "csomag",
+      "boxQty": 25
+    },
+    {
+      "id": "fastener-trapezlemez-csavar-fahoz-ral-7016-4-8x35-mm-25db",
+      "name": "Trapézlemez csavar fához RAL 7016 - 4,8x35 mm - 25db/csomag",
+      "url": "https://kaplarfatelep.hu/Trapezlemez-csavar-fahoz-RAL7016-48x35mm",
+      "kind": "fastener",
+      "price": 749,
+      "unit": "csomag",
+      "boxQty": 25
+    },
+    {
+      "id": "fastener-trapezlemez-csavar-femhez-ral-3009-4-8x19-mm-25d",
+      "name": "Trapézlemez csavar fémhez RAL 3009 - 4,8x19 mm - 25db/csomag",
+      "url": "https://kaplarfatelep.hu/Trapezlemez-csavar-femhez-RAL3009-48x19mm",
+      "kind": "fastener",
+      "price": 749,
+      "unit": "csomag",
+      "boxQty": 25
+    },
+    {
+      "id": "fastener-trapezlemez-csavar-femhez-ral-7016-4-8x19-mm-25d",
+      "name": "Trapézlemez csavar fémhez RAL 7016 - 4,8x19 mm - 25db/csomag",
+      "url": "https://kaplarfatelep.hu/Trapezlemez-csavar-femhez-RAL7016-48x19mm",
+      "kind": "fastener",
+      "price": 749,
+      "unit": "csomag",
+      "boxQty": 25
+    },
+    {
+      "id": "fastener-trapezlemez-fuzocsavar-ral-3009-bordo-4-8x19-mm",
+      "name": "Trapézlemez fűzőcsavar RAL 3009 Bordó - 4,8x19 mm - 10db/csomag",
+      "url": "https://kaplarfatelep.hu/Trapezlemez-fuzocsavar-RAL3009-Bordo-48x19mm",
+      "kind": "fastener",
+      "price": 749,
+      "unit": "csomag",
+      "boxQty": 10
+    },
+    {
+      "id": "fastener-trapezlemez-fuzocsavar-ral-7016-antracit-4-8x19",
+      "name": "Trapézlemez fűzőcsavar RAL 7016 Antracit - 4,8x19 mm - 10db/csomag",
+      "url": "https://kaplarfatelep.hu/Trapezlemez-fuzocsavar-RAL7016-Antracit-48x19mm",
+      "kind": "fastener",
+      "price": 749,
+      "unit": "csomag",
+      "boxQty": 10
+    },
+    {
+      "id": "fastener-vasalatrogzito-csavar-8x40mm",
+      "name": "Vasalatrögzítő csavar (8x40mm)",
+      "url": "https://kaplarfatelep.hu/spd/tkgyor40/Vasalatrogzito-csavar-8x40mm",
+      "kind": "fastener",
+      "price": 115,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-vasalatrogzito-csavar-8x50mm",
+      "name": "Vasalatrögzítő csavar (8x50mm)",
+      "url": "https://kaplarfatelep.hu/egyeb-anyagok/csavarok-platocsavarok/vasalatrogzit",
+      "kind": "fastener",
+      "price": 130,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-woodstar-vinkli-csavar-4-8x25mm-df-torx",
+      "name": "Woodstar Vinkli csavar 4,8x25mm DF Torx",
+      "url": "https://kaplarfatelep.hu/Egyeb-anyagok/Csavarok/Platocsavarok/Woodstar-Vink-25mm",
+      "kind": "fastener",
+      "price": 20,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-woodstar-vinkli-csavar-4-8x35mm-df-torx",
+      "name": "Woodstar Vinkli csavar 4,8x35mm DF Torx",
+      "url": "https://kaplarfatelep.hu/Egyeb-anyagok/Csavarok/Platocsavarok/Woodstar-Vink-35mm",
+      "kind": "fastener",
+      "price": 40,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-woodstar-vinkli-csavar-4-8x40mm-df-torx",
+      "name": "Woodstar Vinkli csavar 4,8x40mm DF Torx",
+      "url": "https://kaplarfatelep.hu/Egyeb-anyagok/Csavarok/Platocsavarok/Woodstar-Vink-40mm",
+      "kind": "fastener",
+      "price": 50,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-woodstar-vinkli-csavar-4-8x45mm-df-torx",
+      "name": "Woodstar Vinkli csavar 4,8x45mm DF Torx",
+      "url": "https://kaplarfatelep.hu/Egyeb-anyagok/Csavarok/Platocsavarok/Woodstar-Vink-45mm",
+      "kind": "fastener",
+      "price": 60,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-zsindelyszeg-20mm-1kg",
+      "name": "Zsindelyszeg 20mm 1kg",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/bitumenes-zsindelyek/zsindelyszeg-20-1",
+      "kind": "fastener",
+      "price": 3500,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-zsindelyszeg-20mm-5kg",
+      "name": "Zsindelyszeg 20mm 5kg",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/bitumenes-zsindelyek/zsindelyszeg-20-5",
+      "kind": "fastener",
+      "price": 14500,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-zsindelyszeg-25-mm-1kg",
+      "name": "Zsindelyszeg 25 mm 1kg",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/bitumenes-zsindelyek/zsindelyszeg-25-1",
+      "kind": "fastener",
+      "price": 3500,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-zsindelyszeg-25-mm-5kg",
+      "name": "Zsindelyszeg 25 mm 5kg",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/bitumenes-zsindelyek/zsindelyszeg-25-5",
+      "kind": "fastener",
+      "price": 14500,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-zsindelyszeg-30mm-1kg",
+      "name": "Zsindelyszeg 30mm 1kg",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/bitumenes-zsindelyek/zsindelyszeg-30-1",
+      "kind": "fastener",
+      "price": 3500,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-zsindelyszeg-30mm-5kg",
+      "name": "Zsindelyszeg 30mm 5kg",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/bitumenes-zsindelyek/zsindelyszeg-30-5",
+      "kind": "fastener",
+      "price": 14500,
+      "unit": "db"
+    },
+    {
+      "id": "fastener-zsindelyszeg-35-mm-5kg",
+      "name": "Zsindelyszeg 35 mm 5kg",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/bitumenes-zsindelyek/zsindelyszeg-35-5",
+      "kind": "fastener",
+      "price": 14500,
+      "unit": "db"
+    },
+    {
+      "id": "foil-folia",
+      "name": "Blue Dolphin extra vastag takarófólia – 50 mikron (50my), létrázható, 4x5m",
+      "url": "https://kaplarfatelep.hu/Blue-Dolphin-extra-vastag-takarofolia-50-mikron-50",
+      "kind": "foil",
+      "price": 1800,
+      "unit": "db"
+    },
+    {
+      "id": "foil-folia-60",
+      "name": "Isoflex Alu PZ alutükrös párafékező fólia 60m²",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/tetofoliak/isoflex-alu-pz-alutukr",
+      "kind": "foil",
+      "price": 13690,
+      "unit": "tekercs",
+      "rollM2": 60
+    },
+    {
+      "id": "foil-paraatereszto-37.5-linopore-rx-3000-paraatereszto-folia-37-5-m2",
+      "name": "LINOPORE® RX 3000 páraáteresztő fólia 37,5 m²",
+      "url": "https://kaplarfatelep.hu/spd/tktdrx3000375/LINOPORE-RX-3000-paraatereszto-folia-375-m",
+      "kind": "foil",
+      "price": 16649,
+      "unit": "tekercs",
+      "rollM2": 37.5
+    },
+    {
+      "id": "foil-paraatereszto-37.5-linopore-rx-5000-paraatereszto-folia-37-5-m2",
+      "name": "LINOPORE® RX 5000 páraáteresztő fólia 37,5 m²",
+      "url": "https://kaplarfatelep.hu/Tetofedo-anyagok/Tetofoliak/Diffuzios-tetofoliak/L",
+      "kind": "foil",
+      "price": 23990,
+      "unit": "tekercs",
+      "rollM2": 37.5
+    },
+    {
+      "id": "foil-paraatereszto-75-linopore-rx-3000-paraatereszto-folia-75-m2",
+      "name": "LINOPORE® RX 3000 páraáteresztő fólia 75 m²",
+      "url": "https://kaplarfatelep.hu/Tetofedo-anyagok/Tetofoliak/LINOPORE-RX-3000",
+      "kind": "foil",
+      "price": 25199,
+      "unit": "tekercs",
+      "rollM2": 75
+    },
+    {
+      "id": "foil-paraatereszto-75-linopore-rx-5000-paraatereszto-folia-75-m2",
+      "name": "LINOPORE® RX 5000 páraáteresztő fólia 75 m²",
+      "url": "https://kaplarfatelep.hu/Tetofedo-anyagok/Tetofoliak/LINOPORE-RX-5000",
+      "kind": "foil",
+      "price": 43190,
+      "unit": "tekercs",
+      "rollM2": 75
+    },
+    {
+      "id": "foil-paraatereszto-75-linopore-rx-7000-paraatereszto-folia-75-m2",
+      "name": "LINOPORE® RX 7000 páraáteresztő fólia 75 m²",
+      "url": "https://kaplarfatelep.hu/Tetofedo-anyagok/Tetofoliak/LINOPORE-RX-7000",
+      "kind": "foil",
+      "price": 59490,
+      "unit": "tekercs",
+      "rollM2": 75
+    },
+    {
+      "id": "foil-parazaro-37.5",
+      "name": "Isoflex Classic párazáró tetőfólia 37,5 m²",
+      "url": "https://kaplarfatelep.hu/spd/tktfiso375/Isoflex-Classic-parazaro-tetofolia-375-m",
+      "kind": "foil",
+      "price": 14190,
+      "unit": "tekercs",
+      "rollM2": 37.5
+    },
+    {
+      "id": "foil-parazaro-60",
+      "name": "Isoflex ALU párazáró tetőfólia (60m²/tek) 1,2m x 50m/tek",
+      "url": "https://kaplarfatelep.hu/Tetofedo-anyagok/Tetofoliak/Isoflex-ALU-tetofolia",
+      "kind": "foil",
+      "price": 32490,
+      "unit": "tekercs",
+      "rollM2": 60
+    },
+    {
+      "id": "foil-parazaro-75",
+      "name": "Isoflex Classic párazáró tetőfólia 75 m²",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/tetofoliak/isoflex-classic-paraza",
+      "kind": "foil",
+      "price": 25690,
+      "unit": "tekercs",
+      "rollM2": 75
+    },
+    {
+      "id": "gutter-also-kifolyo-rancolt-25-kikopo",
+      "name": "Alsó kifolyó ráncolt ( 25 kiköpő )",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/csatornak-badogok/csatornak-25/al",
+      "kind": "gutter",
+      "price": 1899,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-also-kifolyo-rancolt-33-kikopo",
+      "name": "Alsó kifolyó ráncolt ( 33 kiköpő )",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/csatornak-badogok/csatornak-33/al",
+      "kind": "gutter",
+      "price": 2099,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-csatornatarto-horganyzott-csavartszaru-25-os",
+      "name": "Csatornatartó horganyzott csavartszárú (25-ös)",
+      "url": "https://kaplarfatelep.hu/spd/630/Csatornatarto-horganyzott-csavartszaru-25-os",
+      "kind": "gutter",
+      "price": 899,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-csatornatarto-horganyzott-csavartszaru-33-as",
+      "name": "Csatornatartó horganyzott csavartszárú (33-as)",
+      "url": "https://kaplarfatelep.hu/spd/csavascsav/Csatornatarto-horganyzott-csavartszaru-33-as",
+      "kind": "gutter",
+      "price": 899,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-csatornatarto-horganyzott-egyenes-25-os",
+      "name": "Csatornatartó horganyzott egyenes (25-ös)",
+      "url": "https://kaplarfatelep.hu/Tetofedo-anyagok/Csatornak-badogok/Csatornak-25/Cs",
+      "kind": "gutter",
+      "price": 899,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-csatornatarto-horganyzott-egyenes-33-as",
+      "name": "Csatornatartó horganyzott egyenes (33-as)",
+      "url": "https://kaplarfatelep.hu/spd/85/Csatornatarto-horganyzott-egyenes-33-as",
+      "kind": "gutter",
+      "price": 899,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-csatornatarto-horganyzott-hajlitott-szaru-25-os",
+      "name": "Csatornatartó horganyzott hajlított szárú (25-ös)",
+      "url": "https://kaplarfatelep.hu/spd/629/Csatornatarto-horganyzott-hajlitott-szaru-25-os",
+      "kind": "gutter",
+      "price": 899,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-csatornatarto-horganyzott-hajlitott-szaru-33-as",
+      "name": "Csatornatartó horganyzott hajlított szárú (33-as)",
+      "url": "https://kaplarfatelep.hu/spd/csavash/Csatornatarto-horganyzott-hajlitott-szaru-33-as",
+      "kind": "gutter",
+      "price": 899,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-csatornatarto-horganyzott-homlokdeszkara-25-os",
+      "name": "Csatornatartó horganyzott homlokdeszkára (25-ös)",
+      "url": "https://kaplarfatelep.hu/spd/csavashoml25/Csatornatarto-horganyzott-homlokdeszkara-25-os",
+      "kind": "gutter",
+      "price": 899,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-csatornatarto-horganyzott-homlokdeszkara-33-as",
+      "name": "Csatornatartó horganyzott homlokdeszkára (33-as)",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/csatornak-badogok/kiegeszitok-/cs",
+      "kind": "gutter",
+      "price": 899,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-ereszcsatorna-1m-es-25-os",
+      "name": "Ereszcsatorna 1m-es (25-ös)",
+      "url": "https://kaplarfatelep.hu/spd/csa25ersez1/Ereszcsatorna-1m-es-25-os",
+      "kind": "gutter",
+      "price": 1299,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-ereszcsatorna-1m-es-33-as",
+      "name": "Ereszcsatorna 1m-es (33-as)",
+      "url": "https://kaplarfatelep.hu/spd/csa1/Ereszcsatorna-1m-es-33-as",
+      "kind": "gutter",
+      "price": 1575,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-ereszcsatorna-2m-es-25-os",
+      "name": "Ereszcsatorna 2m-es (25-ös)",
+      "url": "https://kaplarfatelep.hu/spd/csa25ersez2/Ereszcsatorna-2m-es-25-os",
+      "kind": "gutter",
+      "price": 2599,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-ereszcsatorna-2m-es-33-as",
+      "name": "Ereszcsatorna 2m-es (33-as)",
+      "url": "https://kaplarfatelep.hu/spd/csa2/Ereszcsatorna-2m-es-33-as",
+      "kind": "gutter",
+      "price": 3150,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-ereszcsatorna-4-m-es-33-as",
+      "name": "Ereszcsatorna 4 m-es (33-as)",
+      "url": "https://kaplarfatelep.hu/spd/csa4/Ereszcsatorna-4-m-es-33-as",
+      "kind": "gutter",
+      "price": 6300,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-ereszcsatorna-6-meter-es-33-as",
+      "name": "Ereszcsatorna 6 méter-es (33-as)",
+      "url": "https://kaplarfatelep.hu/spd/csah6/Ereszcsatorna-6-meter-es-33-as",
+      "kind": "gutter",
+      "price": 9450,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-ereszcsatorna-veges-1m-es-25-os",
+      "name": "Ereszcsatorna véges, 1m-es (25-ös)",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/csatornak-badogok/csatornak-25/er",
+      "kind": "gutter",
+      "price": 1899,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-ereszcsatorna-veges-1m-es-33-as",
+      "name": "Ereszcsatorna véges, 1m-es (33-as)",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/csatornak-badogok/csatornak-33/er",
+      "kind": "gutter",
+      "price": 2399,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-ereszcsatorna-veges-csonkos-1m-es-25-os",
+      "name": "Ereszcsatorna véges csonkos 1m-es (25-ös)",
+      "url": "https://kaplarfatelep.hu/spd/csa25csoveg/Ereszcsatorna-veges-csonkos-1m-es-25-os",
+      "kind": "gutter",
+      "price": 2599,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-ereszcsatorna-veges-csonkos-1m-es-33-as",
+      "name": "Ereszcsatorna véges csonkos 1m-es (33-as)",
+      "url": "https://kaplarfatelep.hu/spd/csaereszvegcs/Ereszcsatorna-veges-csonkos-1m-es-33-as",
+      "kind": "gutter",
+      "price": 3249,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-ereszcsatorna-veglemez-szeles-peremmel-33",
+      "name": "Ereszcsatorna véglemez széles peremmel (33)",
+      "url": "https://kaplarfatelep.hu/Ajanlathoz/33-Ereszcsatorna-veglemez-szeles-peremm",
+      "kind": "gutter",
+      "price": 349,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-pvc-100-50-lefolyocso-3fm-szal",
+      "name": "Galeco PVC (100/50) lefolyócső 3fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csgalpvc90lef3fm/Galeco-PVC-100-50-lefolyocso-3fm-szal",
+      "kind": "gutter",
+      "price": 4603,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-pvc-100-ereszcsatorna-3fm-szal",
+      "name": "Galeco PVC (100) ereszcsatorna 3fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csgalpvc90eresz3/Galeco-PVC-100-ereszcsatorna-3fm-szal",
+      "kind": "gutter",
+      "price": 4039,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-pvc-100-homlokdeszkas-csatornatarto-pvc",
+      "name": "Galeco PVC (100) homlokdeszkás csatornatartó (PVC)",
+      "url": "https://kaplarfatelep.hu/Tetofedo-anyagok/Galeco-csatornak-tobbfeleszinben/",
+      "kind": "gutter",
+      "price": 653,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-pvc-100-szaras-csatornatarto-fem",
+      "name": "Galeco PVC (100) száras csatornatartó (FÉM)",
+      "url": "https://kaplarfatelep.hu/spd/csgalpvc90csvas3/Galeco-PVC-100-szaras-csatornatarto-FEM",
+      "kind": "gutter",
+      "price": 2002,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-pvc-125-80-lefolyocso-4fm-szal",
+      "name": "Galeco PVC (125/80) lefolyócső 4fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csgalpvc110lef4fm/Galeco-PVC-125-80-lefolyocso-4fm-szal",
+      "kind": "gutter",
+      "price": 8785,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-pvc-125-ereszcsatorna-4fm-szal",
+      "name": "Galeco PVC (125) ereszcsatorna 4fm/szál",
+      "url": "https://kaplarfatelep.hu/Tetofedo-anyagok/Galeco-ereszcsatorna-rendszerek/G",
+      "kind": "gutter",
+      "price": 7270,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-pvc-125-homlokdeszkas-csatornatarto-pvc",
+      "name": "Galeco PVC (125) homlokdeszkás csatornatartó (PVC)",
+      "url": "https://kaplarfatelep.hu/spd/csgalpvc110csvashm/Galeco-PVC-125-homlokdeszkas-csatornatarto-PVC",
+      "kind": "gutter",
+      "price": 832,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-pvc-125-szaras-csatornatarto-fem",
+      "name": "Galeco PVC (125) száras csatornatartó (FÉM)",
+      "url": "https://kaplarfatelep.hu/spd/csgalpvc110csvas4/Galeco-PVC-125-szaras-csatornatarto-FEM",
+      "kind": "gutter",
+      "price": 2851,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-100-lefolyocso-1fm-szal",
+      "name": "Galeco Stal (100) lefolyócső 1fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal100lef1mfeher/Galeco-Stal-100-lefolyocso-1fm-szal",
+      "kind": "gutter",
+      "price": 6053,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-100-lefolyocso-3fm-szal",
+      "name": "Galeco Stal (100) lefolyócső 3fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal100lef3mcsoki/Galeco-Stal-100-lefolyocso-3fm-szal",
+      "kind": "gutter",
+      "price": 16804,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-150-ereszcsatorna-3fm-szal",
+      "name": "Galeco Stal (150) ereszcsatorna 3fm/szál",
+      "url": "https://kaplarfatelep.hu/Tetofedo-anyagok/Csatornak-badogok/Galeco-ereszcsa",
+      "kind": "gutter",
+      "price": 13846,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-150-ereszcsatorna-4fm-szal",
+      "name": "Galeco Stal (150) ereszcsatorna 4fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150eresz4mteg/Galeco-Stal-150-ereszcsatorna-4fm-szal",
+      "kind": "gutter",
+      "price": 18444,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-femcsatornatarto-4-320mm",
+      "name": "Galeco Stal fémcsatornatartó 4/320mm",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150csvascsoki/Galeco-Stal-femcsatornatarto-4-320mm",
+      "kind": "gutter",
+      "price": 2602,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-metal-100-lefolyocso-1fm-szal",
+      "name": "Galeco Stal, Metál (100) lefolyócső 1fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal100lef1mrez/Galeco-Stal-Metal-100-lefolyocso-1fm-szal",
+      "kind": "gutter",
+      "price": 6231,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-metal-100-lefolyocso-3fm-szal",
+      "name": "Galeco Stal, Metál (100) lefolyócső 3fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal100lef3mrez/Galeco-Stal-Metal-100-lefolyocso-3fm-szal",
+      "kind": "gutter",
+      "price": 17648,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-metal-150-ereszcsatorna-3fm-szal",
+      "name": "Galeco Stal, Metál (150) ereszcsatorna 3fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150eresz3mrez/Galeco-Stal-Metal-150-ereszcsatorna-3fm-szal",
+      "kind": "gutter",
+      "price": 14624,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-metal-150-ereszcsatorna-4fm-szal",
+      "name": "Galeco Stal, Metál (150) ereszcsatorna 4fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150eresz4mrez/Galeco-Stal-Metal-150-ereszcsatorna-4fm-szal",
+      "kind": "gutter",
+      "price": 19471,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-metal-femcsatornatarto-4-320mm",
+      "name": "Galeco Stal, Metál fémcsatornatartó 4/320mm",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150csvasrez/Galeco-Stal-Metal-femcsatornatarto-4-320mm",
+      "kind": "gutter",
+      "price": 2619,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-metal-univerzalis-csatornatarto-konz",
+      "name": "Galeco Stal, Metál univerzális csatornatartó, konzol nélkül",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150csvasunirez/Galeco-Stal-Metal-univerzalis-csatornatarto-konzol",
+      "kind": "gutter",
+      "price": 2049,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal-univerzalis-csatornatarto-konzol-nel",
+      "name": "Galeco Stal univerzális csatornatartó, konzol nélkül",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal150csvasunifeher/Galeco-Stal-univerzalis-csatornatarto-konzol-nelku",
+      "kind": "gutter",
+      "price": 2020,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal2-ereszcsatorna-4fm-szal",
+      "name": "Galeco STAL² ereszcsatorna 4fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal2150eresz4/Galeco-STAL-ereszcsatorna-4fm-szal",
+      "kind": "gutter",
+      "price": 22661,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal2-lefolyocso-1fm-szal-80-80",
+      "name": "Galeco STAL² lefolyócső 1fm/szál (80/80)",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal280lef1m/Galeco-STAL-lefolyocso-1fm-szal-80-80",
+      "kind": "gutter",
+      "price": 6089,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal2-lefolyocso-3fm-szal-80-80",
+      "name": "Galeco STAL² lefolyócső 3fm/szál (80/80)",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal280lef3m/Galeco-STAL-lefolyocso-3fm-szal-80-80",
+      "kind": "gutter",
+      "price": 17208,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal2-szaras-femcsatornatarto-4-350mm-es",
+      "name": "Galeco STAL² száras fémcsatornatartó 4/350mm-es",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal2150csvas/Galeco-STAL-szaras-femcsatornatarto-4-350mm-es",
+      "kind": "gutter",
+      "price": 2590,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-galeco-stal2-univerzalis-csatornatarto",
+      "name": "Galeco STAL² univerzális csatornatartó",
+      "url": "https://kaplarfatelep.hu/spd/csgalstal2150csvasuni/Galeco-STAL-univerzalis-csatornatarto",
+      "kind": "gutter",
+      "price": 2590,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-lefolyocso-2m-es-25-os",
+      "name": "Lefolyócső 2m-es (25-ös)",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/csatornak-badogok/csatornak-25/le",
+      "kind": "gutter",
+      "price": 2599,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-lefolyocso-2m-es-33-as",
+      "name": "Lefolyócső 2m-es (33-as)",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/csatornak-badogok/csatornak-33/le",
+      "kind": "gutter",
+      "price": 2999,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-qstalyo-pro-ereszcsatorna-3fm-szal",
+      "name": "Qstalyo Pro ereszcsatorna 3fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csqstalpr125eresz3mrez/Qstalyo-Pro-ereszcsatorna-3fm-szal",
+      "kind": "gutter",
+      "price": 13436,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-qstalyo-pro-ereszcsatorna-4fm-szal",
+      "name": "Qstalyo Pro ereszcsatorna 4fm/szál",
+      "url": "https://kaplarfatelep.hu/spd/csqstalpr125eresz4mrez/Qstalyo-Pro-ereszcsatorna-4fm-szal",
+      "kind": "gutter",
+      "price": 17956,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-qstalyo-pro-lapos-homlokdeszkas-csatornatarto",
+      "name": "Qstalyo Pro lapos, homlokdeszkás csatornatartó",
+      "url": "https://kaplarfatelep.hu/spd/csqstalpr125csvashm/Qstalyo-Pro-lapos-homlokdeszkas-csatornatarto",
+      "kind": "gutter",
+      "price": 2328,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-qstalyo-pro-szaras-csatornatarto",
+      "name": "Qstalyo Pro száras csatornatartó",
+      "url": "https://kaplarfatelep.hu/spd/csqstalpr125csvas/Qstalyo-Pro-szaras-csatornatarto",
+      "kind": "gutter",
+      "price": 2328,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-szegletcsatorna-25-os",
+      "name": "Szegletcsatorna (25-ös)",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/csatornak-badogok/csatornak-25/sz",
+      "kind": "gutter",
+      "price": 2499,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-szegletcsatorna-33-as",
+      "name": "Szegletcsatorna (33-as)",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/csatornak-badogok/csatornak-33/sz",
+      "kind": "gutter",
+      "price": 3049,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-szegletcsatorna-csonkos-25-os",
+      "name": "Szegletcsatorna csonkos (25-ös)",
+      "url": "https://kaplarfatelep.hu/spd/csa25szegcson/Szegletcsatorna-csonkos-25-os",
+      "kind": "gutter",
+      "price": 2499,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-szegletcsatorna-csonkos-balos-33-as",
+      "name": "Szegletcsatorna, csonkos, balos (33-as)",
+      "url": "https://kaplarfatelep.hu/spd/csaszegcsob/Szegletcsatorna-csonkos-balos-33-as",
+      "kind": "gutter",
+      "price": 3999,
+      "unit": "db"
+    },
+    {
+      "id": "gutter-szegletcsatorna-csonkos-jobbos-33-as",
+      "name": "Szegletcsatorna, csonkos, jobbos (33-as)",
+      "url": "https://kaplarfatelep.hu/spd/csaszegcsoj/Szegletcsatorna-csonkos-jobbos-33-as",
+      "kind": "gutter",
+      "price": 3999,
+      "unit": "db"
+    },
+    {
+      "id": "insulation-asvanygyapot-50",
+      "name": "Knauf MPN PLUS ásványgyapot 50mm",
+      "url": "https://kaplarfatelep.hu/egyeb-anyagok/hoszigetelesek/knauf-mpn-plus-asvany",
+      "kind": "insulation",
+      "price": 10190,
+      "unit": "db",
+      "thickness": 50,
+      "material": "ásványgyapot",
+      "packM2": 11.52
+    },
+    {
+      "id": "insulation-uveggyapot-100",
+      "name": "Knauf Unifit 035 10cm",
+      "url": "https://kaplarfatelep.hu/Egyeb-anyagok/Hoszigetelesek/Knauf-Unifit-035-10cm",
+      "kind": "insulation",
+      "price": 13290,
+      "unit": "db",
+      "thickness": 100,
+      "material": "üveggyapot",
+      "packM2": 6
+    },
+    {
+      "id": "insulation-uveggyapot-150-knauf-unifit-035-15cm",
+      "name": "Knauf Unifit 035 15cm",
+      "url": "https://kaplarfatelep.hu/Egyeb-anyagok/Hoszigetelesek/Knauf-Unifit-035-15cm",
+      "kind": "insulation",
+      "price": 13490,
+      "unit": "db",
+      "thickness": 150,
+      "material": "üveggyapot",
+      "packM2": 4.08
+    },
+    {
+      "id": "insulation-uveggyapot-150-knauf-unifit-037-15cm",
+      "name": "Knauf Unifit 037 15cm",
+      "url": "https://kaplarfatelep.hu/Egyeb-anyagok/Hoszigetelesek/Uveggyapot/Knauf-Unif",
+      "kind": "insulation",
+      "price": 16290,
+      "unit": "db",
+      "thickness": 150,
+      "material": "üveggyapot",
+      "packM2": 4.92
+    },
+    {
+      "id": "insulation-uveggyapot-50",
+      "name": "Knauf Unifit 035 5cm",
+      "url": "https://kaplarfatelep.hu/Egyeb-anyagok/Hoszigetelesek/Knauf-Unifit-035-5cm",
+      "kind": "insulation",
+      "price": 13490,
+      "unit": "db",
+      "thickness": 50,
+      "material": "üveggyapot",
+      "packM2": 12.12
+    },
+    {
+      "id": "osb-10-1250x2500",
+      "name": "Osb-3 lap 10mm",
+      "url": "https://kaplarfatelep.hu/osb-lapok/osb-lap/osb-lap-10mm",
+      "kind": "osb",
+      "price": 6200,
+      "unit": "tábla",
+      "thickness": 10,
+      "sheet": {
+        "w": 1250,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-12-1250x2500",
+      "name": "Osb-3 lap 12mm",
+      "url": "https://kaplarfatelep.hu/osb-lapok/osb-lap/osb-lap-12mm",
+      "kind": "osb",
+      "price": 7090,
+      "unit": "tábla",
+      "thickness": 12,
+      "sheet": {
+        "w": 1250,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-12-675x2500-nutfeder",
+      "name": "Osb-3 lap 12mm Nútféderes",
+      "url": "https://kaplarfatelep.hu/osb-lapok/nutfederes-osb-lap/osb-lap-12mm-nutfeder",
+      "kind": "osb",
+      "price": 4190,
+      "unit": "tábla",
+      "thickness": 12,
+      "sheet": {
+        "w": 675,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-15-1250x2500",
+      "name": "Osb-3 lap 15mm",
+      "url": "https://kaplarfatelep.hu/osb-lapok/osb-lap/osb-lap-15mm",
+      "kind": "osb",
+      "price": 8890,
+      "unit": "tábla",
+      "thickness": 15,
+      "sheet": {
+        "w": 1250,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-15-675x2500-nutfeder",
+      "name": "Osb-3 lap 15mm Nútféderes",
+      "url": "https://kaplarfatelep.hu/osb-lapok/nutfederes-osb-lap/osb-lap-15mm-nutfeder",
+      "kind": "osb",
+      "price": 5190,
+      "unit": "tábla",
+      "thickness": 15,
+      "sheet": {
+        "w": 675,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-18-1250x2500",
+      "name": "Osb-3 lap 18mm",
+      "url": "https://kaplarfatelep.hu/osb-lapok/osb-lap/osb-lap-18mm",
+      "kind": "osb",
+      "price": 10690,
+      "unit": "tábla",
+      "thickness": 18,
+      "sheet": {
+        "w": 1250,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-18-675x2500-nutfeder",
+      "name": "Osb-3 lap 18mm Nútféderes",
+      "url": "https://kaplarfatelep.hu/osb-lapok/nutfederes-osb-lap/osb-lap-18mm-nutfeder",
+      "kind": "osb",
+      "price": 6190,
+      "unit": "tábla",
+      "thickness": 18,
+      "sheet": {
+        "w": 675,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-22-1250x2500",
+      "name": "Osb-3 lap 22mm",
+      "url": "https://kaplarfatelep.hu/osb-lapok/osb-lap/osb-lap-22mm",
+      "kind": "osb",
+      "price": 12990,
+      "unit": "tábla",
+      "thickness": 22,
+      "sheet": {
+        "w": 1250,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-22-675x2500-nutfeder",
+      "name": "Osb-3 lap 22mm Nútféderes",
+      "url": "https://kaplarfatelep.hu/osb-lapok/nutfederes-osb-lap/osb-lap-22mm-nutfeder",
+      "kind": "osb",
+      "price": 7590,
+      "unit": "tábla",
+      "thickness": 22,
+      "sheet": {
+        "w": 675,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-25-1250x2500",
+      "name": "Osb-3 lap 25mm",
+      "url": "https://kaplarfatelep.hu/osb-lapok/osb-lap/osb-lap-25mm",
+      "kind": "osb",
+      "price": 16300,
+      "unit": "tábla",
+      "thickness": 25,
+      "sheet": {
+        "w": 1250,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-25-675x2500-nutfeder",
+      "name": "Osb-3 lap 25mm Nútféderes",
+      "url": "https://kaplarfatelep.hu/osb-lapok/nutfederes-osb-lap/osb-lap-25mm-nutfeder",
+      "kind": "osb",
+      "price": 9500,
+      "unit": "tábla",
+      "thickness": 25,
+      "sheet": {
+        "w": 675,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-30-1250x2500",
+      "name": "Osb-3 lap 30mm",
+      "url": "https://kaplarfatelep.hu/osb-lapok/osb-lap/osb-lap-30mm",
+      "kind": "osb",
+      "price": 21900,
+      "unit": "tábla",
+      "thickness": 30,
+      "sheet": {
+        "w": 1250,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-6-1250x2500",
+      "name": "Osb-3 lap 6mm",
+      "url": "https://kaplarfatelep.hu/osb-lapok/osb-lap/osb-lap-6mm",
+      "kind": "osb",
+      "price": 4490,
+      "unit": "tábla",
+      "thickness": 6,
+      "sheet": {
+        "w": 1250,
+        "l": 2500
+      }
+    },
+    {
+      "id": "osb-8-1250x2500",
+      "name": "Osb-3 lap 8mm",
+      "url": "https://kaplarfatelep.hu/osb-lapok/osb-lap/osb-lap-8mm",
+      "kind": "osb",
+      "price": 5390,
+      "unit": "tábla",
+      "thickness": 8,
+      "sheet": {
+        "w": 1250,
+        "l": 2500
+      }
+    },
+    {
+      "id": "roofing-iko-cambridge-xpress-laminalt-zsindely-2-17m2-cs",
+      "name": "IKO Cambridge Xpress laminált zsindely (2,17m²/csomag Aged Redwood 54)",
+      "url": "https://kaplarfatelep.hu/IKO-Cambridge-Xpress-laminalt-zsindely-2m-csomag-Aged-Redwood",
+      "kind": "roofing",
+      "price": 16900,
+      "unit": "csomag",
+      "packM2": 2.17
+    },
+    {
+      "id": "roofing-iko-cambridge-xtreme-9-5-tol-ontapado-laminalt-z",
+      "name": "IKO Cambridge Xtreme 9,5° -tól öntapadó laminált zsindely (2,17m²/csomag Amazon Green 43)",
+      "url": "https://kaplarfatelep.hu/IKO-Cambridge-Xtreme-laminalt-zsindely-2m-csomag-Amazon-Green",
+      "kind": "roofing",
+      "price": 19490,
+      "unit": "csomag",
+      "packM2": 2.17
+    },
+    {
+      "id": "roofing-iko-starterstrip-kezdoelem-laminalt-zsindelyekhe",
+      "name": "IKO StarterStrip kezdőelem laminált zsindelyekhez (21m/csom)",
+      "url": "https://kaplarfatelep.hu/spd/tfzsikosrtart/IKO-StarterStrip-kezdoelem-laminalt-zsindelyekhez",
+      "kind": "roofing",
+      "price": 15490,
+      "unit": "db"
+    },
+    {
+      "id": "roofing-iko-superglass-biber-hodfarku-zsindely-2m2-csoma",
+      "name": "IKO Superglass Biber hódfarkú zsindely (2m²/csomag Fekete)",
+      "url": "https://kaplarfatelep.hu/IKO-Superglass-Biber-zsindely-2m-csomag-Fekete",
+      "kind": "roofing",
+      "price": 10990,
+      "unit": "csomag",
+      "packM2": 2
+    },
+    {
+      "id": "roofing-iko-superglass-teglany-zsindely-2m2-csomag-amazo",
+      "name": "IKO Superglass téglány zsindely (2m²/csomag Amazonas zöld)",
+      "url": "https://kaplarfatelep.hu/IKO-Superglass-teglany-zsindely-2m-csomag-Amazonas-Zold",
+      "kind": "roofing",
+      "price": 10990,
+      "unit": "csomag",
+      "packM2": 2
+    },
+    {
+      "id": "roofing-iko-superglass-teglany-zsindely-2m2-csomag-arnya",
+      "name": "IKO Superglass téglány zsindely (2m²/csomag Árnyalt barna)",
+      "url": "https://kaplarfatelep.hu/IKO-Superglass-teglany-zsindely-2m-csomag-Arnyalt-Barna",
+      "kind": "roofing",
+      "price": 10990,
+      "unit": "csomag",
+      "packM2": 2
+    },
+    {
+      "id": "roofing-iko-superglass-teglany-zsindely-2m2-csomag-feket",
+      "name": "IKO Superglass téglány zsindely (2m²/csomag Fekete)",
+      "url": "https://kaplarfatelep.hu/Tetofedo-anyagok/Zsindelyek-es-kiegeszitok-/IKO-Su",
+      "kind": "roofing",
+      "price": 10990,
+      "unit": "csomag",
+      "packM2": 2
+    },
+    {
+      "id": "roofing-iko-superglass-teglany-zsindely-2m2-csomag-voros",
+      "name": "IKO Superglass téglány zsindely (2m²/csomag Vörös)",
+      "url": "https://kaplarfatelep.hu/IKO-Superglass-teglany-zsindely-2m-csomag-Voros",
+      "kind": "roofing",
+      "price": 10990,
+      "unit": "csomag",
+      "packM2": 2
+    },
+    {
+      "id": "roofing-trapez-polikarbonat-lemez-0-8mm-126x200cm",
+      "name": "Trapéz Polikarbonát lemez 0,8mm (126x200cm)",
+      "url": "https://kaplarfatelep.hu/Trapez-Polikarbonat-lemez-kulteri-UV1-1260x2000",
+      "kind": "roofing",
+      "price": 17665,
+      "unit": "db",
+      "packM2": 2.52
+    },
+    {
+      "id": "roofing-trapez-polikarbonat-lemez-0-8mm-126x250cm",
+      "name": "Trapéz Polikarbonát lemez 0,8mm (126x250cm)",
+      "url": "https://kaplarfatelep.hu/Trapez-Polikarbonat-lemez-kulteri-UV1-1260x2500",
+      "kind": "roofing",
+      "price": 22080,
+      "unit": "db",
+      "packM2": 3.15
+    },
+    {
+      "id": "roofing-trapez-polikarbonat-lemez-0-8mm-126x300cm",
+      "name": "Trapéz Polikarbonát lemez 0,8mm (126x300cm)",
+      "url": "https://kaplarfatelep.hu/Trapez-Polikarbonat-lemez-kulteri-UV1-1260x3000",
+      "kind": "roofing",
+      "price": 26499,
+      "unit": "db",
+      "packM2": 3.78
+    },
+    {
+      "id": "roofing-trapezlemez-t18-plusz-ral-3009-bordo",
+      "name": "Trapézlemez T18 Plusz - RAL 3009 Bordó",
+      "url": "https://kaplarfatelep.hu/Trapezlemez-T18-Plusz-RAL3009-Bordo",
+      "kind": "roofing",
+      "price": 12490,
+      "unit": "db",
+      "packM2": 2.36
+    },
+    {
+      "id": "roofing-trapezlemez-t18-plusz-ral-7016-antracit",
+      "name": "Trapézlemez T18 Plusz - RAL 7016 Antracit",
+      "url": "https://kaplarfatelep.hu/Trapezlemez-T18-Plusz-RAL7016-Antracit",
+      "kind": "roofing",
+      "price": 12490,
+      "unit": "db",
+      "packM2": 2.36
+    },
+    {
+      "id": "roofing-zsindely-alatetlemez-iko-armourbase-pro",
+      "name": "Zsindely alátétlemez (IKO ArmourBase Pro)",
+      "url": "https://kaplarfatelep.hu/tetofedo-anyagok/bitumenes-zsindelyek/zsindely-ala",
+      "kind": "roofing",
+      "price": 1690,
+      "unit": "m²",
+      "packM2": 30
+    },
+    {
+      "id": "roofing-zsindelyragaszto",
+      "name": "Zsindelyragasztó",
+      "url": "https://kaplarfatelep.hu/egyeb-anyagok/ragasztok/zsindelyragaszto",
+      "kind": "roofing",
+      "price": 2500,
+      "unit": "db"
+    },
+    {
+      "id": "timber-100x100-2000",
+      "name": "Lucfenyő gerenda 10x10x200cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-10x10x20",
+      "kind": "timber",
+      "price": 4190,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 100
+      },
+      "length": 2000
+    },
+    {
+      "id": "timber-100x100-3000",
+      "name": "Lucfenyő gerenda 10x10x300cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-10x10x30",
+      "kind": "timber",
+      "price": 6190,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 100
+      },
+      "length": 3000
+    },
+    {
+      "id": "timber-100x100-4000",
+      "name": "Gerenda 10x10x400cm (0,04m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-10x10x40",
+      "kind": "timber",
+      "price": 7560,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 100
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-100x100-4490",
+      "name": "Ragasztott gerenda 10x10x449cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-10x10x450cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 19070,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 100
+      },
+      "length": 4490
+    },
+    {
+      "id": "timber-100x100-5000",
+      "name": "Gerenda 10x10x500cm (0,05m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-10x10x50",
+      "kind": "timber",
+      "price": 9450,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 100
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-100x100-6000",
+      "name": "Gerenda 10x10x600cm (0,06m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-10x10x60",
+      "kind": "timber",
+      "price": 11340,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 100
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-100x100-6740",
+      "name": "Ragasztott gerenda 10x10x674cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-10x10x675cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 28600,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 100
+      },
+      "length": 6740
+    },
+    {
+      "id": "timber-100x100-8990",
+      "name": "Ragasztott gerenda 10x10x899cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/spd/bsh10109/Ragasztott-gerenda-10x10x899cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 38140,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 100
+      },
+      "length": 8990
+    },
+    {
+      "id": "timber-100x150-2000",
+      "name": "Lucfenyő szarufa 10x15x200cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-10x15x20",
+      "kind": "timber",
+      "price": 6190,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 150
+      },
+      "length": 2000
+    },
+    {
+      "id": "timber-100x150-3000",
+      "name": "Lucfenyő szarufa 10x15x300cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-10x15x30",
+      "kind": "timber",
+      "price": 9190,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 150
+      },
+      "length": 3000
+    },
+    {
+      "id": "timber-100x150-4000",
+      "name": "Szarufa 10x15x400cm (0,06m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-10x15x40",
+      "kind": "timber",
+      "price": 11340,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 150
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-100x150-5000",
+      "name": "Szarufa 10x15x500cm (0,075m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-10x15x50",
+      "kind": "timber",
+      "price": 14180,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 150
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-100x150-6000",
+      "name": "Szarufa 10x15x600cm (0,09m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-10x15x60",
+      "kind": "timber",
+      "price": 17010,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 150
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-100x150-7000",
+      "name": "Lucfenyő szarufa 10x15x700cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-10x15x70",
+      "kind": "timber",
+      "price": 26300,
+      "unit": "db",
+      "section": {
+        "t": 100,
+        "w": 150
+      },
+      "length": 7000
+    },
+    {
+      "id": "timber-120x120-2000",
+      "name": "Lucfenyő gerenda 12x12x200cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-12x12x20",
+      "kind": "timber",
+      "price": 5950,
+      "unit": "db",
+      "section": {
+        "t": 120,
+        "w": 120
+      },
+      "length": 2000
+    },
+    {
+      "id": "timber-120x120-3000",
+      "name": "Lucfenyő gerenda 12x12x300cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-12x12x30",
+      "kind": "timber",
+      "price": 8850,
+      "unit": "db",
+      "section": {
+        "t": 120,
+        "w": 120
+      },
+      "length": 3000
+    },
+    {
+      "id": "timber-120x120-4000",
+      "name": "Gerenda 12x12x400cm (0,0576m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-12x12x40",
+      "kind": "timber",
+      "price": 10890,
+      "unit": "db",
+      "section": {
+        "t": 120,
+        "w": 120
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-120x120-4490",
+      "name": "Ragasztott gerenda 12x12x449cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-12x12x450cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 27440,
+      "unit": "db",
+      "section": {
+        "t": 120,
+        "w": 120
+      },
+      "length": 4490
+    },
+    {
+      "id": "timber-120x120-5000",
+      "name": "Gerenda 12x12x500cm (0,072m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-12x12x50",
+      "kind": "timber",
+      "price": 13610,
+      "unit": "db",
+      "section": {
+        "t": 120,
+        "w": 120
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-120x120-6000",
+      "name": "Gerenda 12x12x600cm (0,0864m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-12x12x60",
+      "kind": "timber",
+      "price": 16330,
+      "unit": "db",
+      "section": {
+        "t": 120,
+        "w": 120
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-120x120-6740",
+      "name": "Ragasztott gerenda 12x12x674cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-12x12x675cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 41150,
+      "unit": "db",
+      "section": {
+        "t": 120,
+        "w": 120
+      },
+      "length": 6740
+    },
+    {
+      "id": "timber-120x120-8990",
+      "name": "Ragasztott gerenda 12x12x899cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/spd/bsh12129/Ragasztott-gerenda-12x12x899cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 54870,
+      "unit": "db",
+      "section": {
+        "t": 120,
+        "w": 120
+      },
+      "length": 8990
+    },
+    {
+      "id": "timber-140x140-4490",
+      "name": "Ragasztott gerenda 14x14x449cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-14x14x450cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 36100,
+      "unit": "db",
+      "section": {
+        "t": 140,
+        "w": 140
+      },
+      "length": 4490
+    },
+    {
+      "id": "timber-140x140-6740",
+      "name": "Ragasztott gerenda 14x14x674cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-14x14x6750cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 54150,
+      "unit": "db",
+      "section": {
+        "t": 140,
+        "w": 140
+      },
+      "length": 6740
+    },
+    {
+      "id": "timber-140x140-8990",
+      "name": "Ragasztott gerenda 14x14x899cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/spd/bsh14149/Ragasztott-gerenda-14x14x899cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 72200,
+      "unit": "db",
+      "section": {
+        "t": 140,
+        "w": 140
+      },
+      "length": 8990
+    },
+    {
+      "id": "timber-150x150-2000",
+      "name": "Lucfenyő gerenda 15x15x200cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-15x15x20",
+      "kind": "timber",
+      "price": 9190,
+      "unit": "db",
+      "section": {
+        "t": 150,
+        "w": 150
+      },
+      "length": 2000
+    },
+    {
+      "id": "timber-150x150-3000",
+      "name": "Lucfenyő gerenda 15x15x300cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-15x15x30",
+      "kind": "timber",
+      "price": 13690,
+      "unit": "db",
+      "section": {
+        "t": 150,
+        "w": 150
+      },
+      "length": 3000
+    },
+    {
+      "id": "timber-150x150-4000",
+      "name": "Gerenda 15x15x400cm (0,09m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-15x15x40",
+      "kind": "timber",
+      "price": 17010,
+      "unit": "db",
+      "section": {
+        "t": 150,
+        "w": 150
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-150x150-5000",
+      "name": "Gerenda 15x15x500cm (0,113m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-15x15x50",
+      "kind": "timber",
+      "price": 21260,
+      "unit": "db",
+      "section": {
+        "t": 150,
+        "w": 150
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-150x150-6000",
+      "name": "Gerenda 15x15x600cm (0,135m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-15x15x60",
+      "kind": "timber",
+      "price": 25520,
+      "unit": "db",
+      "section": {
+        "t": 150,
+        "w": 150
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-150x150-7000",
+      "name": "Lucfenyő gerenda 15x15x700cm",
+      "url": "https://kaplarfatelep.hu/Fenyo-fureszaru/Gerendak/Lucfenyo-gerenda-15x15x70",
+      "kind": "timber",
+      "price": 39500,
+      "unit": "db",
+      "section": {
+        "t": 150,
+        "w": 150
+      },
+      "length": 7000
+    },
+    {
+      "id": "timber-160x160-4490",
+      "name": "Ragasztott gerenda 16x16x449cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-16x16x450cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 47140,
+      "unit": "db",
+      "section": {
+        "t": 160,
+        "w": 160
+      },
+      "length": 4490
+    },
+    {
+      "id": "timber-160x160-6740",
+      "name": "Ragasztott gerenda 16x16x674cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-16x16x675cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 70700,
+      "unit": "db",
+      "section": {
+        "t": 160,
+        "w": 160
+      },
+      "length": 6740
+    },
+    {
+      "id": "timber-160x160-8990",
+      "name": "Ragasztott gerenda 16x16x899cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/spd/bsh16169/Ragasztott-gerenda-16x16x899cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 94270,
+      "unit": "db",
+      "section": {
+        "t": 160,
+        "w": 160
+      },
+      "length": 8990
+    },
+    {
+      "id": "timber-160x320-4490",
+      "name": "Ragasztott gerenda 16x32x449cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/spd/bsh1632450/Ragasztott-gerenda-16x32x449cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 81990,
+      "unit": "db",
+      "section": {
+        "t": 160,
+        "w": 320
+      },
+      "length": 4490
+    },
+    {
+      "id": "timber-160x320-6740",
+      "name": "Ragasztott gerenda 16x32x674cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-16x32x675cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 149900,
+      "unit": "db",
+      "section": {
+        "t": 160,
+        "w": 320
+      },
+      "length": 6740
+    },
+    {
+      "id": "timber-160x320-8990",
+      "name": "Ragasztott gerenda 16x32x899cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/spd/bsh16329/Ragasztott-gerenda-16x32x899cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 229990,
+      "unit": "db",
+      "section": {
+        "t": 160,
+        "w": 320
+      },
+      "length": 8990
+    },
+    {
+      "id": "timber-17x17-2000",
+      "name": "Barkács léc (gyalult, háromszögléc, 17x17x2000mm)",
+      "url": "https://kaplarfatelep.hu/spd/alec3sz20202dm/Barkacs-lec-gyalult-haromszoglec-17x17x2000mm",
+      "kind": "timber",
+      "price": 1149,
+      "unit": "db",
+      "section": {
+        "t": 17,
+        "w": 17
+      },
+      "length": 2000
+    },
+    {
+      "id": "timber-18x116-4000-szaritott",
+      "name": "Szárított, gyalult luc deszka 1,8x11,6x400cm",
+      "url": "https://kaplarfatelep.hu/Gyalult-termekek/Szaritott-gyalult-egalizalt-deszk",
+      "kind": "timber",
+      "price": 3290,
+      "unit": "db",
+      "section": {
+        "t": 18,
+        "w": 116
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-18x146-4000-szaritott",
+      "name": "Szárított, gyalult luc deszka 1,8x14,6x400cm",
+      "url": "https://kaplarfatelep.hu/spd/lam9/Szaritott-gyalult-luc-deszka-18x146x400cm",
+      "kind": "timber",
+      "price": 4090,
+      "unit": "db",
+      "section": {
+        "t": 18,
+        "w": 146
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-18x190-4000-szaritott",
+      "name": "Szárított, gyalult luc deszka 1,8x19x400cm",
+      "url": "https://kaplarfatelep.hu/spd/lam10/Szaritott-gyalult-luc-deszka-18x19x400cm",
+      "kind": "timber",
+      "price": 5590,
+      "unit": "db",
+      "section": {
+        "t": 18,
+        "w": 190
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-18x96-4000-szaritott",
+      "name": "Szárított, gyalult luc deszka 1,8x9,6x400cm",
+      "url": "https://kaplarfatelep.hu/spd/gyaldl96/Szaritott-gyalult-luc-deszka-18x96x400cm",
+      "kind": "timber",
+      "price": 2790,
+      "unit": "db",
+      "section": {
+        "t": 18,
+        "w": 96
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-200x200-6750",
+      "name": "Ragasztott gerenda 20x20x675cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-20x20x675cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 116490,
+      "unit": "db",
+      "section": {
+        "t": 200,
+        "w": 200
+      },
+      "length": 6750
+    },
+    {
+      "id": "timber-20x146-4200-szaritott",
+      "name": "Gyalult deszka, szárított, BOROVI; méret : 20x146x4200 mm",
+      "url": "https://kaplarfatelep.hu/spd/lamgyb20146420/Gyalult-deszka-szaritott-BOROVI-meret-20x146x4200",
+      "kind": "timber",
+      "price": 4390,
+      "unit": "db",
+      "section": {
+        "t": 20,
+        "w": 146
+      },
+      "length": 4200
+    },
+    {
+      "id": "timber-20x96-4200-szaritott",
+      "name": "Gyalult deszka, szárított, BOROVI; méret : 20x96x4200 mm",
+      "url": "https://kaplarfatelep.hu/spd/lamgyb2096420/Gyalult-deszka-szaritott-BOROVI-meret-20x96x4200-m",
+      "kind": "timber",
+      "price": 2990,
+      "unit": "db",
+      "section": {
+        "t": 20,
+        "w": 96
+      },
+      "length": 4200
+    },
+    {
+      "id": "timber-23x120-4000",
+      "name": "Lucfenyő deszka 2,3x12x400cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/deszkak/lucfenyo-deszka-23x12x400c",
+      "kind": "timber",
+      "price": 2270,
+      "unit": "db",
+      "section": {
+        "t": 23,
+        "w": 120
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-23x150-3000",
+      "name": "Lucfenyő deszka 2,3x15x300cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/deszkak/lucfenyo-deszka-23x15x300c",
+      "kind": "timber",
+      "price": 2240,
+      "unit": "db",
+      "section": {
+        "t": 23,
+        "w": 150
+      },
+      "length": 3000
+    },
+    {
+      "id": "timber-23x200-4000",
+      "name": "Lucfenyő deszka 2,3x20x400cm",
+      "url": "https://kaplarfatelep.hu/spd/f2204/Lucfenyo-deszka-23x20x400cm",
+      "kind": "timber",
+      "price": 4400,
+      "unit": "db",
+      "section": {
+        "t": 23,
+        "w": 200
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-23x200-5000",
+      "name": "Lucfenyő deszka 2,3x20x500cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/deszkak/lucfenyo-deszka-23x20x500c",
+      "kind": "timber",
+      "price": 5500,
+      "unit": "db",
+      "section": {
+        "t": 23,
+        "w": 200
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-23x48-4000",
+      "name": "Lucfenyő léc 2,3x4,8x400cm",
+      "url": "https://kaplarfatelep.hu/Fenyo-fureszaru/Lecek/Lucfenyo-tetolec-23-48-400",
+      "kind": "timber",
+      "price": 1316,
+      "unit": "db",
+      "section": {
+        "t": 23,
+        "w": 48
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-25x100-3000",
+      "name": "Lucfenyő deszka 2,3-2,5x10x300cm",
+      "url": "https://kaplarfatelep.hu/Fenyo-fureszaru/Deszkak/Lucfenyo-deszka-23x10x300c",
+      "kind": "timber",
+      "price": 1549,
+      "unit": "db",
+      "section": {
+        "t": 25,
+        "w": 100
+      },
+      "length": 3000
+    },
+    {
+      "id": "timber-25x100-4000-deszka-2-3-2-5x10x400cm",
+      "name": "Deszka 2,3-2,5x10x400cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/deszkak/lucfenyo-deszka-23x10x400c",
+      "kind": "timber",
+      "price": 1890,
+      "unit": "db",
+      "section": {
+        "t": 25,
+        "w": 100
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-25x100-4000-lucfenyo-zsaludeszka-2-5x10x400cm",
+      "name": "Lucfenyő zsaludeszka 2,5x10x400cm",
+      "url": "https://kaplarfatelep.hu/Fenyo-fureszaru/Zsaludeszkak/Lucfenyo-deszka-25-10-4",
+      "kind": "timber",
+      "price": 1450,
+      "unit": "db",
+      "section": {
+        "t": 25,
+        "w": 100
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-25x100-5000",
+      "name": "Deszka 2,3-2,5x10x500cm",
+      "url": "https://kaplarfatelep.hu/Fenyo-fureszaru/Deszkak/Lucfenyo-deszka-23x10x500c",
+      "kind": "timber",
+      "price": 2360,
+      "unit": "db",
+      "section": {
+        "t": 25,
+        "w": 100
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-25x120-5000",
+      "name": "Deszka 2,3-2,5x12x500cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/deszkak/lucfenyo-deszka-23x12x500c",
+      "kind": "timber",
+      "price": 2840,
+      "unit": "db",
+      "section": {
+        "t": 25,
+        "w": 120
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-25x150-4000-deszka-2-3-2-5x15x400cm",
+      "name": "Deszka 2,3-2,5x15x400cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/deszkak/lucfenyo-deszka-23x15x400c",
+      "kind": "timber",
+      "price": 2840,
+      "unit": "db",
+      "section": {
+        "t": 25,
+        "w": 150
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-25x150-4000-lucfenyo-zsaludeszka-2-5x15x400cm",
+      "name": "Lucfenyő zsaludeszka 2,5x15x400cm",
+      "url": "https://kaplarfatelep.hu/Fenyo-fureszaru/Zsaludeszkak/Lucfenyo-deszka-25-15-4",
+      "kind": "timber",
+      "price": 2200,
+      "unit": "db",
+      "section": {
+        "t": 25,
+        "w": 150
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-25x150-5000",
+      "name": "Deszka 2,3-2,5x15x500cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/deszkak/lucfenyo-deszka-23x15x500c",
+      "kind": "timber",
+      "price": 3540,
+      "unit": "db",
+      "section": {
+        "t": 25,
+        "w": 150
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-25x150-6000",
+      "name": "Deszka 2,3-2,5x15x600cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/deszkak/lucfenyo-deszka-25x15x600c",
+      "kind": "timber",
+      "price": 4250,
+      "unit": "db",
+      "section": {
+        "t": 25,
+        "w": 150
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-28x48-4000",
+      "name": "Lucfenyő léc 2,8x4,8x400cm",
+      "url": "https://kaplarfatelep.hu/Fenyo-fureszaru/Lecek/Lucfenyo-tetolec-28-48-400",
+      "kind": "timber",
+      "price": 1356,
+      "unit": "db",
+      "section": {
+        "t": 28,
+        "w": 48
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-30x50-4000",
+      "name": "Bramac PLUS tetőléc 3x5x400cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/tetolec/bramac-plus-tetolec-3-5-4",
+      "kind": "timber",
+      "price": 1396,
+      "unit": "db",
+      "section": {
+        "t": 30,
+        "w": 50
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-30x50-5000",
+      "name": "Bramac PLUS tetőléc 3x5x500cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/tetolec/bramac-plus-tetolec-3-5-5",
+      "kind": "timber",
+      "price": 1795,
+      "unit": "db",
+      "section": {
+        "t": 30,
+        "w": 50
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-40x70-4000-szaritott",
+      "name": "Szárított, gyalult palló 4x7x400cm",
+      "url": "https://kaplarfatelep.hu/spd/gyp4070/Szaritott-gyalult-pallo-4x7x400cm",
+      "kind": "timber",
+      "price": 5990,
+      "unit": "db",
+      "section": {
+        "t": 40,
+        "w": 70
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-45x145-1990-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x14,5x199cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-145-2000",
+      "kind": "timber",
+      "price": 4145,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 145
+      },
+      "length": 1990
+    },
+    {
+      "id": "timber-45x145-2990-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x14,5x299cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-145-3000",
+      "kind": "timber",
+      "price": 6249,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 145
+      },
+      "length": 2990
+    },
+    {
+      "id": "timber-45x145-4000-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x14,5x400cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-145-4000",
+      "kind": "timber",
+      "price": 8290,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 145
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-45x145-5000-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x14,5x500cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-145-5000",
+      "kind": "timber",
+      "price": 10390,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 145
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-45x145-6000-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x14,5x600cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-145-6000",
+      "kind": "timber",
+      "price": 12490,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 145
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-45x195-1990-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x19,5x199cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-195-2000",
+      "kind": "timber",
+      "price": 5595,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 195
+      },
+      "length": 1990
+    },
+    {
+      "id": "timber-45x195-2990-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x19,5x299cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-195-3000",
+      "kind": "timber",
+      "price": 8395,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 195
+      },
+      "length": 2990
+    },
+    {
+      "id": "timber-45x195-4000-szaritott",
+      "name": "Szárított, egalizált, gyalult, nem látszó szerkezeti palló 4,5x19,5x400cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-195-4000",
+      "kind": "timber",
+      "price": 11190,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 195
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-45x195-5000-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x19,5x500cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-195-5000",
+      "kind": "timber",
+      "price": 13990,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 195
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-45x195-6000-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x19,5x600cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-195-6000",
+      "kind": "timber",
+      "price": 16790,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 195
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-45x95-1990-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x9,5x199cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-95-2000",
+      "kind": "timber",
+      "price": 2745,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 95
+      },
+      "length": 1990
+    },
+    {
+      "id": "timber-45x95-2990-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x9,5x299cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-95-3000",
+      "kind": "timber",
+      "price": 4145,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 95
+      },
+      "length": 2990
+    },
+    {
+      "id": "timber-45x95-4000-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x9,5x400cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-95-4000",
+      "kind": "timber",
+      "price": 5490,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 95
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-45x95-5000-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x9,5x500cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-95-5000",
+      "kind": "timber",
+      "price": 6890,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 95
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-45x95-6000-szaritott",
+      "name": "Szárított, egalizált, gyalult, palló 4,5x9,5x600cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-pallo-45-95-6000",
+      "kind": "timber",
+      "price": 8290,
+      "unit": "db",
+      "section": {
+        "t": 45,
+        "w": 95
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-48x250-4000-szaritott",
+      "name": "Szárított lucfenyő palló 4,8x25x400 cm",
+      "url": "https://kaplarfatelep.hu/Fenyo-fureszaru/Szaritott-fureszaru/Szaritott-lucfenyo-pallo-48x250x4000",
+      "kind": "timber",
+      "price": 10990,
+      "unit": "db",
+      "section": {
+        "t": 48,
+        "w": 250
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-48x48-4000",
+      "name": "Lucfenyő stafni 4,8x4,8x400cm",
+      "url": "https://kaplarfatelep.hu/kiegeszitok/tetolecek/szaritott-egalizalt-stafni-48-48-400",
+      "kind": "timber",
+      "price": 2156,
+      "unit": "db",
+      "section": {
+        "t": 48,
+        "w": 48
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-50x100-2000",
+      "name": "Lucfenyő palló 5x10x200cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x10x200cm",
+      "kind": "timber",
+      "price": 2190,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 100
+      },
+      "length": 2000
+    },
+    {
+      "id": "timber-50x100-3000",
+      "name": "Lucfenyő palló 5x10x300cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x10x300cm",
+      "kind": "timber",
+      "price": 3190,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 100
+      },
+      "length": 3000
+    },
+    {
+      "id": "timber-50x100-4000",
+      "name": "Padló 5x10x400cm (0,02m3)",
+      "url": "https://kaplarfatelep.hu/Fenyo-fureszaru/Pallok/Lucfenyo-pallo-5x10x400cm-f",
+      "kind": "timber",
+      "price": 3780,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 100
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-50x100-5000",
+      "name": "Padló 5x10x500cm (0,025m3)",
+      "url": "https://kaplarfatelep.hu/Fenyo-fureszaru/Pallok/Lucfenyo-pallo-5x10x500cm-f",
+      "kind": "timber",
+      "price": 4730,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 100
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-50x100-6000",
+      "name": "Padló 5x10x600cm (0,03m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x10x600cm",
+      "kind": "timber",
+      "price": 5670,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 100
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-50x150-2000",
+      "name": "Lucfenyő palló 5x15x200cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x15x200cm",
+      "kind": "timber",
+      "price": 3190,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 150
+      },
+      "length": 2000
+    },
+    {
+      "id": "timber-50x150-3000",
+      "name": "Lucfenyő palló 5x15x300cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x15x300cm",
+      "kind": "timber",
+      "price": 4690,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 150
+      },
+      "length": 3000
+    },
+    {
+      "id": "timber-50x150-4000",
+      "name": "Padló 5x15x400cm (0,03m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x15x400cm",
+      "kind": "timber",
+      "price": 5670,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 150
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-50x150-5000",
+      "name": "Padló 5x15x500cm (0,0375m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x15x500cm",
+      "kind": "timber",
+      "price": 7090,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 150
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-50x150-6000",
+      "name": "Padló 5x15x600cm (0,045m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x15x600cm",
+      "kind": "timber",
+      "price": 8510,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 150
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-50x150-7000",
+      "name": "Lucfenyő palló 5x15x700cm",
+      "url": "https://kaplarfatelep.hu/Fenyo-fureszaru/Pallok/Lucfenyo-pallo-5x15x700cm",
+      "kind": "timber",
+      "price": 13200,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 150
+      },
+      "length": 7000
+    },
+    {
+      "id": "timber-50x200-2000",
+      "name": "Lucfenyő palló 5x20x200cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x20x200cm",
+      "kind": "timber",
+      "price": 4750,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 200
+      },
+      "length": 2000
+    },
+    {
+      "id": "timber-50x200-3000",
+      "name": "Lucfenyő palló 5x20x300cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x20x300cm",
+      "kind": "timber",
+      "price": 7050,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 200
+      },
+      "length": 3000
+    },
+    {
+      "id": "timber-50x200-4000",
+      "name": "Lucfenyő palló 5x20x400cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x20x400cm",
+      "kind": "timber",
+      "price": 9100,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 200
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-50x200-5000",
+      "name": "Lucfenyő palló 5x20x500cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x20x500cm",
+      "kind": "timber",
+      "price": 11400,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 200
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-50x200-6000",
+      "name": "Lucfenyő palló 5x20x600cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/pallok/lucfenyo-pallo-5x20x600cm",
+      "kind": "timber",
+      "price": 13700,
+      "unit": "db",
+      "section": {
+        "t": 50,
+        "w": 200
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-60x120-6750",
+      "name": "Ragasztott gerenda 6x12x675cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-6x12x675cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 22350,
+      "unit": "db",
+      "section": {
+        "t": 60,
+        "w": 120
+      },
+      "length": 6750
+    },
+    {
+      "id": "timber-60x160-6750",
+      "name": "Ragasztott gerenda 6x16x675cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-6x16x675cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 29750,
+      "unit": "db",
+      "section": {
+        "t": 60,
+        "w": 160
+      },
+      "length": 6750
+    },
+    {
+      "id": "timber-70x145-4000-szaritott",
+      "name": "Szárított, egalizált, gyalult, szarufa C24, 7x14,5x400cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-szarufa-70-145-4000",
+      "kind": "timber",
+      "price": 13990,
+      "unit": "db",
+      "section": {
+        "t": 70,
+        "w": 145
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-70x145-5000-szaritott",
+      "name": "Szárított, egalizált, gyalult, szarufa C24, 7x14,5x500cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-szarufa-70-145-5000",
+      "kind": "timber",
+      "price": 16990,
+      "unit": "db",
+      "section": {
+        "t": 70,
+        "w": 145
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-70x145-6000-szaritott",
+      "name": "Szárított, egalizált, gyalult, szarufa C24, 7x14,5x600cm",
+      "url": "https://kaplarfatelep.hu/Szaritott-egalizalt-gyalult-szarufa-70-145-6000",
+      "kind": "timber",
+      "price": 19990,
+      "unit": "db",
+      "section": {
+        "t": 70,
+        "w": 145
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-70x70-4000-szaritott",
+      "name": "Lucfenyő, szárított, gyalult gerenda 7x7x400cm",
+      "url": "https://kaplarfatelep.hu/spd/gyg7070/Lucfenyo-szaritott-gyalult-gerenda-7x7x400cm",
+      "kind": "timber",
+      "price": 7990,
+      "unit": "db",
+      "section": {
+        "t": 70,
+        "w": 70
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-75x150-2000",
+      "name": "Lucfenyő szarufa 7,5x15x200cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-75x15x20",
+      "kind": "timber",
+      "price": 4690,
+      "unit": "db",
+      "section": {
+        "t": 75,
+        "w": 150
+      },
+      "length": 2000
+    },
+    {
+      "id": "timber-75x150-3000",
+      "name": "Lucfenyő szarufa 7,5x15x300cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-75x15x30",
+      "kind": "timber",
+      "price": 6930,
+      "unit": "db",
+      "section": {
+        "t": 75,
+        "w": 150
+      },
+      "length": 3000
+    },
+    {
+      "id": "timber-75x150-4000",
+      "name": "Szarufa 7,5x15x400cm (0,045m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-75x15x40",
+      "kind": "timber",
+      "price": 8510,
+      "unit": "db",
+      "section": {
+        "t": 75,
+        "w": 150
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-75x150-5000",
+      "name": "Szarufa 7,5x15x500cm (0,056m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-75x15x50",
+      "kind": "timber",
+      "price": 10630,
+      "unit": "db",
+      "section": {
+        "t": 75,
+        "w": 150
+      },
+      "length": 5000
+    },
+    {
+      "id": "timber-75x150-6000",
+      "name": "Szarufa 7,5x15x600cm (0,068m3)",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-75x15x60",
+      "kind": "timber",
+      "price": 12760,
+      "unit": "db",
+      "section": {
+        "t": 75,
+        "w": 150
+      },
+      "length": 6000
+    },
+    {
+      "id": "timber-75x150-7000",
+      "name": "Lucfenyő szarufa 7,5x15x700cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/szarufak/lucfenyo-szarufa-75x15x70",
+      "kind": "timber",
+      "price": 19700,
+      "unit": "db",
+      "section": {
+        "t": 75,
+        "w": 150
+      },
+      "length": 7000
+    },
+    {
+      "id": "timber-75x75-4000",
+      "name": "Lucfenyő gerenda 7,5x7,5x400 cm",
+      "url": "https://kaplarfatelep.hu/fenyo-fureszaru/gerendak/lucfenyo-gerenda-75x75x40",
+      "kind": "timber",
+      "price": 5900,
+      "unit": "db",
+      "section": {
+        "t": 75,
+        "w": 75
+      },
+      "length": 4000
+    },
+    {
+      "id": "timber-80x120-4490",
+      "name": "Ragasztott gerenda 8x12x449cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-8x12x449cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 20400,
+      "unit": "db",
+      "section": {
+        "t": 80,
+        "w": 120
+      },
+      "length": 4490
+    },
+    {
+      "id": "timber-80x120-6750",
+      "name": "Ragasztott gerenda 8x12x675cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-8x12x675cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 30600,
+      "unit": "db",
+      "section": {
+        "t": 80,
+        "w": 120
+      },
+      "length": 6750
+    },
+    {
+      "id": "timber-80x120-8990",
+      "name": "Ragasztott gerenda 8x12x899cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-8x12x899cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 40800,
+      "unit": "db",
+      "section": {
+        "t": 80,
+        "w": 120
+      },
+      "length": 8990
+    },
+    {
+      "id": "timber-80x160-4490",
+      "name": "Ragasztott gerenda 8x16x449cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/Ragasztott-gerenda-8x16x450cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 24400,
+      "unit": "db",
+      "section": {
+        "t": 80,
+        "w": 160
+      },
+      "length": 4490
+    },
+    {
+      "id": "timber-80x160-6740",
+      "name": "Ragasztott gerenda 8x16x674cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/gyalult-termekek/ragasztott-gerendak/ragasztott-ge",
+      "kind": "timber",
+      "price": 36600,
+      "unit": "db",
+      "section": {
+        "t": 80,
+        "w": 160
+      },
+      "length": 6740
+    },
+    {
+      "id": "timber-80x160-8990",
+      "name": "Ragasztott gerenda 8x16x899cm (rétegragasztott BSH)",
+      "url": "https://kaplarfatelep.hu/spd/bsh8169/Ragasztott-gerenda-8x16x899cm-retegragasztott-BSH",
+      "kind": "timber",
+      "price": 48800,
+      "unit": "db",
+      "section": {
+        "t": 80,
+        "w": 160
+      },
+      "length": 8990
+    },
+    {
+      "id": "timber-90x90-4000-szaritott",
+      "name": "Lucfenyő, szárított, gyalult gerenda 9x9x400cm",
+      "url": "https://kaplarfatelep.hu/spd/gyg9090/Lucfenyo-szaritott-gyalult-gerenda-9x9x400cm",
+      "kind": "timber",
+      "price": 11990,
+      "unit": "db",
+      "section": {
+        "t": 90,
+        "w": 90
+      },
+      "length": 4000
+    }
+  ]
+}

@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "arak": "node scripts/arak.mjs"
   },
   "keywords": [],
   "author": "",
