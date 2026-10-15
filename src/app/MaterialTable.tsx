@@ -6,7 +6,8 @@ import type { MaterialLine } from '../calc/types';
 import { useMemo, useState } from 'preact/hooks';
 import { formatFt, formatQty } from '../ui/format';
 import { BUNDLED_PRICE_LIST } from '../prices';
-import { costOf, type CostLine } from '../pricing/cost';
+import { type CostLine } from '../pricing/cost';
+import { useCost, setLinePrice, resetLinePrice } from './useCost';
 import { PriceCell } from './PriceCell';
 import { sceneFor } from './selection';
 import { elementsForLine, stepForView } from './lineElements';
@@ -18,19 +19,14 @@ export function fold(s: string): string {
 
 export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
   const { output, errors, lastValidPlan } = useStore(store, s => s);
-  const livePlan = useStore(store, st => st.plan);
-  // a geometria az utolsó érvényes tervből; a kézi árak az aktuális tervből (hibás terven is megmaradnak)
-  const plan = useMemo(() => ({
-    ...lastValidPlan,
-    pricing: { ...lastValidPlan.pricing, overrides: livePlan.pricing.overrides, custom: livePlan.pricing.custom },
-  }), [lastValidPlan, livePlan.pricing.overrides, livePlan.pricing.custom]);
+  const { plan, cost } = useCost(store);
   const pl = BUNDLED_PRICE_LIST;
-  const cost = useMemo(() => (pl ? costOf(plan, output, pl) : null), [plan, output, pl]);
   const costById = useMemo(() => new Map((cost?.lines ?? []).map(c => [c.lineId, c])), [cost]);
   const layers = useUi(ui, s => s.layers);
   const query = useUi(ui, s => s.matQuery);
   const openLines = useUi(ui, s => s.matOpen);
   const closedCats = useUi(ui, s => s.matClosed);
+  const onlyMissing = useUi(ui, s => s.matOnlyMissing);
   const toggle = (list: string[], id: string, open: boolean): string[] => {
     const rest = list.filter(x => x !== id);
     return open ? [...rest, id] : rest;
@@ -51,13 +47,8 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
     });
   };
 
-  const setPrice = (c: CostLine, price: number) => store.update(d => {
-    const inOverrides = c.source === 'override' || c.source === 'kaplar';
-    if (inOverrides) d.pricing.overrides[c.lineId] = price; else d.pricing.custom[c.lineId] = price;
-  });
-  const resetPrice = (c: CostLine) => store.update(d => {
-    if (c.source === 'override') delete d.pricing.overrides[c.lineId]; else delete d.pricing.custom[c.lineId];
-  });
+  const setPrice = (c: CostLine, price: number) => setLinePrice(store, c, price);
+  const resetPrice = (c: CostLine) => resetLinePrice(store, c);
   /** true, ha a beírt szöveg érvényes (termék vagy „automatikus”). */
   const chooseProduct = (id: string, kind: string, value: string): boolean => {
     const v = value.trim();
@@ -69,12 +60,17 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
   };
 
   const q = fold(query.trim());
-  const matches = (l: MaterialLine) => q === '' || fold(l.name).includes(q);
+  const matches = (l: MaterialLine) => (q === '' || fold(l.name).includes(q))
+    && (!onlyMissing || costById.get(l.id)?.source === 'missing');
 
   return (
     <div class="material-table">
       <input type="search" class="line-search" placeholder="Keresés név szerint…" aria-label="Keresés" value={query}
         onInput={e => ui.set({ matQuery: (e.currentTarget as HTMLInputElement).value })} />
+      {onlyMissing && (
+        <div class="missing-filter" role="status">Csak az ár nélküli tételek látszanak.
+          <button type="button" onClick={() => ui.set({ matOnlyMissing: false })}>Mind mutatása</button></div>
+      )}
       {errors.length > 0 && (
         <div class="stale-notice" role="status">A terv hibás mezőt tartalmaz – az anyaglista az utolsó érvényes állapotot mutatja.</div>
       )}

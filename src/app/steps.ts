@@ -12,7 +12,7 @@ export const STEPS: StepDef[] = [
   { id: 'walls', title: 'Falak', sections: ['walls'], views: ['floor', 'wall.N', 'wall.E', 'wall.S', 'wall.W', 'section'], defaultView: 'wall.E' },
   { id: 'openings', title: 'Nyílászárók', sections: [], views: ['floor', 'wall.N', 'wall.E', 'wall.S', 'wall.W'], defaultView: 'floor' },
   { id: 'roof', title: 'Tető', sections: ['roof', 'accessories'], views: ['roof', 'gable', 'section'], defaultView: 'roof' },
-  { id: 'materials', title: 'Anyaglista', sections: ['settings'], views: ['table', 'cutplan'], defaultView: 'table' },
+  { id: 'materials', title: 'Anyaglista', sections: ['settings'], views: ['table', 'cutplan', 'cost'], defaultView: 'table' },
 ];
 
 const PREFIXES: Record<StepId, string[]> = {

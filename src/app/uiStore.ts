@@ -6,6 +6,8 @@ export interface UiState {
   layers: Record<LayerId, boolean>; cameras: Partial<Record<ViewId, Camera>>; detailOpen: boolean;
   /** Anyaglista: keresés, kinyitott sorok, összecsukott kategóriák (a lépésváltáson át megmaradnak). */
   matQuery: string; matOpen: string[]; matClosed: string[];
+  /** Anyaglista: csak az ár nélküli tételek (a Költség fül „Mutasd” gombja). */
+  matOnlyMissing: boolean;
 }
 export interface UiStore {
   get(): UiState;
@@ -40,7 +42,7 @@ function loadLayers(): Record<LayerId, boolean> {
 export function createUiStore(): UiStore {
   let state: UiState = {
     step: 'building', view: 'floor', selected: null, selectedOpening: null, hovered: null, highlight: [],
-    layers: loadLayers(), cameras: {}, detailOpen: false, matQuery: '', matOpen: [], matClosed: [],
+    layers: loadLayers(), cameras: {}, detailOpen: false, matQuery: '', matOpen: [], matClosed: [], matOnlyMissing: false,
   };
   const listeners = new Set<() => void>();
   return {

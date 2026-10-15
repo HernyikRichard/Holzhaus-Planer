@@ -226,3 +226,36 @@ button.cutstrip-piece:hover:not(:disabled) { background: #4a90d9; }
 .material-table .source { width: 4.8rem; }
 .material-table .show-slot, .material-table button.show { width: 1.5rem; }
 @media (max-width: 1350px) { .material-table .cols { display: none; } }
+
+/* Költség és rendelés */
+.cost-view { padding: 0.6rem 0.4rem 2rem; display: flex; flex-direction: column; gap: 1.2rem; }
+.cost-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.8rem; }
+.cost-card { background: var(--panel); border: 1px solid var(--accent); border-radius: 6px; padding: 0.7rem 0.9rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.cost-card h3 { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.cost-card .big { font-size: 1.35rem; }
+.cost-card .sub { font-size: 0.8rem; color: var(--muted); }
+.cost-card .check, .cost-card .fee { display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem; }
+.cost-card .shipping-fee { width: 7rem; text-align: right; }
+.total-card { border-color: var(--select); }
+.total-card .big { font-size: 2rem; color: var(--select); }
+.warn-card { border-color: var(--warn); }
+.warn-card h3 { color: var(--warn); }
+.warn-card button { align-self: flex-start; }
+.cost-bars { display: flex; flex-direction: column; gap: 0.5rem; }
+.bar-label { font-size: 0.85rem; margin-bottom: 0.15rem; }
+.bar-track { background: var(--panel); border-radius: 3px; height: 0.7rem; }
+.bar-fill { background: var(--accent); height: 100%; border-radius: 3px; min-width: 2px; }
+.cost-section h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.cart-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.cart-table th, .cart-table td { padding: 0.3rem 0.5rem; text-align: left; border-bottom: 1px solid var(--accent); }
+.cart-table .num { text-align: right; }
+.cart-table th { color: var(--muted); font-weight: 500; font-size: 0.75rem; }
+.cart-table tfoot td { font-weight: 700; border-bottom: none; border-top: 2px solid var(--accent); }
+.cart-table a { color: var(--line); }
+.other-list { list-style: none; margin: 0; padding: 0; }
+.other-list li { display: flex; gap: 0.6rem; align-items: center; padding: 0.3rem 0.2rem; border-bottom: 1px solid var(--accent); flex-wrap: wrap; }
+.other-list .name { flex: 1 1 14rem; }
+.other-list .qty { width: 7rem; text-align: right; }
+.other-list .total { width: 6rem; text-align: right; font-weight: 600; }
+.cost-note, .cost-view .muted, .no-prices { color: var(--muted); font-size: 0.8rem; }
+.missing-filter { display: flex; gap: 0.6rem; align-items: center; margin: 0.4rem 0; color: var(--warn); font-size: 0.85rem; }
