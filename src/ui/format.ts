@@ -4,9 +4,9 @@
  */
 export function parseNumberInput(text: string): number | null {
   let t = text.trim();
-  if (/[   ]/.test(t)) {
-    if (!/^-?\d{1,3}([   ]\d{3})+([.,]\d*)?$/.test(t)) return null;
-    t = t.replace(/[   ]/g, '');
+  if (/[ \u00a0\u202f]/.test(t)) {
+    if (!/^-?\d{1,3}([ \u00a0\u202f]\d{3})+([.,]\d*)?$/.test(t)) return null;
+    t = t.replace(/[ \u00a0\u202f]/g, '');
   }
   if (!/^-?(\d+([.,]\d*)?|[.,]\d+)$/.test(t)) return null;
   const n = Number(t.replace(',', '.'));
