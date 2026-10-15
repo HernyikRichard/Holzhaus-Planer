@@ -3,7 +3,7 @@ import type { Category, MaterialLine, TimberPiece } from './types';
 import { KERF } from '../catalog';
 import type { CutRef } from '../scene/types';
 import { ceilTo, sectionKey, sectionLabel } from './util';
-import { missingSupplyWarning, type Supply } from '../pricing/supply';
+import { missingSupplyWarning, type Supply } from '../pricing/supplyTypes';
 
 export interface CutBin { stock: Mm; pieces: Mm[] }
 

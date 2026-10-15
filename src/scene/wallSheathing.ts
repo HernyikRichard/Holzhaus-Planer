@@ -1,5 +1,5 @@
 import type { Plan } from '../model/types';
-import type { Supply } from '../pricing/supply';
+import type { Supply } from '../pricing/supplyTypes';
 import { OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING, OSB_SCREW_LABEL, OSB_SHEET } from '../catalog';
 import { wallGeometry, wallHeightAt } from '../calc/geometry';
 import type { WallGeom } from '../calc/geometry';

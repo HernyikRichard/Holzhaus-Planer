@@ -1,17 +1,9 @@
-import type { Category } from '../calc/types';
-import type { FASTENER_BOX } from '../catalog';
-import type { InsulationType, Mm, Plan, Section } from '../model/types';
+import type { InsulationType, Mm, Plan } from '../model/types';
 import { BUNDLED_PRICE_LIST } from '../prices';
 import type { PriceList, Product } from '../prices/types';
+import type { Supply } from './supplyTypes';
 
-export interface Supply {
-  stockLengths(category: Category, section: Section): Mm[] | null;
-  osbSheet(thickness: number): { w: Mm; l: Mm } | null;
-  osbTgSheet(thickness: number): { w: Mm; l: Mm } | null;
-  insulationPack(type: InsulationType, thickness: number): number | null;
-  foilRoll(kind: 'vapor' | 'breather' | 'underlay'): number | null;
-  fastenerBox(kind: keyof typeof FASTENER_BOX): number | null;
-}
+export type { Supply } from './supplyTypes';
 
 const isTg = (p: Product): boolean => p.id.includes('nutfeder') || p.sheet?.w === 675;
 const lc = (p: Product): string => `${p.material ?? ''} ${p.name}`.toLowerCase();
@@ -70,6 +62,3 @@ export function supplyFor(plan: Plan, pl: PriceList | null = BUNDLED_PRICE_LIST)
   return s;
 }
 
-/** Figyelmeztetés, ha a kínálatból hiányzik a sor által igényelt méret. */
-export const missingSupplyWarning = (size: string): string =>
-  `Nincs Káplár-termék ilyen méretben (${size}), katalógusértékkel számoltunk.`;

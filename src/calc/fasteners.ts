@@ -4,7 +4,7 @@ import {
   SCREWS_PER_OSB_SHEET,
 } from '../catalog';
 import { hu } from './util';
-import type { Supply } from '../pricing/supply';
+import type { Supply } from '../pricing/supplyTypes';
 
 export function calcFasteners(stats: CalcStats, supply?: Supply): MaterialLine[] {
   /** A kínálat dobozmérete, ha van; az árlista ezt most nem tartalmazza, így a katalógusérték marad. */

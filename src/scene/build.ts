@@ -1,4 +1,4 @@
-import type { Supply } from '../pricing/supply';
+import type { Supply } from '../pricing/supplyTypes';
 import type { Plan } from '../model/types';
 import type { TimberPiece } from '../calc/types';
 import { assignCuts } from '../calc/cutting';

@@ -10,7 +10,7 @@ import { openingArea } from './openings';
 import { wallFrameElements } from '../scene/wallFrame';
 import { wallOsbElements } from '../scene/wallSheathing';
 import { elementsToPieces } from '../scene/toPieces';
-import { missingSupplyWarning, type Supply } from '../pricing/supply';
+import { missingSupplyWarning, type Supply } from '../pricing/supplyTypes';
 
 const VERTICAL = new Set(['oszlop', 'sarokoszlop', 'oromoszlop', 'teljes oszlop', 'kiváltó oszlop',
   'felső rövid oszlop', 'alsó rövid oszlop']);
@@ -102,7 +102,7 @@ export function calcWallLayers(plan: Plan, supply?: Supply): ModuleResult {
     const need = net * (1 + fw);
     const rolls = Math.ceil(need / roll - 1e-9);
     add({
-      id, name, quantity: rolls, unit: 'tekercs',
+      id, name, quantity: rolls, unit: 'tekercs', unitM2: roll, needM2: need,
       explanation: `${area}; ${hu(net)} m² × ${hu(1 + fw)} = ${hu(need)} m² / ${roll} m² = ${hu(need / roll, 3)} → ${rolls} tekercs`,
       ...(warnings.length ? { warnings } : {}),
     });
@@ -145,7 +145,7 @@ export function calcWallLayers(plan: Plan, supply?: Supply): ModuleResult {
         add({
           id: 'wall.insulation',
           name: `Fal hőszigetelés (${type === 'xps' ? 'XPS' : 'ásványgyapot'}, ${used} mm)`,
-          quantity: qty, unit: 'csomag',
+          quantity: qty, unit: 'csomag', unitM2: pack, needM2: need,
           explanation: `${area}; ${hu(net)} m² × (1 − ${t}/${sp}) × ${hu(1 + sw)} = ${hu(need)} m² / ${hu(pack)} m² = ${hu(need / pack, 3)} → ${qty} csomag`,
           ...(warnings.length ? { warnings } : {}),
         });

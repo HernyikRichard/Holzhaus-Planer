@@ -2,7 +2,7 @@ import type { Plan } from '../model/types';
 import type { MaterialLine, ModuleResult } from './types';
 import { FOIL_ROLL_M2, INSULATION_PACK_M2, OSB_TG_SHEET } from '../catalog';
 import { emptyResult, hu } from './util';
-import { missingSupplyWarning, type Supply } from '../pricing/supply';
+import { missingSupplyWarning, type Supply } from '../pricing/supplyTypes';
 import { floorElements } from '../scene/misc';
 import { elementsToPieces } from '../scene/toPieces';
 
@@ -34,7 +34,7 @@ export function calcFloor(plan: Plan, supply?: Supply): ModuleResult {
     add({
       id: 'floor.insulation',
       name: `Padló hőszigetelés (${type === 'xps' ? 'XPS' : 'ásványgyapot'}, ${thickness} mm)`,
-      quantity: packs, unit: 'csomag',
+      quantity: packs, unit: 'csomag', unitM2: pack, needM2: need,
       explanation: `${hu(area)} m² × (1 − ${fl.joistSection.t}/${fl.joistSpacing}) × ${hu(1 + sheetWaste)} = ${hu(need)} m² / ${hu(pack)} m² = ${hu(need / pack, 3)} → ${packs} csomag`,
       ...(warnings.length ? { warnings } : {}),
     });
@@ -60,7 +60,7 @@ export function calcFloor(plan: Plan, supply?: Supply): ModuleResult {
     const roll = sRoll ?? FOIL_ROLL_M2;
     const rolls = Math.ceil(need / roll - 1e-9);
     add({
-      id: 'floor.vaporBarrier', name: 'Párazáró fólia', quantity: rolls, unit: 'tekercs',
+      id: 'floor.vaporBarrier', name: 'Párazáró fólia', quantity: rolls, unit: 'tekercs', unitM2: roll, needM2: need,
       explanation: `${hu(area)} m² × ${hu(1 + fw)} = ${hu(need)} m² / ${roll} m² = ${hu(need / roll, 3)} → ${rolls} tekercs`,
       ...(supply && sRoll === null ? { warnings: [missingSupplyWarning('párazáró fólia')] } : {}),
     });

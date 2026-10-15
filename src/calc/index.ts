@@ -7,7 +7,7 @@ import { calcRoofLayers, calcRoofStructure } from './roof';
 import { calcAccessories } from './accessories';
 import { calcFasteners } from './fasteners';
 import { cutTimber } from './cutting';
-import type { Supply } from '../pricing/supply';
+import type { Supply } from '../pricing/supplyTypes';
 
 export interface CalcOutput { lines: MaterialLine[]; warnings: string[] }
 
