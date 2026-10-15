@@ -131,3 +131,47 @@ test('gone choice shows a warning', () => {
   act(() => store.update(d => { d.pricing.productChoice[l.lineId] = 'no-such-product'; }));
   expect(row(l.lineId).textContent).toContain('A kiválasztott termék már nem elérhető');
 });
+
+test('converted line: unit price carries the product unit and a caption shows qty × price', () => {
+  const { cost, row, store } = setup();
+  const l = cost().lines.find(x => x.productId && x.source === 'kaplar'
+    && store.get().output.lines.some(m => m.id === x.lineId && (m.unit !== x.unit || m.quantity !== x.qty)))!;
+  expect(l).toBeTruthy();
+  const r = row(l.lineId);
+  expect(r.querySelector('button.price-btn')!.textContent).toBe(`${formatFt(l.unitPrice!)} / ${l.unit}`);
+  expect(r.querySelector('.price-caption')!.textContent).toContain(`${l.unit} × ${formatFt(l.unitPrice!)}`);
+});
+
+test('price edit on an invalid plan keeps showing the new total', () => {
+  const { store, timberLine, row } = setup();
+  const l = timberLine();
+  act(() => store.update(d => { d.walls.studSpacing = -5; }));
+  expect(store.get().errors.length).toBeGreaterThan(0);
+  fireEvent.click(row(l.lineId).querySelector('button.price-btn')!);
+  const input = screen.getByLabelText('Egységár') as HTMLInputElement;
+  fireEvent.input(input, { target: { value: '1000' } });
+  fireEvent.keyDown(input, { key: 'Enter' });
+  expect(store.get().plan.pricing.overrides[l.lineId]).toBe(1000);
+  expect(row(l.lineId).textContent).toContain(formatFt(Math.round(l.qty * 1000)));
+});
+
+test('editor is focused, focus returns to the button, button label names the line', () => {
+  const { timberLine, row } = setup();
+  const l = timberLine();
+  const btn = row(l.lineId).querySelector('button.price-btn') as HTMLElement;
+  expect(btn.getAttribute('aria-label')).toMatch(/egységárának szerkesztése$/);
+  fireEvent.click(btn);
+  const input = screen.getByLabelText('Egységár') as HTMLInputElement;
+  expect(document.activeElement).toBe(input);
+  fireEvent.keyDown(input, { key: 'Escape' });
+  expect(document.activeElement).toBe(row(l.lineId).querySelector('button.price-btn'));
+});
+
+test('unknown product text is rejected with a message and no change', () => {
+  const { store, timberLine, row } = setup();
+  const l = timberLine();
+  const chooser = row(l.lineId).querySelector('input.product-choice') as HTMLInputElement;
+  fireEvent.change(chooser, { target: { value: 'valami ismeretlen' } });
+  expect(row(l.lineId).textContent).toContain('Nincs ilyen termék');
+  expect(store.get().plan.pricing.productChoice[l.lineId]).toBeUndefined();
+});

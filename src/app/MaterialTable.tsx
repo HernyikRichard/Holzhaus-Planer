@@ -3,7 +3,7 @@ import type { UiStore } from './uiStore';
 import { useStore, useUi } from './hooks';
 import { CATEGORY_ORDER } from '../calc';
 import type { MaterialLine } from '../calc/types';
-import { useMemo } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import { formatFt, formatQty } from '../ui/format';
 import { BUNDLED_PRICE_LIST } from '../prices';
 import { costOf, type CostLine } from '../pricing/cost';
@@ -18,7 +18,12 @@ export function fold(s: string): string {
 
 export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
   const { output, errors, lastValidPlan } = useStore(store, s => s);
-  const plan = lastValidPlan;
+  const livePlan = useStore(store, st => st.plan);
+  // a geometria az utolsó érvényes tervből; a kézi árak az aktuális tervből (hibás terven is megmaradnak)
+  const plan = useMemo(() => ({
+    ...lastValidPlan,
+    pricing: { ...lastValidPlan.pricing, overrides: livePlan.pricing.overrides, custom: livePlan.pricing.custom },
+  }), [lastValidPlan, livePlan.pricing.overrides, livePlan.pricing.custom]);
   const pl = BUNDLED_PRICE_LIST;
   const cost = useMemo(() => (pl ? costOf(plan, output, pl) : null), [plan, output, pl]);
   const costById = useMemo(() => new Map((cost?.lines ?? []).map(c => [c.lineId, c])), [cost]);
@@ -47,17 +52,20 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
   };
 
   const setPrice = (c: CostLine, price: number) => store.update(d => {
-    if (c.productId !== undefined) d.pricing.overrides[c.lineId] = price; else d.pricing.custom[c.lineId] = price;
+    const inOverrides = c.source === 'override' || c.source === 'kaplar';
+    if (inOverrides) d.pricing.overrides[c.lineId] = price; else d.pricing.custom[c.lineId] = price;
   });
   const resetPrice = (c: CostLine) => store.update(d => {
     if (c.source === 'override') delete d.pricing.overrides[c.lineId]; else delete d.pricing.custom[c.lineId];
   });
-  const chooseProduct = (id: string, kind: string, value: string) => {
+  /** true, ha a beírt szöveg érvényes (termék vagy „automatikus”). */
+  const chooseProduct = (id: string, kind: string, value: string): boolean => {
     const v = value.trim();
-    if (v === '') return;
-    if (fold(v) === 'automatikus') { store.update(d => { delete d.pricing.productChoice[id]; }); return; }
+    if (fold(v) === 'automatikus') { store.update(d => { delete d.pricing.productChoice[id]; }); return true; }
     const p = pl?.products.find(x => x.kind === kind && x.name === v);
-    if (p) store.update(d => { d.pricing.productChoice[id] = p.id; });
+    if (!p) return false;
+    store.update(d => { d.pricing.productChoice[id] = p.id; });
+    return true;
   };
 
   const q = fold(query.trim());
@@ -77,6 +85,12 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
         </div>
       )}
       {q !== '' && !output.lines.some(matches) && <p class="no-results">Nincs találat a(z) „{query.trim()}” keresésre.</p>}
+      {cost && (
+        <div class="cols" aria-hidden="true">
+          <span class="name">Anyag</span><span class="qty">Mennyiség</span><span class="unit">Egység</span>
+          <span class="price-cell">Egységár</span><span class="total">Összeg</span><span class="source">Forrás</span><span class="show-slot" />
+        </div>
+      )}
       {CATEGORY_ORDER.map(cat => {
         const lines = output.lines.filter(l => l.category === cat && matches(l));
         if (lines.length === 0) return null;
@@ -94,6 +108,7 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
                   <summary onClick={e => { e.preventDefault(); ui.set({ matOpen: toggle(ui.get().matOpen, l.id, !openLines.includes(l.id)) }); }}>
                     <span class="name">
                       {l.name}
+                      {l.secondary && <span class="secondary">{l.secondary}</span>}
                       {c?.productName && c.url && (
                         <a class="product-link" href={c.url} target="_blank" rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}>{c.productName} ↗</a>
@@ -102,8 +117,10 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
                     </span>
                     <span class="qty">{formatQty(l.quantity)}</span>
                     <span class="unit">{l.unit}</span>
-                    <span class="secondary">{l.secondary ?? ''}</span>
-                    {c && <PriceCell line={c} onCommit={v => setPrice(c, v)} onReset={() => resetPrice(c)} />}
+                    {c && <PriceCell line={c} label={l.name}
+                      caption={c.productId !== undefined && c.unitPrice !== undefined && (c.qty !== l.quantity || c.unit !== l.unit)
+                        ? `${formatQty(c.qty)} ${c.unit} × ${formatFt(c.unitPrice)}` : undefined}
+                      onCommit={v => setPrice(c, v)} onReset={() => resetPrice(c)} />}
                     {c && <span class="total">{c.total === undefined ? '—' : formatFt(c.total)}</span>}
                     {c && <SourceTag line={c} />}
                     {drawable ? (
@@ -114,15 +131,9 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
                   <p class="explanation">{l.explanation}</p>
                   {c?.source === 'missing' && c.reason && <p class="explanation">{c.reason}</p>}
                   {c && kind && pl && (
-                    <label class="product-picker">Termék
-                      <input type="text" class="product-choice" list={`products-${l.id}`} placeholder="automatikus"
-                        defaultValue={plan.pricing.productChoice[l.id] ? c.productName ?? '' : ''}
-                        onChange={e => chooseProduct(l.id, kind, (e.currentTarget as HTMLInputElement).value)} />
-                      <datalist id={`products-${l.id}`}>
-                        <option value="automatikus" />
-                        {pl.products.filter(p => p.kind === kind).map(p => <option key={p.id} value={p.name} />)}
-                      </datalist>
-                    </label>
+                    <ProductPicker lineId={l.id} products={pl.products.filter(p => p.kind === kind)}
+                      current={plan.pricing.productChoice[l.id] ? c.productName ?? '' : ''}
+                      onChoose={v => chooseProduct(l.id, kind, v)} />
                   )}
                   {(l.warnings ?? []).map((w, i) => <p key={i} class="line-warning">{w}</p>)}
                 </details>
@@ -135,6 +146,30 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
         <div class="material-total"><span>Anyagköltség összesen</span><strong>{formatFt(cost.kaplarSubtotal + cost.otherSubtotal)}</strong></div>
       )}
     </div>
+  );
+}
+
+function ProductPicker({ lineId, products, current, onChoose }: {
+  lineId: string; products: { id: string; name: string }[]; current: string; onChoose: (v: string) => boolean;
+}) {
+  const [bad, setBad] = useState(false);
+  return (
+    <label class="product-picker">Termék
+      <input type="text" class="product-choice" list={`products-${lineId}`} placeholder="automatikus" value={current}
+        aria-invalid={bad ? 'true' : undefined}
+        onChange={e => {
+          const el = e.currentTarget as HTMLInputElement;
+          if (el.value.trim() === '') { setBad(false); return; }
+          const ok = onChoose(el.value);
+          setBad(!ok);
+          if (!ok) el.value = current;
+        }} />
+      {bad && <span class="price-error" role="alert">Nincs ilyen termék</span>}
+      <datalist id={`products-${lineId}`}>
+        <option value="automatikus" />
+        {products.map(p => <option key={p.id} value={p.name} />)}
+      </datalist>
+    </label>
   );
 }
 
