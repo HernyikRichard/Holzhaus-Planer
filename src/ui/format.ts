@@ -20,3 +20,8 @@ export function sectionLabel(t: number, w: number): string {
 export function sectionLabelWithUnit(t: number, w: number): string {
   return `${sectionLabel(t, w)} ${Math.min(t, w) < 30 ? 'mm' : 'cm'}`;
 }
+
+/** Pénzösszeg: "12 490 Ft" (ezres tagolás nem törhető szóközzel, tizedes nélkül). */
+export function formatFt(n: number): string {
+  return `${formatQty(Math.round(n), 0)} Ft`;
+}
