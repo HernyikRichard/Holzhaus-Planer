@@ -2,6 +2,7 @@ import type { Mm, Plan } from '../model/types';
 import type { Element, Scene } from '../scene/types';
 import { neighbours } from '../scene/neighbours';
 import { buildScene } from '../scene/build';
+import { supplyFor } from '../pricing/supply';
 import { elementPoly } from '../viewer/views/world';
 import { KERF, WALL_BATTEN_PIECE_LENGTH } from '../catalog';
 import type { LayerId, ViewId } from './steps';
@@ -14,7 +15,7 @@ import { invalidOpeningIds, openingsOnlyInvalid } from '../ui/openingLogic';
 const scenes = new WeakMap<Plan, Scene>();
 export function sceneFor(plan: Plan): Scene {
   let sc = scenes.get(plan);
-  if (!sc) { sc = buildScene(plan); scenes.set(plan, sc); }
+  if (!sc) { sc = buildScene(plan, supplyFor(plan)); scenes.set(plan, sc); }
   return sc;
 }
 

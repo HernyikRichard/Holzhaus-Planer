@@ -3,6 +3,7 @@ import type { Plan, RoofShape, WallSide } from '../model/types';
 import { CATEGORY_ORDER, type CalcOutput } from '../calc';
 import { formatQty } from '../ui/format';
 import { buildScene } from '../scene/build';
+import { supplyFor } from '../pricing/supply';
 import { renderStandalone } from '../viewer/render';
 import { PRINT_PALETTE } from '../viewer/theme';
 import type { LayerId, ViewId } from '../viewer/layers';
@@ -99,7 +100,7 @@ export async function exportPdf(plan: Plan, output: CalcOutput, opts: PdfOptions
 
   // 2. Rajzok
   if (opts.drawings) {
-    const scene = buildScene(plan);
+    const scene = buildScene(plan, supplyFor(plan));
     const svgOf = (view: ViewId) => renderStandalone({ plan, scene, view, layers: PDF_LAYERS, palette: PRINT_PALETTE });
     const fullPage = (title: string, view: ViewId) => {
       doc.addPage();
@@ -199,7 +200,7 @@ export async function exportPdf(plan: Plan, output: CalcOutput, opts: PdfOptions
 
   // 3b. Vágási terv
   if (opts.cutPlan) {
-    const rows = cutPlanRows(buildScene(plan));
+    const rows = cutPlanRows(buildScene(plan, supplyFor(plan)));
     const colW = [58, 38, 62, 22];
     const colX = colW.map((_, i) => MARGIN + colW.slice(0, i).reduce((a, b) => a + b, 0));
     const PAD = 1.5; const LH = 3.8; const FS = 8.5; const HEADER_H = 7;

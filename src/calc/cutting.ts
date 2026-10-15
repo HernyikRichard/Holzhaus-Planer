@@ -3,6 +3,7 @@ import type { Category, MaterialLine, TimberPiece } from './types';
 import { KERF } from '../catalog';
 import type { CutRef } from '../scene/types';
 import { ceilTo, sectionKey, sectionLabel } from './util';
+import { missingSupplyWarning, type Supply } from '../pricing/supply';
 
 export interface CutBin { stock: Mm; pieces: Mm[] }
 
@@ -45,7 +46,7 @@ export function packPieces(lengths: Mm[], stockLengths: Mm[], kerf: Mm): { bins:
 }
 
 /** Darab → vágási hely, ugyanazzal a csoportosítással és csomagolással, mint a `cutTimber`. */
-export function assignCuts(pieces: TimberPiece[], stockLengths: Mm[]): Record<string, CutRef> {
+export function assignCuts(pieces: TimberPiece[], stockLengths: Mm[], supply?: Supply): Record<string, CutRef> {
   const groups = new Map<string, TimberPiece[]>();
   for (const p of pieces) {
     const k = `${p.category}|${sectionKey(p.section)}`;
@@ -54,7 +55,8 @@ export function assignCuts(pieces: TimberPiece[], stockLengths: Mm[]): Record<st
   }
   const out: Record<string, CutRef> = {};
   for (const group of groups.values()) {
-    const { bins } = packParts(group.map(p => p.length), stockLengths, KERF);
+    const { category, section } = group[0];
+    const { bins } = packParts(group.map(p => p.length), supply?.stockLengths(category, section) ?? stockLengths, KERF);
     const counter = new Map<Mm, number>();
     for (const b of bins) {
       const stockIndex = (counter.get(b.stock) ?? 0) + 1;
@@ -78,7 +80,7 @@ export function assignCuts(pieces: TimberPiece[], stockLengths: Mm[]): Record<st
 
 const fmt = (x: number, d: number) => x.toFixed(d).replace('.', ',');
 
-export function cutTimber(pieces: TimberPiece[], stockLengths: Mm[], waste: number): MaterialLine[] {
+export function cutTimber(pieces: TimberPiece[], stockLengths: Mm[], waste: number, supply?: Supply): MaterialLine[] {
   const groups = new Map<string, TimberPiece[]>();
   for (const p of pieces) {
     const k = `${p.category}|${sectionKey(p.section)}`;
@@ -88,7 +90,9 @@ export function cutTimber(pieces: TimberPiece[], stockLengths: Mm[], waste: numb
   const lines: MaterialLine[] = [];
   for (const group of groups.values()) {
     const { category, section } = group[0];
-    const { bins, warnings } = packParts(group.map(p => p.length), stockLengths, KERF);
+    const supplied = supply?.stockLengths(category, section);
+    const { bins, warnings } = packParts(group.map(p => p.length), supplied ?? stockLengths, KERF);
+    if (supply && !supplied) warnings.push(missingSupplyWarning(sectionLabel(section)));
     const byStock = new Map<Mm, PartBin[]>();
     for (const b of bins) byStock.set(b.stock, [...(byStock.get(b.stock) ?? []), b]);
     const stockKeys = [...byStock.keys()].sort((a, b) => a - b);

@@ -4,8 +4,11 @@ import {
   SCREWS_PER_OSB_SHEET,
 } from '../catalog';
 import { hu } from './util';
+import type { Supply } from '../pricing/supply';
 
-export function calcFasteners(stats: CalcStats): MaterialLine[] {
+export function calcFasteners(stats: CalcStats, supply?: Supply): MaterialLine[] {
+  /** A kínálat dobozmérete, ha van; az árlista ezt most nem tartalmazza, így a katalógusérték marad. */
+  const boxOf = (kind: keyof typeof FASTENER_BOX): number => supply?.fastenerBox(kind) ?? FASTENER_BOX[kind];
   const lines: MaterialLine[] = [];
   const box = (id: string, name: string, pieces: number, boxSize: number, explanation: string): void => {
     if (pieces <= 0) return;
@@ -23,10 +26,10 @@ export function calcFasteners(stats: CalcStats): MaterialLine[] {
       explanation: `${stats.anchorPoints} rögzítési pont a talpgerenda mentén (800 mm-enként, sarkoknál és nyílászáróknál pótlással)`,
     });
   }
-  box('fix.frameScrews', 'Vázszerkezeti csavar', stats.frameScrewCount, FASTENER_BOX.frameScrew,
+  box('fix.frameScrews', 'Vázszerkezeti csavar', stats.frameScrewCount, boxOf('frameScrew'),
     `${hu(stats.frameScrewCount / FRAME_SCREWS_PER_END, 0)} rögzítési pont a vázon (elemvégenként ${FRAME_SCREWS_PER_END} db)`);
   const osbPieces = stats.osbScrewCount + stats.osbSheets * SCREWS_PER_OSB_SHEET;
-  box('fix.osbScrews', 'OSB-csavar', osbPieces, FASTENER_BOX.osbScrew,
+  box('fix.osbScrews', 'OSB-csavar', osbPieces, boxOf('osbScrew'),
     `${stats.osbScrewCount} db a falak kiosztásából + ${stats.osbSheets} tábla × ${SCREWS_PER_OSB_SHEET} db`);
   if (stats.hurricaneTieCount > 0) {
     lines.push({
@@ -37,13 +40,13 @@ export function calcFasteners(stats: CalcStats): MaterialLine[] {
   }
   box('fix.counterBattenNails', 'Ellenlécszeg',
     stats.counterBattenLength > 0 ? Math.ceil(stats.counterBattenLength / COUNTER_BATTEN_NAIL_SPACING - 1e-9) : 0,
-    FASTENER_BOX.counterBattenNail,
+    boxOf('counterBattenNail'),
     `⌈${hu(stats.counterBattenLength / 1000)} m ellenléc / ${hu(COUNTER_BATTEN_NAIL_SPACING / 1000)} m⌉`);
-  box('fix.battenNails', 'Tetőlécszeg', stats.battenCrossings, FASTENER_BOX.battenNail,
+  box('fix.battenNails', 'Tetőlécszeg', stats.battenCrossings, boxOf('battenNail'),
     `${stats.battenCrossings} léc–ellenléc kereszteződés × 1 szeg`);
-  box('fix.tileClips', 'Cserépkapocs', stats.tileClips, FASTENER_BOX.tileClip,
+  box('fix.tileClips', 'Cserépkapocs', stats.tileClips, boxOf('tileClip'),
     `${stats.tileClips} kapocs az eresz menti és a szélső sorokba`);
-  box('fix.claddingNails', 'Burkolatszeg', Math.ceil(stats.claddingArea * CLADDING_NAILS_PER_M2 - 1e-9), FASTENER_BOX.claddingNail,
+  box('fix.claddingNails', 'Burkolatszeg', Math.ceil(stats.claddingArea * CLADDING_NAILS_PER_M2 - 1e-9), boxOf('claddingNail'),
     `${hu(stats.claddingArea, 2)} m² × ${CLADDING_NAILS_PER_M2} db/m²`);
   return lines;
 }

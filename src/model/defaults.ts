@@ -1,4 +1,4 @@
-import type { Plan } from './types';
+import type { Plan, PlanPricing } from './types';
 
 export function createDefaultPlan(): Plan {
   const width = 3000;
@@ -52,3 +52,7 @@ export function createDefaultPlan(): Plan {
     },
   };
 }
+
+export const DEFAULT_PRICING: PlanPricing = {
+  useSupply: true, overrides: {}, custom: {}, productChoice: {}, pickup: false,
+};

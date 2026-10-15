@@ -8,6 +8,7 @@ import { ceilTo, emptyResult, hu, sectionKey, sectionLabel } from './util';
 import { roofGeometry } from './geometry';
 import { roofElements } from '../scene/roofFrame';
 import { elementsToPieces } from '../scene/toPieces';
+import { missingSupplyWarning, type Supply } from '../pricing/supply';
 
 const OSB_AREA = (OSB_SHEET.w / 1000) * (OSB_SHEET.l / 1000);
 const COVERING_HU: Record<string, string> = {
@@ -36,7 +37,7 @@ export function calcRoofStructure(plan: Plan): ModuleResult {
   return res;
 }
 
-export function calcRoofLayers(plan: Plan): ModuleResult {
+export function calcRoofLayers(plan: Plan, supply?: Supply): ModuleResult {
   const res = emptyResult();
   const g = roofGeometry(plan);
   const { covering, layers } = plan.roof;
@@ -80,12 +81,14 @@ export function calcRoofLayers(plan: Plan): ModuleResult {
   const underlay = layer('underlay');
   if (underlay?.enabled) {
     const mat = underlay.material === 'bitumen' ? 'bitumen' : 'foil';
-    const roll = UNDERLAY_ROLL_M2[mat];
+    const sRoll = mat === 'foil' ? supply?.foilRoll('underlay') ?? null : null;
+    const roll = sRoll ?? UNDERLAY_ROLL_M2[mat];
     const need = A * (1 + UNDERLAY_WASTE);
     const qty = Math.ceil(need / roll - 1e-9);
     add({
       id: 'roof.underlay', name: mat === 'bitumen' ? 'Bitumenes lemez' : 'Alátétfólia', quantity: qty, unit: 'tekercs',
       explanation: `${areaTxt}; × ${hu(1 + UNDERLAY_WASTE)} = ${hu(need, 3)} m² / ${roll} m² = ${hu(need / roll, 3)} → ${qty} tekercs`,
+      ...(supply && mat === 'foil' && sRoll === null ? { warnings: [missingSupplyWarning('alátétfólia')] } : {}),
     });
   }
 

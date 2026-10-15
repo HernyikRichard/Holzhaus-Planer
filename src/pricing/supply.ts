@@ -1,0 +1,75 @@
+import type { Category } from '../calc/types';
+import type { FASTENER_BOX } from '../catalog';
+import type { InsulationType, Mm, Plan, Section } from '../model/types';
+import { BUNDLED_PRICE_LIST } from '../prices';
+import type { PriceList, Product } from '../prices/types';
+
+export interface Supply {
+  stockLengths(category: Category, section: Section): Mm[] | null;
+  osbSheet(thickness: number): { w: Mm; l: Mm } | null;
+  osbTgSheet(thickness: number): { w: Mm; l: Mm } | null;
+  insulationPack(type: InsulationType, thickness: number): number | null;
+  foilRoll(kind: 'vapor' | 'breather' | 'underlay'): number | null;
+  fastenerBox(kind: keyof typeof FASTENER_BOX): number | null;
+}
+
+const isTg = (p: Product): boolean => p.id.includes('nutfeder') || p.sheet?.w === 675;
+const lc = (p: Product): string => `${p.material ?? ''} ${p.name}`.toLowerCase();
+
+/** Az árlistából a kapható méretek; ami nincs benne, azt null jelzi (a hívó a katalógusértékre esik vissza). */
+export function supplyFromPriceList(pl: PriceList): Supply {
+  const ps = pl.products;
+  const sheet = (thickness: number, tg: boolean): { w: Mm; l: Mm } | null => {
+    const p = ps.find(x => x.kind === 'osb' && x.thickness === thickness && x.sheet && isTg(x) === tg);
+    return p?.sheet ? { w: p.sheet.w, l: p.sheet.l } : null;
+  };
+  return {
+    stockLengths(_category, section) {
+      const lens = ps
+        .filter(p => p.kind === 'timber' && p.section && p.length
+          && ((p.section.t === section.t && p.section.w === section.w) || (p.section.t === section.w && p.section.w === section.t)))
+        .map(p => p.length as number);
+      return lens.length ? [...new Set(lens)].sort((a, b) => a - b) : null;
+    },
+    osbSheet: t => sheet(t, false),
+    osbTgSheet: t => sheet(t, true),
+    insulationPack(type, thickness) {
+      const wanted = (p: Product): boolean => {
+        const m = lc(p);
+        return type === 'xps' ? m.includes('xps') : /ásványgyapot|kőzetgyapot|üveggyapot/.test(m);
+      };
+      const cands = ps.filter(p => p.kind === 'insulation' && p.thickness === thickness && p.packM2 && wanted(p));
+      if (!cands.length) return null;
+      cands.sort((a, b) => a.price / a.packM2! - b.price / b.packM2!);
+      return cands[0].packM2!;
+    },
+    foilRoll(kind) {
+      const foils = ps.filter(p => p.kind === 'foil' && p.rollM2);
+      const has = (re: RegExp): Product[] => foils.filter(p => re.test(p.name.toLowerCase()));
+      let c: Product[];
+      if (kind === 'vapor') c = has(/párazáró/);
+      else if (kind === 'breather') c = has(/páraáteresztő/);
+      else {
+        c = has(/alátét/);
+        if (!c.length) c = has(/páraáteresztő/);
+      }
+      return c.length ? Math.max(...c.map(p => p.rollM2!)) : null;
+    },
+    // az árlistában nincs dobozonkénti darabszám (boxQty), a katalógusérték marad
+    fastenerBox: () => null,
+  };
+}
+
+const cache = new WeakMap<PriceList, Supply>();
+
+/** A tervhez tartozó kínálat; undefined, ha ki van kapcsolva vagy nincs árlista. */
+export function supplyFor(plan: Plan, pl: PriceList | null = BUNDLED_PRICE_LIST): Supply | undefined {
+  if (!pl || plan.pricing?.useSupply === false) return undefined;
+  let s = cache.get(pl);
+  if (!s) { s = supplyFromPriceList(pl); cache.set(pl, s); }
+  return s;
+}
+
+/** Figyelmeztetés, ha a kínálatból hiányzik a sor által igényelt méret. */
+export const missingSupplyWarning = (size: string): string =>
+  `Nincs Káplár-termék ilyen méretben (${size}), katalógusértékkel számoltunk.`;
