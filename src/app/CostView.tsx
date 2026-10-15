@@ -1,3 +1,4 @@
+import { useState } from 'preact/hooks';
 import type { Store } from '../ui/store';
 import type { UiStore } from './uiStore';
 import { CATEGORY_ORDER } from '../calc';
@@ -8,6 +9,27 @@ import { PriceCell, parsePrice } from './PriceCell';
 import { useCost, setLinePrice, resetLinePrice } from './useCost';
 
 export { formatDateHu };
+
+/** Átírható szállítási díj: üres = automatikus; érvénytelen szövegnél piros mező és üzenet, a terv nem változik. */
+function ShippingFeeInput({ store, fee, disabled }: { store: Store; fee: number | undefined; disabled: boolean }) {
+  const [invalid, setInvalid] = useState(false);
+  return (
+    <label class="fee">Szállítási díj (Ft)
+      <input type="text" inputMode="numeric" class="shipping-fee" placeholder="automatikus" disabled={disabled}
+        defaultValue={fee === undefined ? '' : String(fee)} aria-invalid={invalid ? 'true' : undefined}
+        onInput={() => setInvalid(false)}
+        onChange={e => {
+          const el = e.currentTarget as HTMLInputElement;
+          if (el.value.trim() === '') { setInvalid(false); store.update(d => { delete d.pricing.shippingFee; }); return; }
+          const n = parsePrice(el.value);
+          if (n === null) { setInvalid(true); return; }
+          setInvalid(false);
+          store.update(d => { d.pricing.shippingFee = n; });
+        }} />
+      {invalid && <span class="price-error" role="alert">Érvénytelen összeg</span>}
+    </label>
+  );
+}
 
 /** A Költség és rendelés fül: összesítők, kategóriasávok, Káplár-kosár, máshonnan beszerzendő tételek. */
 export function CostView({ store, ui }: { store: Store; ui: UiStore }) {
@@ -43,17 +65,7 @@ export function CostView({ store, ui }: { store: Store; ui: UiStore }) {
           <label class="check"><input type="checkbox" checked={pricing.pickup}
             onChange={e => { const v = (e.currentTarget as HTMLInputElement).checked; store.update(d => { d.pricing.pickup = v; }); }} />
             Személyes átvétel</label>
-          <label class="fee">Szállítási díj (Ft)
-            <input type="text" inputMode="numeric" class="shipping-fee" placeholder="automatikus" disabled={pricing.pickup}
-              key={String(pricing.shippingFee)} defaultValue={pricing.shippingFee === undefined ? '' : String(pricing.shippingFee)}
-              onChange={e => {
-                const el = e.currentTarget as HTMLInputElement;
-                if (el.value.trim() === '') { store.update(d => { delete d.pricing.shippingFee; }); return; }
-                const n = parsePrice(el.value);
-                if (n === null) { el.value = pricing.shippingFee === undefined ? '' : String(pricing.shippingFee); return; }
-                store.update(d => { d.pricing.shippingFee = n; });
-              }} />
-          </label>
+          <ShippingFeeInput key={String(pricing.shippingFee)} store={store} fee={pricing.shippingFee} disabled={pricing.pickup} />
         </section>
         <section class="cost-card total-card">
           <h3>Végösszeg</h3>

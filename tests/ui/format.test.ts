@@ -6,6 +6,14 @@ test('parseNumberInput accepts comma', () => {
   expect(parseNumberInput('')).toBeNull();
   expect(parseNumberInput('3,5,1')).toBeNull();
 });
+test('parseNumberInput accepts Hungarian thousands spacing (space, NBSP, narrow NBSP)', () => {
+  expect(parseNumberInput('2 390')).toBe(2390);
+  expect(parseNumberInput('2' + String.fromCharCode(0xa0) + '390')).toBe(2390);
+  expect(parseNumberInput('1' + String.fromCharCode(0x202f) + '234' + String.fromCharCode(0x202f) + '567,5')).toBe(1234567.5);
+  expect(parseNumberInput(' 14 990 ')).toBe(14990);
+  expect(parseNumberInput('3,5,1')).toBeNull();
+  expect(parseNumberInput('3 5,1 2')).toBeNull();
+});
 test('parseNumberInput rejects junk', () => {
   expect(parseNumberInput('1e3')).toBeNull();
   expect(parseNumberInput('abc')).toBeNull();

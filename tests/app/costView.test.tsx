@@ -63,6 +63,22 @@ test('a typed shipping fee applies and an empty field restores the automatic one
   expect(cost().shipping).toBe(auto);
 });
 
+test('invalid shipping fee text: red state with a message, plan unchanged; a valid value clears it', () => {
+  const { store, view } = setup();
+  const input = () => view.container.querySelector('.shipping-fee') as HTMLInputElement;
+  fireEvent.change(input(), { target: { value: '9000' } });
+  const before = store.get().plan;
+  fireEvent.change(input(), { target: { value: 'abc' } });
+  expect(store.get().plan).toBe(before);
+  expect(input().getAttribute('aria-invalid')).toBe('true');
+  expect(input().value).toBe('abc');
+  expect(screen.getByRole('alert').textContent).toBe('Érvénytelen összeg');
+  fireEvent.change(input(), { target: { value: '14 990' } });
+  expect(store.get().plan.pricing.shippingFee).toBe(14990);
+  expect(input().getAttribute('aria-invalid')).toBeNull();
+  expect(screen.queryByRole('alert')).toBeNull();
+});
+
 test('missing items warning and the Mutasd button', () => {
   const { store, ui, view, cost } = setup();
   const n = cost().missingCount;

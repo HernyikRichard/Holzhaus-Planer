@@ -236,6 +236,7 @@ button.cutstrip-piece:hover:not(:disabled) { background: #4a90d9; }
 .cost-card .sub { font-size: 0.8rem; color: var(--muted); }
 .cost-card .check, .cost-card .fee { display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem; }
 .cost-card .shipping-fee { width: 7rem; text-align: right; }
+.cost-card .shipping-fee[aria-invalid="true"] { border-color: var(--error); outline-color: var(--error); }
 .total-card { border-color: var(--select); }
 .total-card .big { font-size: 2rem; color: var(--select); }
 .warn-card { border-color: var(--warn); }

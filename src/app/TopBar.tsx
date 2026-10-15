@@ -41,9 +41,10 @@ function PdfDialog({ store, dialogRef }: { store: Store; dialogRef: { current: H
     try {
       const state = store.get();
       const { lastValidPlan, output } = state;
-      const { cost } = computeCost(state, BUNDLED_PRICE_LIST);
+      // az utolsó érvényes geometria az aktuális árazási beállításokkal (a szállítás felirata is ebből)
+      const { plan, cost } = computeCost(state, BUNDLED_PRICE_LIST);
       const { exportPdf } = await import('../export/pdf');
-      const blob = await exportPdf(lastValidPlan, output, {
+      const blob = await exportPdf(plan, output, {
         drawings: drawings.current!.checked,
         materials: materials.current!.checked,
         explanations: materials.current!.checked && explanations.current!.checked,

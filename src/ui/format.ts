@@ -1,5 +1,13 @@
+/**
+ * Szám a beviteli mezőből: tizedesvessző vagy -pont; magyar ezres tagolás szóközzel, nem törhető
+ * vagy keskeny nem törhető szóközzel („2 390”), csak szabályos hármas csoportokkal.
+ */
 export function parseNumberInput(text: string): number | null {
-  const t = text.trim();
+  let t = text.trim();
+  if (/[   ]/.test(t)) {
+    if (!/^-?\d{1,3}([   ]\d{3})+([.,]\d*)?$/.test(t)) return null;
+    t = t.replace(/[   ]/g, '');
+  }
   if (!/^-?(\d+([.,]\d*)?|[.,]\d+)$/.test(t)) return null;
   const n = Number(t.replace(',', '.'));
   return Number.isFinite(n) ? n : null;

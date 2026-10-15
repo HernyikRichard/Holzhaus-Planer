@@ -188,13 +188,31 @@ describe('PDF export dialog', () => {
     await vi.waitFor(() => expect(q<HTMLDialogElement>('dialog').hasAttribute('open')).toBe(false));
     HTMLAnchorElement.prototype.click = orig;
     const [plan, output, opts] = exportPdf.mock.calls[0];
-    expect(plan).toBe(store.get().lastValidPlan);
+    expect(plan).toEqual(computeCost(store.get(), BUNDLED_PRICE_LIST).plan);
     expect(output).toBe(store.get().output);
     expect(opts).toEqual({ drawings: true, materials: true, explanations: false, cutPlan: true, cost: true });
     expect(exportPdf.mock.calls[0][3]).toEqual(computeCost(store.get(), BUNDLED_PRICE_LIST).cost);
     expect(names).toEqual(['uj-terv.pdf']);
     await vi.waitFor(() => expect(go.disabled).toBe(false));
     expect(go.textContent).toBe('Létrehozás');
+  });
+
+  test('invalid plan: the PDF gets the last valid geometry with the live pricing (shipping label context)', async () => {
+    const { store, q } = setup();
+    exportPdf.mockResolvedValue(new Blob(['x']));
+    const orig = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = () => {};
+    store.update(d => { d.walls.studSpacing = -5; });
+    store.update(d => { d.pricing.pickup = true; d.pricing.shippingFee = 5000; });
+    expect(store.get().lastValidPlan.pricing.pickup).toBe(false);
+    await act(() => { q('[data-action="pdf"]').click(); });
+    await act(() => { q<HTMLButtonElement>('[data-action="pdf-create"]').click(); });
+    await vi.waitFor(() => expect(exportPdf).toHaveBeenCalled());
+    HTMLAnchorElement.prototype.click = orig;
+    const [plan] = exportPdf.mock.calls[0];
+    expect(plan.pricing.pickup).toBe(true);
+    expect(plan.pricing.shippingFee).toBe(5000);
+    expect(plan.walls.studSpacing).toBe(store.get().lastValidPlan.walls.studSpacing);
   });
 
   test('a failing export alerts in Hungarian, logs the error and re-enables the button', async () => {
