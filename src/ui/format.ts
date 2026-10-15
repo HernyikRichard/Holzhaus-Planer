@@ -25,3 +25,9 @@ export function sectionLabelWithUnit(t: number, w: number): string {
 export function formatFt(n: number): string {
   return `${formatQty(Math.round(n), 0)} Ft`;
 }
+
+/** ISO dátum → „2026. 10. 15.” */
+export function formatDateHu(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${m[1]}. ${m[2]}. ${m[3]}.` : iso;
+}

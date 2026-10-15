@@ -1,9 +1,31 @@
 import { useMemo } from 'preact/hooks';
-import type { Store } from '../ui/store';
+import type { AppState, Store } from '../ui/store';
+import type { PriceList } from '../prices/types';
 import { useStore } from './hooks';
 import { BUNDLED_PRICE_LIST } from '../prices';
 import { costOf, type CostLine, type CostSummary } from '../pricing/cost';
 import type { Plan } from '../model/types';
+
+type PricingFields = Pick<Plan['pricing'], 'overrides' | 'custom' | 'pickup' | 'shippingFee'>;
+
+/** Az utolsó érvényes terv geometriája az aktuális terv árazási beállításaival (hibás terven is érvényesek). */
+export function pricedPlan(lastValidPlan: Plan, live: PricingFields): Plan {
+  return {
+    ...lastValidPlan,
+    pricing: {
+      ...lastValidPlan.pricing, overrides: live.overrides, custom: live.custom,
+      pickup: live.pickup, shippingFee: live.shippingFee,
+    },
+  };
+}
+
+/** A költségösszesítés tiszta számítása a store állapotából – a UI, a CSV és a PDF is ezt használja. */
+export function computeCost(
+  state: Pick<AppState, 'plan' | 'lastValidPlan' | 'output'>, pl: PriceList | null,
+): { plan: Plan; cost: CostSummary | null } {
+  const plan = pricedPlan(state.lastValidPlan, state.plan.pricing);
+  return { plan, cost: pl ? costOf(plan, state.output, pl) : null };
+}
 
 /**
  * Az aktuális költségösszesítés: a geometria az utolsó érvényes tervből, az árazási beállítások
@@ -12,13 +34,8 @@ import type { Plan } from '../model/types';
 export function useCost(store: Store): { plan: Plan; cost: CostSummary | null } {
   const { output, lastValidPlan } = useStore(store, s => s);
   const livePricing = useStore(store, st => st.plan.pricing);
-  const plan = useMemo(() => ({
-    ...lastValidPlan,
-    pricing: {
-      ...lastValidPlan.pricing, overrides: livePricing.overrides, custom: livePricing.custom,
-      pickup: livePricing.pickup, shippingFee: livePricing.shippingFee,
-    },
-  }), [lastValidPlan, livePricing.overrides, livePricing.custom, livePricing.pickup, livePricing.shippingFee]);
+  const plan = useMemo(() => pricedPlan(lastValidPlan, livePricing),
+    [lastValidPlan, livePricing.overrides, livePricing.custom, livePricing.pickup, livePricing.shippingFee]);
   const pl = BUNDLED_PRICE_LIST;
   const cost = useMemo(() => (pl ? costOf(plan, output, pl) : null), [plan, output, pl]);
   return { plan, cost };

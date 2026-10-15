@@ -4,6 +4,8 @@ import { createStore } from '../../src/ui/store';
 import { createDefaultPlan } from '../../src/model/defaults';
 import { createUiStore } from '../../src/app/uiStore';
 import { TopBar } from '../../src/app/TopBar';
+import { computeCost } from '../../src/app/useCost';
+import { BUNDLED_PRICE_LIST } from '../../src/prices';
 
 const exportPdf = vi.hoisted(() => vi.fn());
 vi.mock('../../src/export/pdf', () => ({ exportPdf }));
@@ -95,6 +97,25 @@ test('save and csv call download with slugged filenames', () => {
   expect(names).toEqual(['uj-terv.json', 'uj-terv-anyaglista.csv']);
 });
 
+test('az anyaglista CSV költségoszlopokat, a rendelési lista CSV a kosarat tölti le (ugyanaz a költség, mint a UI-ban)', async () => {
+  const { store, q } = setup();
+  const texts: Promise<string>[] = [];
+  const names: string[] = [];
+  URL.createObjectURL = vi.fn((b: Blob) => { texts.push(new Promise<string>(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result)); fr.readAsText(b); })); return 'blob:x'; });
+  const orig = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function (this: HTMLAnchorElement) { names.push(this.download); };
+  q('[data-action="csv"]').click();
+  q('[data-action="order-csv"]').click();
+  HTMLAnchorElement.prototype.click = orig;
+  expect(q('[data-action="order-csv"]').textContent).toBe('Rendelési lista CSV');
+  expect(names).toEqual(['uj-terv-anyaglista.csv', 'uj-terv-rendeles.csv']);
+  const [mat, order] = await Promise.all(texts);
+  const cost = computeCost(store.get(), BUNDLED_PRICE_LIST).cost!;
+  expect(mat.split(/\r?\n/)[0]).toContain(';Egységár;Összeg;Forrás;Káplár-termék');
+  expect(order.split(/\r?\n/)[0]).toContain('Termék;Mennyiség;Egység;Egységár;Összeg;Link');
+  expect(order).toContain(`Összesen;;;;${cost.kaplarSubtotal};`);
+});
+
 test('exception during replace shows generic alert and store stays', async () => {
   const { store, root } = setup();
   const before = store.get().plan;
@@ -116,7 +137,7 @@ test('structurally malformed file is rejected without touching the store', async
 });
 
 describe('PDF export dialog', () => {
-  test('PDF button is enabled and opens a dialog with four checked options', async () => {
+  test('PDF button is enabled and opens a dialog with five checked options', async () => {
     const { q } = setup();
     expect(q<HTMLButtonElement>('[data-action="pdf"]').disabled).toBe(false);
     await act(() => { q('[data-action="pdf"]').click(); });
@@ -126,7 +147,8 @@ describe('PDF export dialog', () => {
     expect(dlg.textContent).toContain('Anyaglista');
     expect(dlg.textContent).toContain('Számítás oszlop');
     expect(dlg.textContent).toContain('Vágási terv');
-    expect(Array.from(dlg.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')).map(c => c.checked)).toEqual([true, true, true, true]);
+    expect(dlg.textContent).toContain('Költség');
+    expect(Array.from(dlg.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')).map(c => c.checked)).toEqual([true, true, true, true, true]);
   });
 
   test('the explanations checkbox is disabled while materials is off', async () => {
@@ -168,7 +190,8 @@ describe('PDF export dialog', () => {
     const [plan, output, opts] = exportPdf.mock.calls[0];
     expect(plan).toBe(store.get().lastValidPlan);
     expect(output).toBe(store.get().output);
-    expect(opts).toEqual({ drawings: true, materials: true, explanations: false, cutPlan: true });
+    expect(opts).toEqual({ drawings: true, materials: true, explanations: false, cutPlan: true, cost: true });
+    expect(exportPdf.mock.calls[0][3]).toEqual(computeCost(store.get(), BUNDLED_PRICE_LIST).cost);
     expect(names).toEqual(['uj-terv.pdf']);
     await vi.waitFor(() => expect(go.disabled).toBe(false));
     expect(go.textContent).toBe('Létrehozás');

@@ -7,6 +7,7 @@ import type { StepId } from '../../src/app/steps';
 import { StepPanel } from '../../src/app/StepPanel';
 import { TopBar } from '../../src/app/TopBar';
 import { SECTIONS } from '../../src/ui/fields';
+import { FIXTURE } from '../fixtures/priceList';
 import { MaterialsSettingsStep } from '../../src/app/steps/MaterialsSettingsStep';
 
 vi.mock('../../src/export/pdf', () => ({ exportPdf: vi.fn() }));
@@ -181,19 +182,20 @@ describe('Árak beállítások', () => {
     expect(ids()).not.toEqual(on);
     expect(screen.getByLabelText('Káplár-kínálat szerint számol')).toBeTruthy();
   });
+  const PL = { ...FIXTURE, fetchedAt: '2026-10-15' };
+  const settings = () => render(<MaterialsSettingsStep store={createStore(createDefaultPlan())} priceList={PL} />).container as HTMLElement;
   test('shows the price list date', () => {
     at('2026-10-15');
-    const { root } = setup('materials');
+    const root = settings();
     expect(root.textContent).toContain('Árlista: Káplár Fatelep, 2026. 10. 15.');
     expect(root.textContent).not.toContain('npm run arak');
   });
   test('stale warning on day 61 but not on day 60', () => {
     at('2026-12-14'); // fetchedAt 2026-10-15 + 60 nap
-    cleanup();
-    expect(setup('materials').root.textContent).not.toContain('npm run arak');
+    expect(settings().textContent).not.toContain('npm run arak');
     cleanup();
     at('2026-12-15');
-    expect(setup('materials').root.textContent).toContain('Az árlista régi – frissítés: npm run arak');
+    expect(settings().textContent).toContain('Az árlista régi – frissítés: npm run arak');
   });
   test('no price list', () => {
     const store = createStore(createDefaultPlan());

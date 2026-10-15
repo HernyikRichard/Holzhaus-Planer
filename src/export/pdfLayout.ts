@@ -1,6 +1,8 @@
 import type { Scene } from '../scene/types';
 import { cutSticks, cutVariants } from '../app/lineElements';
-import { formatQty, sectionLabelWithUnit } from '../ui/format';
+import { formatDateHu, formatFt, formatQty, sectionLabelWithUnit } from '../ui/format';
+import { CATEGORY_ORDER } from '../calc';
+import { isCart, orderList, type CostSummary } from '../pricing/cost';
 
 /** A PDF-export tiszta (DOM- és jsPDF-mentes) segédfüggvényei. */
 
@@ -87,4 +89,48 @@ export function cutPlanRows(scene: Scene): string[][] {
     }
   }
   return [...merged.values()].map(m => [m.cells[0], `${m.len} × ${m.count}`, m.cells[1], m.cells[2]]);
+}
+
+export interface CostPageContext { pickup: boolean; feeSet: boolean; freeAbove: number }
+export interface CostTableRow { cells: string[]; url?: string }
+export interface CostPageData {
+  summary: string[][]; missingNote: string | null;
+  cart: (CostTableRow & { url: string })[]; others: CostTableRow[]; footnote: string;
+}
+
+export const COST_TABLE_HEADER = ['Termék', 'Menny.', 'Egység', 'Egységár', 'Összeg'];
+
+/** A költségoldalak tartalma: összesítő sorok, Káplár-kosár (linkkel), máshonnan beszerzendő tételek, lábjegyzet. */
+export function costPageRows(summary: CostSummary, ctx: CostPageContext): CostPageData {
+  const shipping = ctx.pickup ? 'személyes átvétel: 0 Ft'
+    : ctx.feeSet ? formatFt(summary.shipping)
+    : summary.kaplarSubtotal <= 0 ? '0 Ft'
+    : summary.shipping === 0 ? `ingyenes (${formatFt(ctx.freeAbove)} felett)` : formatFt(summary.shipping);
+  const catOf = (productId: string) => summary.lines.find(l => l.productId === productId)!.category;
+  const cart = orderList(summary)
+    .sort((a, b) => CATEGORY_ORDER.indexOf(catOf(a.productId)) - CATEGORY_ORDER.indexOf(catOf(b.productId))
+      || a.name.localeCompare(b.name, 'hu'))
+    .map(r => ({
+      cells: [r.name, formatQty(r.qty), r.unit, formatFt(r.unitPrice), formatFt(r.total)], url: r.url,
+    }));
+  const others = summary.lines.filter(l => l.otherSource || !isCart(l)).map((l): CostTableRow => {
+    const priced = !l.informational && l.unitPrice !== undefined && l.total !== undefined;
+    return {
+      cells: [l.name, formatQty(l.qty), l.unit,
+        l.informational ? 'tájékoztató' : priced ? formatFt(l.unitPrice!) : 'nincs ár',
+        priced ? formatFt(l.total!) : ''],
+    };
+  });
+  return {
+    summary: [
+      ['Anyagköltség', formatFt(summary.kaplarSubtotal + summary.otherSubtotal)],
+      ['', `Káplár: ${formatFt(summary.kaplarSubtotal)} · egyéb: ${formatFt(summary.otherSubtotal)}`],
+      ['Szállítás', shipping],
+      ['Végösszeg', formatFt(summary.total)],
+    ],
+    missingNote: summary.missingCount > 0
+      ? `${summary.missingCount} tétel ára hiányzik, a végösszeg ezek nélkül értendő.` : null,
+    cart, others,
+    footnote: `Árak: Káplár Fatelep, ${formatDateHu(summary.priceDate)} – bruttó, tájékoztató jellegű. A tényleges árak és készlet a webshopban ellenőrizendők.`,
+  };
 }

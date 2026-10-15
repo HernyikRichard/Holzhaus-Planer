@@ -3,15 +3,11 @@ import type { UiStore } from './uiStore';
 import { CATEGORY_ORDER } from '../calc';
 import { BUNDLED_PRICE_LIST } from '../prices';
 import { orderList, isCart } from '../pricing/cost';
-import { formatFt, formatQty } from '../ui/format';
+import { formatDateHu, formatFt, formatQty } from '../ui/format';
 import { PriceCell, parsePrice } from './PriceCell';
 import { useCost, setLinePrice, resetLinePrice } from './useCost';
 
-/** ISO dátum → „2026. 10. 15.” */
-export function formatDateHu(iso: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  return m ? `${m[1]}. ${m[2]}. ${m[3]}.` : iso;
-}
+export { formatDateHu };
 
 /** A Költség és rendelés fül: összesítők, kategóriasávok, Káplár-kosár, máshonnan beszerzendő tételek. */
 export function CostView({ store, ui }: { store: Store; ui: UiStore }) {
