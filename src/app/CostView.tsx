@@ -19,7 +19,7 @@ export function CostView({ store, ui }: { store: Store; ui: UiStore }) {
   const catOf = (productId: string) => cost.lines.find(l => l.productId === productId)!.category;
   const kaplarCart = orderList(cost).sort((a, b) =>
     CATEGORY_ORDER.indexOf(catOf(a.productId)) - CATEGORY_ORDER.indexOf(catOf(b.productId)) || a.name.localeCompare(b.name, 'hu'));
-  const others = cost.lines.filter(l => l.otherSource || !isCart(l));
+  const others = cost.lines.filter(l => l.otherSource || (!isCart(l) && !l.informational));
   const materialTotal = cost.kaplarSubtotal + cost.otherSubtotal;
   const bars = CATEGORY_ORDER.filter(c => cost.byCategory[c] > 0);
   const sum = bars.reduce((a, c) => a + cost.byCategory[c], 0);

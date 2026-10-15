@@ -126,7 +126,7 @@ export function MaterialTable({ store, ui }: { store: Store; ui: UiStore }) {
                     ) : <span class="show-slot" />}
                   </summary>
                   <p class="explanation">{l.explanation}</p>
-                  {c?.source === 'missing' && !c.informational && c.reason && <p class="explanation">{c.reason}</p>}
+                  {c?.source === 'missing' && c.reason && <p class="explanation">{c.reason}</p>}
                   {c?.note && <p class="explanation price-note">{c.note}</p>}
                   {c?.warning && <p class="line-warning">{c.warning}</p>}
                   {c && kind && pl && (

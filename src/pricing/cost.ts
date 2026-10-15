@@ -58,6 +58,9 @@ export function costOf(plan: Plan, output: CalcOutput, pl: PriceList): CostSumma
     if (isInformational(line.id)) {
       return { ...base, qty: line.quantity, unit: line.unit as string, source: 'missing', otherSource: true, informational: true };
     }
+    if ('missing' in m && m.informational) {
+      return { ...base, qty: line.quantity, unit: line.unit as string, source: 'missing', otherSource: false, informational: true, reason: m.reason };
+    }
     const flags = {
       ...('choiceGone' in m && m.choiceGone ? { choiceGone: true } : {}),
       ...('productId' in m && m.warning ? { warning: m.warning } : {}),

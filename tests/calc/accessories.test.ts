@@ -26,6 +26,13 @@ test('gutter joiners: default plan has 2, none when gutter off', () => {
   expect(calcAccessories(p).lines.some(l => l.id === 'acc.gutterJoiners')).toBe(false);
 });
 
+test('gutter and joiner lines carry the eave geometry for product matching', () => {
+  const lines = calcAccessories(createDefaultPlan()).lines;
+  for (const id of ['acc.gutter', 'acc.gutterJoiners']) {
+    expect(lines.find(l => l.id === id), id).toMatchObject({ eaveLength: 4600, eaveCount: 2 });
+  }
+});
+
 test('fascia runs along both eaves (low and high) for mono and flat roofs', async () => {
   const { createDefaultPlan } = await import('../../src/model/defaults');
   const { calcAccessories } = await import('../../src/calc/accessories');

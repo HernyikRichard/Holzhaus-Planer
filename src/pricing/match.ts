@@ -13,7 +13,11 @@ export type Match =
     /** Az átváltás magyarázata (pl. tetődeszka m² → szál). */
     note?: string;
   }
-  | { missing: true; reason: string; otherSource?: boolean; choiceGone?: boolean };
+  | {
+    missing: true; reason: string; otherSource?: boolean; choiceGone?: boolean;
+    /** Nem kell megvenni (pl. a választott csatornaszálhoz nem kell toldó): tájékoztató sor. */
+    informational?: boolean;
+  };
 
 const MANUAL = 'kézi ár szükséges';
 const miss = (reason: string): Match => ({ missing: true, reason: `${reason} – ${MANUAL}` });
@@ -146,6 +150,13 @@ export function gutterSystemKey(p: Product): string | null {
 }
 const isGutterPipe = (p: Product): boolean =>
   /ereszcsatorna/i.test(p.name) && !/véges|véglemez|szeglet|csonkos/i.test(p.name) && nameLengthM(p) !== null;
+/** A rendszer csatornaszála: a legolcsóbb m-árú, azonos m-árnál a leghosszabb (kevesebb toldás). */
+function gutterPipe(inSys: Product[]): Product | undefined {
+  const perM = (p: Product): number => p.price / nameLengthM(p)!;
+  return inSys.filter(isGutterPipe).sort((a, b) =>
+    (Math.abs(perM(a) - perM(b)) > 1e-6 ? perM(a) - perM(b) : 0)
+    || nameLengthM(b)! - nameLengthM(a)! || (a.id < b.id ? -1 : 1))[0];
+}
 
 /** Egy rendszer: a legolcsóbb m-árú csatornájú, amelyiknek van végeleme és tartója is (ha nincs ilyen, a legolcsóbb). */
 function chooseGutterSystem(ps: Product[]): string | null {
@@ -293,7 +304,7 @@ function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan, meta: { warni
       if (!sys) return none('Nincs ereszcsatorna az árlistában');
       const inSys = ps.filter(p => p.kind === 'gutter' && gutterSystemKey(p) === sys);
       const lack = 'A választott csatornarendszerben nincs ilyen elem';
-      if (id === 'acc.gutter') return cheapest(inSys.filter(isGutterPipe), p => p.price / nameLengthM(p)!) || none(lack);
+      if (id === 'acc.gutter') return gutterPipe(inSys) || none(lack);
       if (id === 'acc.downpipe') {
         const need = (plan.building.wallHeight + DOWNPIPE_EXTRA) / 1000;
         return cheapest(inSys.filter(p => /lefolyócső/i.test(p.name) && (nameLengthM(p) ?? 0) >= need - EPS), p => p.price)
@@ -314,8 +325,23 @@ function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan, meta: { warni
 }
 
 /** A sor mennyisége a termék egységében; a trapézlemez táblakiosztásból, a többi az egységátváltásból. */
+/** A tervhez tartozó csatornaszál hossza (m): a kézzel választott, különben a szabály szerinti csatorna. */
+function gutterPieceM(pl: PriceList, plan: Plan): number | null {
+  const choice = plan.pricing.productChoice['acc.gutter'];
+  const chosen = choice !== undefined ? pl.products.find(p => p.id === choice) : undefined;
+  const sys = chosen ? null : chooseGutterSystem(pl.products);
+  const p = chosen ?? (sys ? gutterPipe(pl.products.filter(x => x.kind === 'gutter' && gutterSystemKey(x) === sys)) : undefined);
+  return p ? nameLengthM(p) : null;
+}
+
 type Qty = { qty: number; note?: string } | { reason: string };
 function quantity(line: MaterialLine, p: Product, unconvertible: string): Qty {
+  const { eaveLength, eaveCount } = line;
+  const pieceM = nameLengthM(p);
+  if (line.id === 'acc.gutter' && eaveLength !== undefined && eaveCount !== undefined && p.unit !== 'fm' && pieceM) {
+    const per = Math.ceil(eaveLength / (pieceM * 1000) - EPS);
+    return { qty: per * eaveCount, note: `Ereszenként ⌈${hu(eaveLength / 1000)} m / ${hu(pieceM)} m⌉ = ${per} szál × ${eaveCount} eresz = ${per * eaveCount} szál` };
+  }
   if (line.id === 'roof.trapezoid' && p.kind === 'roofing' && p.unit !== 'm²') {
     const q = trapezoidQty(line, p);
     return typeof q === 'number' ? { qty: q } : q;
@@ -337,11 +363,26 @@ export function matchLine(line: MaterialLine, pl: PriceList, plan: Plan): Match 
   if (FOUNDATION.test(line.id)) {
     return { missing: true, reason: 'Nincs Káplár-termék, máshonnan beszerzendő', otherSource: true };
   }
+  // toldó: a választott csatornaszál hosszából, ereszenként (szálak − 1)
+  let joinNote: string | undefined;
+  if (line.id === 'acc.gutterJoiners' && line.eaveLength !== undefined && line.eaveCount !== undefined) {
+    const pieceM = gutterPieceM(pl, plan);
+    if (pieceM) {
+      const per = Math.max(0, Math.ceil(line.eaveLength / (pieceM * 1000) - EPS) - 1);
+      const need = per * line.eaveCount;
+      if (need === 0) {
+        return { missing: true, informational: true, reason: `A választott ${hu(pieceM)} m-es ereszcsatornához nem kell toldó` };
+      }
+      joinNote = `Ereszenként ⌈${hu(line.eaveLength / 1000)} m / ${hu(pieceM)} m⌉ − 1 = ${per} toldó × ${line.eaveCount} eresz = ${need} db`;
+      line = { ...line, quantity: need };
+    }
+  }
+  const withJoinNote = (m: Match): Match => (joinNote && 'productId' in m ? { ...m, note: joinNote } : m);
   const choice = plan.pricing.productChoice[line.id];
   let choiceGone = false;
   if (choice !== undefined) {
     const p = pl.products.find(x => x.id === choice);
-    if (p) return toMatch(p, quantity(line, p, 'A kiválasztott termék egysége nem váltható át'));
+    if (p) return withJoinNote(toMatch(p, quantity(line, p, 'A kiválasztott termék egysége nem váltható át')));
     choiceGone = true;
   }
   const meta: { warning?: string } = {};
@@ -352,5 +393,6 @@ export function matchLine(line: MaterialLine, pl: PriceList, plan: Plan): Match 
     const p = picked as Product;
     m = toMatch(p, quantity(line, p, 'Az egység nem váltható át'), meta.warning);
   }
+  m = withJoinNote(m);
   return choiceGone ? { ...m, choiceGone: true } : m;
 }

@@ -161,6 +161,18 @@ describe('helyettesítő termék és tetődeszka a költségsorban', () => {
   });
 });
 
+describe('nem szükséges toldó', () => {
+  it('tájékoztató sor: nem hiányzó, nem máshonnan beszerzendő, az okkal', () => {
+    const pl = BUNDLED_PRICE_LIST!;
+    const plan = createDefaultPlan();
+    const s = costOf(plan, calculate(plan, supplyFromPriceList(pl)), pl);
+    const j = s.lines.find(l => l.lineId === 'acc.gutterJoiners')!;
+    expect(j).toMatchObject({ informational: true, otherSource: false, source: 'missing', reason: 'A választott 6 m-es ereszcsatornához nem kell toldó' });
+    expect(j.total).toBeUndefined();
+    expect(s.lines.filter(l => !l.informational && l.source === 'missing').length).toBe(s.missingCount);
+  });
+});
+
 describe('informational foundation lines', () => {
   const ids = ['foundation.concrete', 'foundation.cement', 'foundation.water'];
   it('beton, cement és víz tájékoztató: nincs ár, nem hiányzó, nincs a végösszegben', () => {

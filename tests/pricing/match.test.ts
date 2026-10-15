@@ -149,6 +149,21 @@ describe('csatornarendszer', () => {
     expect((joiner as { reason: string }).reason).toContain('A választott csatornarendszerben nincs ilyen elem');
     expect(pick('acc.downpipeClips')).toMatchObject({ missing: true });
   });
+  it('csatornaszál: azonos m-árnál a leghosszabb; ereszenként ⌈ereszhossz / szálhossz⌉ szál, a toldó a választott szálhosszból', () => {
+    const pl = { ...PL, products: [...PL.products,
+      g('d-1', 'Ereszcsatorna 1m-es (33-as)', 1500), g('d-2', 'Ereszcsatorna 2m-es (33-as)', 3000),
+      g('d-veg', 'Ereszcsatorna véglemez (33)', 300), g('d-tarto', 'Csatornatartó (33-as)', 900),
+      g('d-toldo', 'Ereszcsatorna toldó (33-as)', 500)] };
+    const plan = createDefaultPlan();
+    const out = calculate(plan, supply);
+    const pick = (id: string) => matchLine(out.lines.find(l => l.id === id)!, pl, plan);
+    expect(pick('acc.gutter')).toEqual({ productId: 'd-2', qtyInProductUnit: 6, note: 'Ereszenként ⌈4,6 m / 2 m⌉ = 3 szál × 2 eresz = 6 szál' });
+    expect(pick('acc.gutterJoiners')).toEqual({ productId: 'd-toldo', qtyInProductUnit: 4, note: 'Ereszenként ⌈4,6 m / 2 m⌉ − 1 = 2 toldó × 2 eresz = 4 db' });
+    // kézzel választott 1 m-es csatornához a toldó is ehhez igazodik
+    const chosen = { ...plan, pricing: { ...DEFAULT_PRICING, productChoice: { 'acc.gutter': 'd-1' } } };
+    expect(matchLine(out.lines.find(l => l.id === 'acc.gutterJoiners')!, pl, chosen)).toMatchObject({ productId: 'd-toldo', qtyInProductUnit: 8 });
+    expect(matchLine(out.lines.find(l => l.id === 'acc.gutter')!, pl, chosen)).toMatchObject({ productId: 'd-1', qtyInProductUnit: 10 });
+  });
   it('rendszerkulcs: hazai sorozat és Galeco család', () => {
     expect(gutterSystemKey(g('x', 'Csatornatartó horganyzott egyenes (25-ös)', 1))).toBe('horg-25');
     expect(gutterSystemKey(g('x', 'Ereszcsatorna véglemez széles peremmel (33)', 1))).toBe('horg-33');
@@ -199,6 +214,14 @@ describe('helyettesítő szelvény és tetődeszka', () => {
 });
 
 describe('beépített árlista', () => {
+  it('ereszcsatorna az alaptervhez: 6 m-es szál ereszenként 1, toldó nem kell (tájékoztató)', () => {
+    const pl = BUNDLED_PRICE_LIST!;
+    const plan = createDefaultPlan();
+    const out = calculate(plan, supplyFromPriceList(pl));
+    const pick = (id: string) => matchLine(out.lines.find(l => l.id === id)!, pl, plan);
+    expect(pick('acc.gutter')).toMatchObject({ productId: 'gutter-ereszcsatorna-6-meter-es-33-as', qtyInProductUnit: 2 });
+    expect(pick('acc.gutterJoiners')).toEqual({ missing: true, informational: true, reason: 'A választott 6 m-es ereszcsatornához nem kell toldó' });
+  });
   it('alapterv: a 24×48, 50×50, 24×150 és a tetődeszkázat is árazott, helyettesítő figyelmeztetéssel', () => {
     const pl = BUNDLED_PRICE_LIST!;
     const plan = createDefaultPlan();
