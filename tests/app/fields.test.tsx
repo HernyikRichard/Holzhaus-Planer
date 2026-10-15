@@ -7,6 +7,7 @@ import type { StepId } from '../../src/app/steps';
 import { StepPanel } from '../../src/app/StepPanel';
 import { TopBar } from '../../src/app/TopBar';
 import { SECTIONS } from '../../src/ui/fields';
+import { MaterialsSettingsStep } from '../../src/app/steps/MaterialsSettingsStep';
 
 vi.mock('../../src/export/pdf', () => ({ exportPdf: vi.fn() }));
 
@@ -163,4 +164,40 @@ test('step panels together cover exactly the SECTIONS fields (roof.shape on Buil
   }
   expect(stepsWithShape).toEqual(['building']);
   expect([...seen].sort()).toEqual(all.map(f => f.path).sort());
+});
+
+describe('Árak beállítások', () => {
+  afterEach(() => vi.useRealTimers());
+  const at = (d: string) => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date(`${d}T12:00:00`)); };
+
+  test('the supply toggle sets pricing.useSupply and changes timber line ids', () => {
+    const { store, root } = setup('materials');
+    const ids = () => store.get().output.lines.filter(l => /^timber\.[^.]+\.50x1(00|50)\./.test(l.id)).map(l => l.id).sort();
+    const box = root.querySelector<HTMLInputElement>('[data-pricing="useSupply"]')!;
+    expect(box.checked).toBe(true);
+    const on = ids();
+    fireEvent.click(box);
+    expect(store.get().plan.pricing.useSupply).toBe(false);
+    expect(ids()).not.toEqual(on);
+    expect(screen.getByLabelText('Káplár-kínálat szerint számol')).toBeTruthy();
+  });
+  test('shows the price list date', () => {
+    at('2026-10-15');
+    const { root } = setup('materials');
+    expect(root.textContent).toContain('Árlista: Káplár Fatelep, 2026. 10. 15.');
+    expect(root.textContent).not.toContain('npm run arak');
+  });
+  test('stale warning on day 61 but not on day 60', () => {
+    at('2026-12-14'); // fetchedAt 2026-10-15 + 60 nap
+    cleanup();
+    expect(setup('materials').root.textContent).not.toContain('npm run arak');
+    cleanup();
+    at('2026-12-15');
+    expect(setup('materials').root.textContent).toContain('Az árlista régi – frissítés: npm run arak');
+  });
+  test('no price list', () => {
+    const store = createStore(createDefaultPlan());
+    const r = render(<MaterialsSettingsStep store={store} priceList={null} />);
+    expect(r.container.textContent).toContain('Nincs árlista');
+  });
 });

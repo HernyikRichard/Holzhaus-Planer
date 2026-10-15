@@ -260,3 +260,8 @@ button.cutstrip-piece:hover:not(:disabled) { background: #4a90d9; }
 .cost-note, .cost-view .muted, .no-prices { color: var(--muted); font-size: 0.8rem; }
 .missing-filter { display: flex; gap: 0.6rem; align-items: center; margin: 0.4rem 0; color: var(--warn); font-size: 0.85rem; }
 .tag.info { font-size: 0.75rem; border: 1px solid var(--muted); border-radius: 3px; padding: 0 0.35rem; color: var(--muted); }
+.summary-total { white-space: nowrap; font-weight: 700; }
+.summary-total small { font-weight: 400; }
+.field-check { display: flex; align-items: center; gap: 0.5rem; }
+.price-date { margin: 0.3rem 0; font-size: 0.85rem; }
+.price-stale { margin: 0.3rem 0; font-size: 0.85rem; color: #b45309; }
