@@ -15,7 +15,10 @@
 
 const NUM = '\\d+(?:[.,]\\d+)?';
 
-/** Magyar számformátum: „5 670" -> 5670, „5,4" -> 5.4, „14.500" -> 14500. Érvénytelen: NaN. */
+/**
+ * Magyar számformátum: „5 670" -> 5670, „5,4" -> 5.4, „14.500" -> 14500. Érvénytelen: NaN.
+ * Ezres tagoló: szóköz/nbsp, vagy pont, ha pontosan 3 számjegyes csoportok követik (`14.500` -> 14500);
+ * egyébként a vessző (és az egyetlen pont) tizedesjel. */
 export function parseHuNumber(s) {
   let t = String(s).replace(/[\s  ]/g, '');
   if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
@@ -63,15 +66,27 @@ const r1 = (v) => Math.round(v * 10) / 10;
 function parseTriple(name, defaultUnit) {
   const m = new RegExp(`(${NUM})(?:\\s*-\\s*(${NUM}))?\\s*[x×]\\s*(${NUM})\\s*[x×]\\s*(${NUM})\\s*(mm|cm|m)?(?![a-zA-Z])`, 'i').exec(name);
   if (m) {
-    const f = FACTOR[(m[5] || defaultUnit).toLowerCase()];
     const a = Math.max(parseHuNumber(m[1]), m[2] ? parseHuNumber(m[2]) : 0);
-    return { a: r1(a * f), b: r1(parseHuNumber(m[3]) * f), c: r1(parseHuNumber(m[4]) * f) };
+    const b = parseHuNumber(m[3]);
+    const c = parseHuNumber(m[4]);
+    const suffix = m[5] && m[5].toLowerCase();
+    // Jelölés nélkül: ha mindkét keresztmetszeti szám >= 20, mm (pl. 45x95x4000), különben cm.
+    const unmarked = defaultUnit === 'auto' ? (a >= 20 && b >= 20 ? 'mm' : 'cm') : defaultUnit;
+    // Az 'm' végződés csak a hosszra vonatkozik; a keresztmetszet marad az alapegységben.
+    const fs = FACTOR[suffix && suffix !== 'm' ? suffix : unmarked];
+    const fl = FACTOR[suffix || unmarked];
+    return { a: r1(a * fs), b: r1(b * fs), c: r1(c * fl) };
   }
   const s = new RegExp(`(${NUM})\\s*/\\s*(${NUM})\\s+(${NUM})\\s*m(?![a-zA-Z])`, 'i').exec(name); // „3/5 4m"
   if (s) {
     return { a: r1(parseHuNumber(s[1]) * 10), b: r1(parseHuNumber(s[2]) * 10), c: r1(parseHuNumber(s[3]) * 1000) };
   }
   return null;
+}
+
+/** Hihető faanyag-/burkolatméret (mm): vastagság minT..300, szélesség 15..400, hossz 300..13000. */
+function plausible(d, minT) {
+  return d.a >= minT && d.a <= 300 && d.b >= 15 && d.b <= 400 && d.c >= 300 && d.c <= 13000;
 }
 
 function normalizeUnit(unitText) {
@@ -84,7 +99,8 @@ function normalizeUnit(unitText) {
     case 'm2': case 'negyzetmeter': return 'm²';
     case 'fm': case 'meter': case 'm': return 'fm';
     case 'doboz': case 'dob': return 'doboz';
-    default: return 'db'; // db, üres, ismeretlen (pl. kg: a termék egy kiszerelés)
+    case '': case 'db': case 'szal': return 'db';
+    default: return null; // ismeretlen egység (pl. kg) -> a termék nem értelmezhető
   }
 }
 
@@ -99,19 +115,22 @@ const num = (re, s) => {
  */
 export function parseProduct({ name: rawName, url, price, unitText }) {
   const name = cleanName(rawName);
-  if (!name || !Number.isFinite(price)) return null;
+  if (!name || !Number.isFinite(price) || price <= 0) return null;
   const f = fold(name);
   const kind = detectKind(f, url ?? '');
   if (!kind) return null;
 
   const unit = normalizeUnit(unitText);
+  if (unit === null) return null;
   const p = { id: '', name, url, kind, price, unit };
   const packM2 = num(new RegExp(`(${NUM})\\s*m[²2]\\s*/\\s*(?:cs|csomag)`, 'i'), name);
 
   switch (kind) {
     case 'timber': {
-      const d = parseTriple(name, 'cm');
-      if (!d) return null;
+      // nem faanyag: burkolatok, tartók, lapok
+      if (/laminalt|parketta|padlolap|burkolat|tarto|saru|(^|[^a-z])lap([^a-z]|$)/.test(f)) return null;
+      const d = parseTriple(name, 'auto');
+      if (!d || !plausible(d, 15)) return null;
       p.section = { t: d.a, w: d.b }; p.length = d.c;
       p.id = `timber-${d.a}x${d.b}-${d.c}${/szaritott/.test(f) ? '-szaritott' : ''}`;
       break;
@@ -153,7 +172,7 @@ export function parseProduct({ name: rawName, url, price, unitText }) {
     }
     case 'cladding': {
       const d = parseTriple(name, 'mm');
-      if (!d) return null;
+      if (!d || !plausible(d, 8)) return null; // lambéria lehet 8-9 mm vastag
       const mat = /hajopadlo/.test(f) ? 'hajópadló' : 'lambéria';
       p.material = mat; p.section = { t: d.a, w: d.b }; p.length = d.c; p.thickness = d.a;
       if (packM2 !== undefined) p.packM2 = packM2;

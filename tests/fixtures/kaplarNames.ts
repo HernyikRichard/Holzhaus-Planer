@@ -79,8 +79,6 @@ export const KAPLAR_NAMES: KaplarCase[] = [
     expected: { kind: 'fastener', unit: 'db', price: 14500 } },
   { name: 'Önmetsző platócsavar 5,5x38mm', url: `${U}/kiegeszitok/csavarok-platocsavarok/platocsavar-55x`, price: 40, unitText: 'db',
     expected: { kind: 'fastener', unit: 'db' } },
-  { name: 'Huzalszeg 100mm 1kg', url: `${U}/kiegeszitok/szegekvasanyagok-/huzalszeg-42x100-1kg`, price: 1990, unitText: 'kg',
-    expected: { kind: 'fastener', unit: 'db' } },
   { name: 'Reisser DNS PLUS duplamenetes facsavar, Rm., 5x80mm(200db/doboz)', url: `${U}/DNS-PLUS-facsavar/Reisser-DNS-PLUS-duplamenetes-facsavar-5x80mm`, price: 4200, unitText: 'doboz',
     expected: { kind: 'fastener', unit: 'doboz', boxQty: 200, price: 4200 } },
 ];

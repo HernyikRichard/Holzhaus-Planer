@@ -69,3 +69,36 @@ test('name is cleaned of site suffix, entities and whitespace', () => {
 test('fastener is not mistaken for roofing (zsindelyszeg)', () => {
   expect(parseProduct({ name: 'Zsindelyszeg 25 mm 5kg', url: 'u', price: 1, unitText: 'db' })!.kind).toBe('fastener');
 });
+
+test('non-lumber "padló"/"gerenda" products are rejected', () => {
+  const p = (name: string) => parseProduct({ name, url: 'u', price: 1000, unitText: 'db' });
+  expect(p('Laminált padló 1285x192x8 mm')).toBeNull();
+  expect(p('Padlólap 60x60x1 cm')).toBeNull();
+  expect(p('Gerendatartó 10x10x4 cm')).toBeNull();
+});
+
+test('unmarked sizes: both section numbers >= 20 means mm', () => {
+  expect(parseProduct({ name: 'Szarufa 45x95x4000', url: 'u', price: 1000, unitText: 'db' }))
+    .toMatchObject({ kind: 'timber', section: { t: 45, w: 95 }, length: 4000, id: 'timber-45x95-4000' });
+});
+
+test('implausible timber sizes are rejected', () => {
+  const p = (name: string) => parseProduct({ name, url: 'u', price: 1000, unitText: 'db' });
+  expect(p('Gerenda 10x10x4000 cm')).toBeNull();  // hossz 40000 mm
+  expect(p('Gerenda 10x10x20 cm')).toBeNull();    // hossz 200 mm
+  expect(p('Léc 1x1x400 cm')).toBeNull();         // vastagság 10 mm
+});
+
+test('"m" suffix scales only the length', () => {
+  expect(parseProduct({ name: 'Gerenda 10x10x4 m', url: 'u', price: 1000, unitText: 'db' }))
+    .toMatchObject({ section: { t: 100, w: 100 }, length: 4000 });
+});
+
+test('unknown units and non-positive prices are rejected', () => {
+  const p = (price: number, unitText: string) => parseProduct({ name: 'Huzalszeg 100mm 1kg', url: 'u', price, unitText });
+  expect(p(1990, 'kg')).toBeNull();
+  expect(p(1990, 'liter')).toBeNull();
+  expect(p(0, 'db')).toBeNull();
+  expect(p(-5, 'db')).toBeNull();
+  expect(p(1990, 'szál')).toMatchObject({ unit: 'db' });
+});
