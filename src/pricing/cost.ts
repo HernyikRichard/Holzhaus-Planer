@@ -38,7 +38,7 @@ export function shippingCost(
   pricing: Pick<PlanPricing, 'pickup' | 'shippingFee'>,
   shipping: PriceList['shipping'],
 ): number {
-  if (pricing.pickup) return 0;
+  if (pricing.pickup || kaplarSubtotal <= 0) return 0; // nincs Káplár-rendelés, nincs szállítás
   if (pricing.shippingFee !== undefined) return Math.round(pricing.shippingFee);
   return kaplarSubtotal >= shipping.freeAbove ? 0 : shipping.fee;
 }
@@ -77,7 +77,7 @@ export function costOf(plan: Plan, output: CalcOutput, pl: PriceList): CostSumma
   for (const l of lines) {
     if (l.total === undefined) { missingCount++; continue; }
     byCategory[l.category] += l.total;
-    if (l.source === 'kaplar') kaplarSubtotal += l.total;
+    if (isCart(l)) kaplarSubtotal += l.total;
     else otherSubtotal += l.total;
   }
   const shipping = shippingCost(kaplarSubtotal, pricing, pl.shipping);
@@ -91,19 +91,27 @@ export interface OrderRow {
   productId: string; name: string; url: string; qty: number; unit: string; unitPrice: number; total: number;
 }
 
-/** A Káplár-kosár: azonos termékek összevonva (csak a Káplár-áras sorok). */
+/** Káplár-termékhez tartozó sor (kézi áras is: ugyanaz a termék, más ár) – a kosárba és a Káplár-részösszegbe tartozik. */
+const isCart = (l: CostLine): boolean => l.productId !== undefined && (l.source === 'kaplar' || l.source === 'override');
+
+/**
+ * A Káplár-kosár: azonos termékek összevonva. Különböző egységáraknál a mennyiség és az összeg összeadódik,
+ * az egységár egyező árakra az ár, különben az összeg/mennyiség súlyozott átlaga egész forintra kerekítve.
+ */
 export function orderList(summary: CostSummary): OrderRow[] {
-  const rows = new Map<string, OrderRow>();
+  const rows = new Map<string, OrderRow & { prices: Set<number> }>();
   for (const l of summary.lines) {
-    if (l.source !== 'kaplar' || !l.productId) continue;
+    if (!isCart(l) || l.productId === undefined || l.total === undefined || l.unitPrice === undefined) continue;
     const r = rows.get(l.productId);
-    if (r) { r.qty += l.qty; r.total += l.total!; }
+    if (r) { r.qty += l.qty; r.total += l.total; r.prices.add(l.unitPrice); }
     else {
       rows.set(l.productId, {
-        productId: l.productId, name: l.productName!, url: l.url!, qty: l.qty, unit: l.unit,
-        unitPrice: l.unitPrice!, total: l.total!,
+        productId: l.productId, name: l.productName ?? l.name, url: l.url ?? '', qty: l.qty, unit: l.unit,
+        unitPrice: l.unitPrice, total: l.total, prices: new Set([l.unitPrice]),
       });
     }
   }
-  return [...rows.values()];
+  return [...rows.values()].map(({ prices, ...r }) => ({
+    ...r, unitPrice: prices.size === 1 ? r.unitPrice : Math.round(r.total / r.qty),
+  }));
 }

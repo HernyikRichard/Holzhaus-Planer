@@ -56,11 +56,32 @@ describe('costOf', () => {
     expect(new Set(orderList(s).map(r => r.productId)).size).toBe(orderList(s).length);
   });
 
-  it('a kosárba csak a Káplár-áras sorok kerülnek', () => {
+  it('a kézi áras Káplár-termék is a kosárban és a Káplár-részösszegben van', () => {
     const id = 'timber.Fal.50x100.4000';
+    const base = cost(createDefaultPlan());
     const s = cost(withPricing(createDefaultPlan(), { overrides: { [id]: 1 } }));
-    expect(s.lines.find(l => l.lineId === id)!.source).toBe('override');
-    expect(orderList(s).some(r => r.productId === 'pallo-50x100-4000' && r.total === 1)).toBe(false);
+    const l = s.lines.find(x => x.lineId === id)!;
+    expect(l.source).toBe('override');
+    expect(l.productId).toBe('pallo-50x100-4000');
+    const row = orderList(s).find(r => r.productId === 'pallo-50x100-4000')!;
+    expect(row).toMatchObject({ qty: l.qty, unitPrice: 1, total: l.qty });
+    const old = base.lines.find(x => x.lineId === id)!;
+    expect(s.kaplarSubtotal).toBe(base.kaplarSubtotal - old.total! + l.total!);
+    expect(s.otherSubtotal).toBe(base.otherSubtotal);
+  });
+
+  it('azonos termék különböző egységáron: mennyiség és összeg összeadva, az egységár súlyozott átlag', () => {
+    const plan = withPricing(createDefaultPlan(), { overrides: { 'wall.osb': 5000 } });
+    const s = cost(plan);
+    const a = s.lines.find(l => l.lineId === 'wall.osb')!;
+    const b = s.lines.find(l => l.lineId === 'wall.interiorCladding')!;
+    expect(a.unitPrice).toBe(5000);
+    expect(b.unitPrice).toBe(1000);
+    const row = orderList(s).find(r => r.productId === 'osb-12')!;
+    expect(row.qty).toBe(a.qty + b.qty);
+    expect(row.total).toBe(a.total! + b.total!);
+    expect(row.unitPrice).toBe(Math.round(row.total / row.qty));
+    expect(row.unitPrice).not.toBe(1000);
   });
 
   it('szállítás: határ, személyes átvétel, átírt díj', () => {
@@ -71,6 +92,10 @@ describe('costOf', () => {
     expect(shippingCost(499999, { pickup: false, shippingFee: 9000 }, sh)).toBe(9000);
     expect(shippingCost(600000, { pickup: false, shippingFee: 9000 }, sh)).toBe(9000);
     expect(shippingCost(100, { pickup: true, shippingFee: 9000 }, sh)).toBe(0);
+    expect(shippingCost(0, { pickup: false }, sh)).toBe(0);
+    expect(shippingCost(0, { pickup: false, shippingFee: 9000 }, sh)).toBe(0);
+    expect(shippingCost(1, { pickup: false }, sh)).toBe(14990);
+    expect(shippingCost(1, { pickup: false, shippingFee: 9000 }, sh)).toBe(9000);
   });
 
   it('a végösszeg egész forint, a hiányzók száma stimmel', () => {

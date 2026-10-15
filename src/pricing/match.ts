@@ -41,6 +41,7 @@ function piecesOf(line: MaterialLine): number | null {
 /** A sor mennyisége a termék egységében, vagy null, ha az átváltás nem egyértelmű. */
 function convert(line: MaterialLine, p: Product): number | null {
   const m2 = coverM2(p);
+  if (p.unit === 'm²' && line.needM2 !== undefined) return Math.ceil(line.needM2 * 10 - EPS) / 10;
   if (line.needM2 !== undefined && m2) {
     if (line.unitM2 !== undefined && Math.abs(line.unitM2 - m2) < EPS) return line.quantity;
     return Math.ceil(line.needM2 / m2 - EPS);
@@ -92,6 +93,45 @@ function closestThickness(c: Product[], mm: number): Product | undefined {
   if (!c.length) return undefined;
   const d = Math.min(...c.map(p => Math.abs((p.thickness ?? 0) - mm)));
   return cheapest(c.filter(p => Math.abs((p.thickness ?? 0) - mm) === d), perM2);
+}
+
+
+/** Csatornarendszer-kulcs a névből: hazai 25-ös / 33-as sorozat, Galeco család (PVC: méret is), Qstalyo. */
+export function gutterSystemKey(p: Product): string | null {
+  const n = p.name.toLowerCase();
+  const g = /galeco\s+(pvc|stal²|stal,\s*metál|stal)/.exec(n);
+  if (g) {
+    const fam = g[1].replace(/[\s,]+/g, '-');
+    if (fam !== 'pvc') return `galeco-${fam}`;
+    const sz = /\((\d+)(?:\/\d+)?\)/.exec(n);
+    return sz ? `galeco-pvc-${sz[1]}` : null;
+  }
+  if (/qstalyo/.test(n)) return 'qstalyo';
+  const h = /\(\s*(25|33)(?:-[a-zö]+)?\s*\)/.exec(n);
+  return h ? `horg-${h[1]}` : null;
+}
+const isGutterPipe = (p: Product): boolean =>
+  /ereszcsatorna/i.test(p.name) && !/véges|véglemez|szeglet|csonkos/i.test(p.name) && nameLengthM(p) !== null;
+
+/** Egy rendszer: a legolcsóbb m-árú csatornájú, amelyiknek van végeleme és tartója is (ha nincs ilyen, a legolcsóbb). */
+function chooseGutterSystem(ps: Product[]): string | null {
+  const best = new Map<string, number>();
+  const complete = new Set<string>();
+  const parts = new Map<string, { cap: boolean; bracket: boolean }>();
+  for (const p of ps) {
+    if (p.kind !== 'gutter') continue;
+    const k = gutterSystemKey(p);
+    if (!k) continue;
+    const st = parts.get(k) ?? { cap: false, bracket: false };
+    if (/véglemez/i.test(p.name)) st.cap = true;
+    if (/csatornatartó/i.test(p.name)) st.bracket = true;
+    parts.set(k, st);
+    if (isGutterPipe(p)) best.set(k, Math.min(best.get(k) ?? Infinity, p.price / nameLengthM(p)!));
+  }
+  for (const [k, st] of parts) if (st.cap && st.bracket) complete.add(k);
+  const pool = [...best.keys()].filter(k => complete.has(k));
+  const keys = (pool.length ? pool : [...best.keys()]).sort((a, b) => best.get(a)! - best.get(b)! || (a < b ? -1 : 1));
+  return keys[0] ?? null;
 }
 
 const FOUNDATION = /^foundation\./;
@@ -159,7 +199,10 @@ function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan): Product | { 
     case 'wall.breatherMembrane':
       return foilCandidates(pl, line, [/páraáteresztő/]) || none('Nincs páraáteresztő fólia az árlistában');
     case 'roof.underlay':
-      if (line.name !== 'Alátétfólia') return none('Bitumenes lemez nincs az árlistában');
+      if (line.name !== 'Alátétfólia') {
+        return cheapest(ps.filter(p => p.kind === 'roofing' && /alátét/i.test(p.name) && coverM2(p)), perM2)
+          || none('Bitumenes alátétlemez nincs az árlistában');
+      }
       return foilCandidates(pl, line, [/alátét/, /páraáteresztő/]) || none('Nincs alátétfólia az árlistában');
     case 'wall.exteriorCladding': {
       const layer = layers.find(l => l.kind === 'exteriorCladding' && l.enabled);
@@ -181,31 +224,27 @@ function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan): Product | { 
     case 'roof.tiles':
     case 'acc.ridgeTiles':
       return none('Cserép nincs az árlistában');
-    case 'acc.gutter': {
-      const c = ps.filter(p => p.kind === 'gutter' && /ereszcsatorna/i.test(p.name)
-        && !/véges|véglemez|szeglet|csonkos/i.test(p.name) && nameLengthM(p));
-      return cheapest(c, p => p.price / nameLengthM(p)!) || none('Nincs ereszcsatorna az árlistában');
-    }
+    case 'acc.gutter':
     case 'acc.gutterEnds':
-      return cheapest(ps.filter(p => p.kind === 'gutter' && /véglemez/i.test(p.name)), p => p.price)
-        || none('Nincs csatorna-végelem az árlistában');
     case 'acc.gutterJoiners':
-      return cheapest(ps.filter(p => p.kind === 'gutter' && /toldó/i.test(p.name)), p => p.price)
-        || none('Nincs csatornatoldó az árlistában');
     case 'acc.gutterBrackets':
-      return cheapest(ps.filter(p => p.kind === 'gutter' && /csatornatartó/i.test(p.name)), p => p.price)
-        || none('Nincs csatornatartó az árlistában');
-    case 'acc.downpipe': {
-      const need = (plan.building.wallHeight + DOWNPIPE_EXTRA) / 1000;
-      const c = ps.filter(p => p.kind === 'gutter' && /lefolyócső/i.test(p.name) && (nameLengthM(p) ?? 0) >= need - EPS);
-      return cheapest(c, p => p.price) || none('Nincs elég hosszú lefolyócső az árlistában');
-    }
+    case 'acc.downpipe':
     case 'acc.downpipeElbows':
-      return cheapest(ps.filter(p => p.kind === 'gutter' && /könyök/i.test(p.name)), p => p.price)
-        || none('Nincs lefolyó-könyök az árlistában');
-    case 'acc.downpipeClips':
-      return cheapest(ps.filter(p => p.kind === 'gutter' && /bilincs/i.test(p.name)), p => p.price)
-        || none('Nincs lefolyó-bilincs az árlistában');
+    case 'acc.downpipeClips': {
+      const sys = chooseGutterSystem(ps);
+      if (!sys) return none('Nincs ereszcsatorna az árlistában');
+      const inSys = ps.filter(p => p.kind === 'gutter' && gutterSystemKey(p) === sys);
+      const lack = 'A választott csatornarendszerben nincs ilyen elem';
+      if (id === 'acc.gutter') return cheapest(inSys.filter(isGutterPipe), p => p.price / nameLengthM(p)!) || none(lack);
+      if (id === 'acc.downpipe') {
+        const need = (plan.building.wallHeight + DOWNPIPE_EXTRA) / 1000;
+        return cheapest(inSys.filter(p => /lefolyócső/i.test(p.name) && (nameLengthM(p) ?? 0) >= need - EPS), p => p.price)
+          || none('A választott csatornarendszerben nincs elég hosszú lefolyócső');
+      }
+      const re = { 'acc.gutterEnds': /véglemez/i, 'acc.gutterJoiners': /toldó/i, 'acc.gutterBrackets': /csatornatartó/i,
+        'acc.downpipeElbows': /könyök/i, 'acc.downpipeClips': /bilincs/i }[id]!;
+      return cheapest(inSys.filter(p => re.test(p.name)), p => p.price) || none(lack);
+    }
     case 'fix.frameScrews': {
       // a katalógus „5×90 csavar” címkéje: pontos méretű, dobozos facsavar
       const c = ps.filter(p => p.kind === 'fastener' && p.boxQty && /csavar/i.test(p.name) && /\b5x90\b|5x90mm/i.test(p.name));

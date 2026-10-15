@@ -3,7 +3,7 @@ import type { MaterialLine } from '../../src/calc/types';
 import { createDefaultPlan, DEFAULT_PRICING } from '../../src/model/defaults';
 import type { Plan } from '../../src/model/types';
 import { BUNDLED_PRICE_LIST } from '../../src/prices';
-import { matchLine } from '../../src/pricing/match';
+import { gutterSystemKey, matchLine } from '../../src/pricing/match';
 import { supplyFromPriceList } from '../../src/pricing/supply';
 import { MATCH_FIXTURE as PL } from '../fixtures/priceList';
 
@@ -99,6 +99,58 @@ describe('matchLine', () => {
   it('eltűnt kézi termék: szabály szerinti párosítás, jelzővel', () => {
     const { plan, line } = setup(p => { p.pricing = { ...DEFAULT_PRICING, productChoice: { 'wall.osb': 'nincs-ilyen' } }; });
     expect(matchLine(line('wall.osb'), PL, plan)).toMatchObject({ productId: 'osb-12', choiceGone: true });
+  });
+});
+
+describe('csatornarendszer', () => {
+  const g = (id: string, name: string, price: number) =>
+    ({ id, name, url: 'u', kind: 'gutter' as const, unit: 'db' as const, price });
+  const sysPl = {
+    ...PL,
+    products: [
+      ...PL.products,
+      // A rendszer: olcsóbb csatorna, de nincs végeleme
+      g('a-cso', 'Ereszcsatorna 2m-es (25-ös)', 2000), g('a-tarto', 'Csatornatartó (25-ös)', 100),
+      // B rendszer: kicsit drágább, teljes
+      g('b-cso', 'Ereszcsatorna 2m-es (33-as)', 3000), g('b-veg', 'Ereszcsatorna véglemez (33)', 300),
+      g('b-tarto', 'Csatornatartó (33-as)', 900), g('b-lefolyo', 'Lefolyócső 4m-es (33-as)', 4000),
+      // C rendszer: Galeco PVC, az olcsó tartó nem keveredhet
+      g('c-tarto', 'Galeco PVC (100) csatornatartó', 50), g('c-cso', 'Galeco PVC (100) ereszcsatorna 3fm/szál', 3600),
+    ],
+  };
+  it('egy rendszerből választ: a teljes (végelemmel és tartóval) rendszer a legolcsóbb m-árú közül', () => {
+    const plan = createDefaultPlan();
+    plan.accessories.gutter = true; plan.accessories.downpipe = true;
+    const out = calculate(plan, supply);
+    const pick = (id: string) => matchLine(out.lines.find(l => l.id === id)!, sysPl, plan);
+    expect(pick('acc.gutter')).toMatchObject({ productId: 'b-cso' });
+    expect(pick('acc.gutterEnds')).toMatchObject({ productId: 'b-veg' });
+    expect(pick('acc.gutterBrackets')).toMatchObject({ productId: 'b-tarto' });
+    expect(pick('acc.downpipe')).toMatchObject({ productId: 'b-lefolyo' });
+    const joiner = pick('acc.gutterJoiners');
+    expect(joiner).toMatchObject({ missing: true });
+    expect((joiner as { reason: string }).reason).toContain('A választott csatornarendszerben nincs ilyen elem');
+    expect(pick('acc.downpipeClips')).toMatchObject({ missing: true });
+  });
+  it('rendszerkulcs: hazai sorozat és Galeco család', () => {
+    expect(gutterSystemKey(g('x', 'Csatornatartó horganyzott egyenes (25-ös)', 1))).toBe('horg-25');
+    expect(gutterSystemKey(g('x', 'Ereszcsatorna véglemez széles peremmel (33)', 1))).toBe('horg-33');
+    expect(gutterSystemKey(g('x', 'Galeco PVC (125/80) lefolyócső 4fm/szál', 1))).toBe('galeco-pvc-125');
+    expect(gutterSystemKey(g('x', 'Galeco Stal (150) ereszcsatorna 3fm/szál', 1))).toBe('galeco-stal');
+    expect(gutterSystemKey(g('x', 'Galeco Stal, Metál (150) lefolyócső 1fm/szál', 1))).toBe('galeco-stal-metál');
+  });
+});
+
+describe('bitumenes alátét', () => {
+  it('Zsindely alátétlemezre párosítható, ha van az árlistában', () => {
+    const pl = { ...PL, products: [...PL.products, { id: 'alatet-30', name: 'Zsindely alátétlemez (X)', url: 'u', kind: 'roofing' as const, unit: 'm²' as const, price: 1690, packM2: 30 }] };
+    const plan = createDefaultPlan();
+    plan.roof.layers.find(l => l.kind === 'underlay')!.material = 'bitumen';
+    const l = calculate(plan, supply).lines.find(x => x.id === 'roof.underlay')!;
+    const m = matchLine(l, pl, plan);
+    expect(m).toMatchObject({ productId: 'alatet-30' });
+    expect((m as { qtyInProductUnit: number }).qtyInProductUnit).toBe(Math.ceil(l.needM2! * 10 - 1e-9) / 10);
+    expect(matchLine(l, PL, plan)).toMatchObject({ missing: true });
   });
 });
 
