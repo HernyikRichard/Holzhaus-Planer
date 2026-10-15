@@ -1766,7 +1766,12 @@
       "kind": "roofing",
       "price": 12490,
       "unit": "db",
-      "packM2": 2.36
+      "packM2": 2.36,
+      "sheet": {
+        "w": 1180,
+        "l": 2000
+      },
+      "usefulWidth": 1127
     },
     {
       "id": "roofing-trapezlemez-t18-plusz-ral-7016-antracit",
@@ -1775,7 +1780,12 @@
       "kind": "roofing",
       "price": 12490,
       "unit": "db",
-      "packM2": 2.36
+      "packM2": 2.36,
+      "sheet": {
+        "w": 1180,
+        "l": 2000
+      },
+      "usefulWidth": 1127
     },
     {
       "id": "roofing-zsindely-alatetlemez-iko-armourbase-pro",

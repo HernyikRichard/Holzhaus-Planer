@@ -28,7 +28,7 @@ export const MATCH_FIXTURE: PriceList = {
     p({ id: 'kozetgyapot-100-b', kind: 'insulation', unit: 'db', material: 'kőzetgyapot', thickness: 100, packM2: 6, price: 12000 }),
     p({ id: 'foil-takarofolia', kind: 'foil', unit: 'db', name: 'Takarófólia párazáró 4x5m', price: 5 }),
     p({ id: 'trapez-polikarbonat', kind: 'roofing', unit: 'db', name: 'Trapéz Polikarbonát lemez 0,8mm', packM2: 2.5, price: 5000 }),
-    p({ id: 'trapez-t18', kind: 'roofing', unit: 'db', name: 'Trapézlemez T18 Plusz', packM2: 2.36, price: 12490 }),
+    p({ id: 'trapez-t18', kind: 'roofing', unit: 'db', name: 'Trapézlemez T18 Plusz', packM2: 2.36, price: 12490, sheet: { w: 1180, l: 2000 }, usefulWidth: 1127 }),
     p({ id: 'zsindely-3', kind: 'roofing', unit: 'csomag', name: 'Bitumenes zsindely (3 m²/csomag)', packM2: 3, price: 9000 }),
     p({ id: 'zsindely-starter', kind: 'roofing', unit: 'db', name: 'IKO StarterStrip kezdőelem zsindelyhez', packM2: 3, price: 100 }),
     p({ id: 'zsindely-ragaszto', kind: 'roofing', unit: 'db', name: 'Zsindelyragasztó', packM2: 3, price: 100 }),

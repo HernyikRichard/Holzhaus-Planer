@@ -128,6 +128,7 @@ export function calcRoofLayers(plan: Plan, supply?: Supply): ModuleResult {
       const qty = perPlane * g.planes;
       add({
         id: 'roof.trapezoid', name: 'Trapézlemez', quantity: qty, unit: 'db', needM2: A,
+        alongRidge: g.roofLengthAlongRidge, rafterLength: g.rafterLength, planes: g.planes,
         secondary: `táblahossz ${hu(g.rafterLength / 1000)} m, ${hu(A, 1)} m²`,
         explanation: `Tetősíkonként ⌈${hu(g.roofLengthAlongRidge / 1000)} m / ${hu(TRAPEZOID_EFFECTIVE_W / 1000)} m⌉ = ${perPlane} tábla × ${g.planes} tetősík = ${qty} tábla`,
       });

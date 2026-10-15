@@ -68,10 +68,27 @@ describe('matchLine', () => {
     expect(matchLine(line('floor.vaporBarrier'), PL, plan)).toMatchObject({ productId: 'foil-parazaro-60' });
     expect(matchLine(line('wall.breatherMembrane'), PL, plan)).toMatchObject({ missing: true });
   });
-  it('trapézlemez: a polikarbonát kizárva, db = ⌈m² / lemezterület⌉', () => {
+  it('trapézlemez: a polikarbonát kizárva, tábla = síkok × ⌈ereszhossz / hasznos szélesség⌉ × ⌈szarufahossz / (táblahossz − 150)⌉', () => {
     const { plan, line } = setup(p => { p.roof.covering = 'trapezoid'; });
     const l = line('roof.trapezoid');
-    expect(matchLine(l, PL, plan)).toEqual({ productId: 'trapez-t18', qtyInProductUnit: Math.ceil(l.needM2! / 2.36 - 1e-9) });
+    // 2 × ⌈4600 / 1127⌉ × ⌈2078 / 1850⌉ = 2 × 5 × 2
+    expect(matchLine(l, PL, plan)).toEqual({ productId: 'trapez-t18', qtyInProductUnit: 20 });
+  });
+  it('trapézlemez: hasznos szélesség hiányában táblaszélesség − 53 mm; a méret a névből is jöhet', () => {
+    const { plan, line } = setup(p => {
+      p.roof.covering = 'trapezoid';
+      p.pricing = { ...DEFAULT_PRICING, productChoice: { 'roof.trapezoid': 'trapez-polikarbonat' } };
+    });
+    const pl = { ...PL, products: PL.products.map(x => x.id === 'trapez-polikarbonat' ? { ...x, name: 'Trapéz Polikarbonát lemez 0,8mm (126x200cm)' } : x) };
+    // 2 × ⌈4600 / (1260 − 53)⌉ × ⌈2078 / 1850⌉ = 2 × 4 × 2
+    expect(matchLine(line('roof.trapezoid'), pl, plan)).toEqual({ productId: 'trapez-polikarbonat', qtyInProductUnit: 16 });
+  });
+  it('trapézlemez: ismeretlen táblaméret -> hiányzó, nem területből becsült', () => {
+    const { plan, line } = setup(p => { p.roof.covering = 'trapezoid'; });
+    const pl = { ...PL, products: PL.products.map(x => x.id === 'trapez-t18' ? { ...x, sheet: undefined, usefulWidth: undefined } : x) };
+    const m = matchLine(line('roof.trapezoid'), pl, plan);
+    expect(m).toMatchObject({ missing: true });
+    expect((m as { reason: string }).reason).toBe('A trapézlemez táblamérete ismeretlen – kézi ár szükséges');
   });
   it('zsindely: a kezdőelem és a ragasztó kizárva, csomag 1:1 azonos méretnél', () => {
     const { plan, line } = setup(p => { p.roof.covering = 'shingle'; });
@@ -155,6 +172,15 @@ describe('bitumenes alátét', () => {
 });
 
 describe('beépített árlista', () => {
+  it('trapézlemez az alaptervhez: 1180×2000-es tábla, 20 db', () => {
+    const pl = BUNDLED_PRICE_LIST!;
+    const plan = createDefaultPlan();
+    plan.roof.covering = 'trapezoid';
+    const l = calculate(plan, supplyFromPriceList(pl)).lines.find(x => x.id === 'roof.trapezoid')!;
+    const m = matchLine(l, pl, plan) as { productId: string; qtyInProductUnit: number };
+    expect(pl.products.find(p => p.id === m.productId)).toMatchObject({ sheet: { w: 1180, l: 2000 }, usefulWidth: 1127 });
+    expect(m.qtyInProductUnit).toBe(20);
+  });
   it('a 50×100, 50×150 és 30×50 faanyag-sorok mind kapnak Káplár-terméket', () => {
     const pl = BUNDLED_PRICE_LIST!;
     const plan = createDefaultPlan();

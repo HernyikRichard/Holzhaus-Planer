@@ -45,6 +45,13 @@ test('trapezoid sheets', () => {
   expect(q(r, 'roof.trapezoid')).toBe(10);
   expect(r.lines.find(l => l.id === 'roof.trapezoid')!.secondary).toBe('táblahossz 2,08 m, 19,1 m²');
 });
+test('trapezoid line carries the sheet-layout geometry for product matching', () => {
+  const p = createDefaultPlan(); p.roof.covering = 'trapezoid';
+  const l = calcRoofLayers(p).lines.find(x => x.id === 'roof.trapezoid')!;
+  expect(l.alongRidge).toBe(4600);
+  expect(l.rafterLength).toBeCloseTo(2078, 0);
+  expect(l.planes).toBe(2);
+});
 test('osb decking and epdm', () => {
   const p = createDefaultPlan(); p.roof.covering = 'epdm';
   p.roof.layers.find(l => l.kind === 'decking')!.material = 'osb';

@@ -1,5 +1,5 @@
 import type { MaterialLine } from '../calc/types';
-import { DOWNPIPE_EXTRA } from '../catalog';
+import { DOWNPIPE_EXTRA, TRAPEZOID_END_OVERLAP, TRAPEZOID_SIDE_OVERLAP } from '../catalog';
 import type { InsulationType, Plan } from '../model/types';
 import type { PriceList, Product } from '../prices/types';
 
@@ -36,6 +36,32 @@ function sectionOf(key: string): { t: number; w: number } | null {
 function piecesOf(line: MaterialLine): number | null {
   const m = /^(\d+)\s*db$/.exec(line.secondary ?? '');
   return m ? +m[1] : null;
+}
+
+/** Trapézlemez-tábla (mm): hossz és hasznos fedőszélesség – a termék adataiból vagy a nevéből („126x200cm”). */
+export function trapezoidSheet(p: Product): { length: number; useful: number } | null {
+  let s = p.sheet;
+  if (!s) {
+    const m = /(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*cm(?![a-z])/i.exec(p.name);
+    if (m) {
+      const a = Math.round(parseFloat(m[1].replace(',', '.')) * 10);
+      const b = Math.round(parseFloat(m[2].replace(',', '.')) * 10);
+      s = { w: Math.min(a, b), l: Math.max(a, b) };
+    }
+  }
+  if (!s) return null;
+  const useful = p.usefulWidth ?? s.w - TRAPEZOID_SIDE_OVERLAP;
+  return useful > 0 && s.l > TRAPEZOID_END_OVERLAP ? { length: s.l, useful } : null;
+}
+
+/** Trapézlemez táblaszáma: síkok × ⌈ereszhossz / hasznos szélesség⌉ × ⌈szarufahossz / (táblahossz − végátfedés)⌉. */
+function trapezoidQty(line: MaterialLine, p: Product): number | { reason: string } {
+  const sh = trapezoidSheet(p);
+  const { alongRidge, rafterLength, planes } = line;
+  if (!sh || alongRidge === undefined || rafterLength === undefined || planes === undefined) {
+    return { reason: 'A trapézlemez táblamérete ismeretlen' };
+  }
+  return planes * Math.ceil(alongRidge / sh.useful - EPS) * Math.ceil(rafterLength / (sh.length - TRAPEZOID_END_OVERLAP) - EPS);
 }
 
 /** A sor mennyisége a termék egységében, vagy null, ha az átváltás nem egyértelmű. */
@@ -216,9 +242,13 @@ function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan): Product | { 
       return closestThickness(ps.filter(p => p.kind === 'cladding' && p.packM2), layer.thickness)
         || none('Nincs lambéria az árlistában');
     }
-    case 'roof.trapezoid':
-      return cheapest(ps.filter(p => p.kind === 'roofing' && p.packM2 && /trapézlemez/i.test(p.name) && !/polikarbon/i.test(p.name)), perM2)
-        || none('Nincs trapézlemez az árlistában');
+    case 'roof.trapezoid': {
+      const c = ps.filter(p => p.kind === 'roofing' && p.unit !== 'm²' && /trapézlemez/i.test(p.name) && !/polikarbon/i.test(p.name));
+      if (!c.length) return none('Nincs trapézlemez az árlistában');
+      const sized = c.filter(p => typeof trapezoidQty(line, p) === 'number');
+      // ismert táblaméretű: a teljes tetőre legolcsóbb; különben a legolcsóbb (a mennyisége hiányzó lesz)
+      return sized.length ? cheapest(sized, p => (trapezoidQty(line, p) as number) * p.price)! : cheapest(c, p => p.price)!;
+    }
     case 'roof.shingles': {
       const c = ps.filter(p => p.kind === 'roofing' && p.packM2 && /zsindely/i.test(p.name)
         && !/starter|kezdőelem|ragasztó|alátét/i.test(p.name));
@@ -259,6 +289,14 @@ function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan): Product | { 
   }
 }
 
+/** A sor mennyisége a termék egységében; a trapézlemez táblakiosztásból, a többi az egységátváltásból. */
+function quantity(line: MaterialLine, p: Product, unconvertible: string): number | { reason: string } {
+  if (line.id === 'roof.trapezoid' && p.kind === 'roofing' && p.unit !== 'm²') return trapezoidQty(line, p);
+  return convert(line, p) ?? { reason: unconvertible };
+}
+const toMatch = (p: Product, q: number | { reason: string }): Match =>
+  typeof q === 'number' ? { productId: p.id, qtyInProductUnit: q } : miss(q.reason);
+
 export function matchLine(line: MaterialLine, pl: PriceList, plan: Plan): Match {
   if (FOUNDATION.test(line.id)) {
     return { missing: true, reason: 'Nincs Káplár-termék, máshonnan beszerzendő', otherSource: true };
@@ -267,10 +305,7 @@ export function matchLine(line: MaterialLine, pl: PriceList, plan: Plan): Match 
   let choiceGone = false;
   if (choice !== undefined) {
     const p = pl.products.find(x => x.id === choice);
-    if (p) {
-      const q = convert(line, p);
-      return q === null ? miss('A kiválasztott termék egysége nem váltható át') : { productId: p.id, qtyInProductUnit: q };
-    }
+    if (p) return toMatch(p, quantity(line, p, 'A kiválasztott termék egysége nem váltható át'));
     choiceGone = true;
   }
   const picked = pickByRule(line, pl, plan);
@@ -278,8 +313,7 @@ export function matchLine(line: MaterialLine, pl: PriceList, plan: Plan): Match 
   if ('reason' in picked && !('id' in picked)) m = miss(picked.reason);
   else {
     const p = picked as Product;
-    const q = convert(line, p);
-    m = q === null ? miss('Az egység nem váltható át') : { productId: p.id, qtyInProductUnit: q };
+    m = toMatch(p, quantity(line, p, 'Az egység nem váltható át'));
   }
   return choiceGone ? { ...m, choiceGone: true } : m;
 }

@@ -109,6 +109,15 @@ const num = (re, s) => {
   return m ? parseHuNumber(m[1]) : undefined;
 };
 
+/** Fedőlemez táblamérete cm-ben megadva („126x200cm”, „118x200 cm”) -> mm, w ≤ l; különben null. */
+export function roofingSheetFromText(s) {
+  const m = new RegExp(`(${NUM})\\s*[x×]\\s*(${NUM})\\s*cm(?![a-zA-Z])`, 'i').exec(String(s));
+  if (!m) return null;
+  const a = Math.round(parseHuNumber(m[1]) * 10); const b = Math.round(parseHuNumber(m[2]) * 10);
+  if (!(a >= 300 && b >= 300 && a <= 15000 && b <= 15000)) return null;
+  return { w: Math.min(a, b), l: Math.max(a, b) };
+}
+
 /**
  * @param {{ name: string, url: string, price: number, unitText: string }} input
  * @returns {import('../src/prices/types').Product | null}
@@ -181,6 +190,10 @@ export function parseProduct({ name: rawName, url, price, unitText }) {
     }
     default: { // roofing, gutter, fastener
       if (packM2 !== undefined) p.packM2 = packM2;
+      if (kind === 'roofing') {
+        const sheet = roofingSheetFromText(name);
+        if (sheet) p.sheet = sheet;
+      }
       const box = num(/(\d+)\s*db\s*\/\s*dob/i, name);
       if (kind === 'fastener' && box !== undefined) p.boxQty = box;
       p.id = `${kind}-${slug(name)}`;

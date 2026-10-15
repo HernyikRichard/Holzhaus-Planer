@@ -10,6 +10,7 @@ export interface Product {
   section?: { t: number; w: number }; length?: number;   // mm (faanyag)
   thickness?: number; sheet?: { w: number; l: number };  // mm (lapok)
   packM2?: number; rollM2?: number; boxQty?: number;
+  usefulWidth?: number;  // mm, trapézlemez hasznos fedőszélessége (ha az oldal megadja)
   material?: string;     // pl. 'kőzetgyapot', 'üveggyapot', 'XPS', 'lambéria'
 }
 

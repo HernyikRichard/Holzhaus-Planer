@@ -42,6 +42,10 @@ export const TILE_PER_M2 = 10;
 export const TILE_CLIP_EAVE_SPACING = 300;
 export const TILE_CLIP_RAKE_SPACING = 330;
 export const TRAPEZOID_EFFECTIVE_W = 1050;
+/** Trapézlemez oldalirányú átfedése (mm): ha a termék hasznos fedőszélessége nem ismert, táblaszélesség − ennyi. */
+export const TRAPEZOID_SIDE_OVERLAP = 53;
+/** Trapézlemez-táblák végátfedése lejtésirányban (mm). */
+export const TRAPEZOID_END_OVERLAP = 150;
 export const SHINGLE_PACK_M2 = 3;
 export const EPDM_UPTURN = 200;
 

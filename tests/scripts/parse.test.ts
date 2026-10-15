@@ -102,3 +102,8 @@ test('unknown units and non-positive prices are rejected', () => {
   expect(p(-5, 'db')).toBeNull();
   expect(p(1990, 'szál')).toMatchObject({ unit: 'db' });
 });
+
+test('roofing sheet size from the name (cm)', () => {
+  expect(parseProduct({ name: 'Trapéz Polikarbonát lemez 0,8mm (126x200cm)', url: 'u', price: 17665, unitText: 'db' }))
+    .toMatchObject({ kind: 'roofing', sheet: { w: 1260, l: 2000 } });
+});

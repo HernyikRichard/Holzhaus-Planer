@@ -10,7 +10,7 @@
 import { gunzipSync } from 'node:zlib';
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { parseProduct, parseHuNumber, cleanName, slug } from './parse.mjs';
+import { parseProduct, parseHuNumber, cleanName, slug, roofingSheetFromText } from './parse.mjs';
 
 const BASE = 'https://kaplarfatelep.hu';
 const OUT = fileURLToPath(new URL('../src/prices/kaplar.json', import.meta.url));
@@ -163,6 +163,12 @@ export function enrich(p, text, areaPerPiece) {
     const m = /(\d+(?:[.,]\d+)?)\s*m[²2]\s*\/\s*(?:csomag|cs\b|bála|bala|tekercs)/i.exec(text);
     if (areaPerPiece && p.unit !== 'm²') p.packM2 = areaPerPiece;
     else if (m) p.packM2 = n(m);
+  }
+  if (p.kind === 'roofing' && /trapéz/i.test(p.name)) {
+    // trapézlemez: táblaméret („Méret: 118x200 cm”) és hasznos fedőszélesség az oldalról
+    if (!p.sheet) { const s = roofingSheetFromText(text); if (s) p.sheet = s; }
+    const u = /Hasznos\s+fedőszélesség:?\s*(\d{3,4})\s*mm/i.exec(text);
+    if (u && p.usefulWidth === undefined) p.usefulWidth = Number(u[1]);
   }
   if (p.kind === 'foil' && p.rollM2 === undefined) {
     const m = /(\d+(?:[.,]\d+)?)\s*m[²2]\s*\/\s*tekercs/i.exec(text);

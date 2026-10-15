@@ -28,6 +28,16 @@ describe('extract + enrich (fixture HTML)', () => {
     expect(p.packM2).toBe(2.36);
   });
 
+  it('trapézlemez T18: táblaméret és hasznos fedőszélesség az oldal szövegéből', () => {
+    const r = extract(page('Trapézlemez T18 PLUSZ RAL 3009 bordó',
+      '<b>12 490 Ft / db</b> <span>Bruttó: 5 292 Ft / m² 2.36</span> Méret 118x200 cm Teljes szélesség: 1180 mm'
+      + ' Hasznos fedőszélesség: 1127 mm (ezzel a mérettel számoljon)'));
+    const p = parseProduct({ name: r.name!, url: 'https://kaplarfatelep.hu/x', price: r.price!, unitText: r.unitText! })!;
+    enrich(p, r.text!, r.areaPerPiece);
+    expect(p.sheet).toEqual({ w: 1180, l: 2000 });
+    expect(p.usefulWidth).toBe(1127);
+  });
+
   it('léc: a Bruttó db ár a darabár, nem a méterár', () => {
     const r = extract(page('Bramac PLUS tetőléc 3x5x400cm', '<b>349 Ft / méter</b> Bruttó: 1 396 Ft / db 0.25'));
     expect(r.price).toBe(1396);
