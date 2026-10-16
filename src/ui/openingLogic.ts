@@ -3,7 +3,10 @@ import type { Mm, Opening, Plan, WallSide } from '../model/types';
 import { wallGeometry } from '../calc/geometry';
 import { validatePlan } from '../model/validate';
 
-export const SNAP: Mm = 50;
+/** Húzás/beszúrás rácsa (1 cm); a beírt értékek nem igazodnak rácshoz. */
+export const SNAP: Mm = 10;
+/** A szabad hely keresésének lépése (addFreeOpening). */
+const SCAN_STEP: Mm = 50;
 export const WALL_NAME: Record<WallSide, string> = { N: 'É', E: 'K', S: 'D', W: 'Ny' };
 export const WALLS: WallSide[] = ['N', 'E', 'S', 'W'];
 export const DEFAULTS = {
@@ -65,7 +68,7 @@ export function addFreeOpening(plan: Plan, type: 'door' | 'window'): Opening | n
   const o = addOpening(plan, 'S', type, 0);
   const last = plan.openings.length - 1;
   const max = wallLength(plan, 'S') - margin - o.width;
-  for (let off = margin; off <= max; off += SNAP) {
+  for (let off = margin; off <= max; off += SCAN_STEP) {
     o.offset = off;
     if (!validatePlan(plan).some(e => e.path.startsWith(`openings.${last}.`))) return o;
   }

@@ -1,7 +1,7 @@
 import type { jsPDF } from 'jspdf';
 import type { Plan, RoofShape, WallSide } from '../model/types';
 import { CATEGORY_ORDER, type CalcOutput } from '../calc';
-import { formatQty } from '../ui/format';
+import { formatCmNum, formatQty } from '../ui/format';
 import { buildScene } from '../scene/build';
 import { supplyFor } from '../pricing/supply';
 import { renderStandalone } from '../viewer/render';
@@ -86,7 +86,7 @@ export async function exportPdf(plan: Plan, output: CalcOutput, opts: PdfOptions
   doc.text(nameLines, MARGIN, 60);
   const y = 60 + nameLines.length * 11 + 6;
   setText(12);
-  const cm = (mm: number) => formatQty(mm / 10, 1);
+  const cm = formatCmNum;
   const { width, length, wallHeight } = plan.building;
   doc.text('Szélesség × hosszúság × falmagasság:', MARGIN, y);
   setText(12, 'bold');

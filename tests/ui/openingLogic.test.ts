@@ -1,10 +1,10 @@
 import { createDefaultPlan } from '../../src/model/defaults';
 import { addOpening, moveOpening } from '../../src/ui/openingLogic';
 
-test('addOpening centers on click and snaps to 50 mm', () => {
+test('addOpening centers on click and snaps to 10 mm', () => {
   const p = createDefaultPlan();
   const o = addOpening(p, 'E', 'window', 2013);
-  expect(o.offset).toBe(1700);         // 2013 − 300 = 1713 → 1700
+  expect(o.offset).toBe(1710);         // 2013 − 300 = 1713 → 1710
   expect(p.openings).toContain(o);
 });
 
@@ -26,7 +26,7 @@ test('moveOpening clamps inside wall', () => {
   moveOpening(p, id, -5);
   expect(p.openings[0].offset).toBe(150);
   moveOpening(p, id, 1013);
-  expect(p.openings[0].offset).toBe(1000);
+  expect(p.openings[0].offset).toBe(1010);
 });
 
 

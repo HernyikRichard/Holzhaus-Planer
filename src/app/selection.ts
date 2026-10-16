@@ -117,9 +117,3 @@ export function targetLines(scene: Scene, plan: Plan, errors: { path: string; me
   }
   return tooltipLines(scene, plan, { el: id }, errs);
 }
-
-/** mm → "N cm" (egész, vagy egy tizedes tizedesvesszővel). */
-export function cmText(mm: Mm): string {
-  const v = mm / 10;
-  return (Math.abs(v - Math.round(v)) < 1e-6 ? String(Math.round(v)) : v.toFixed(1).replace('.', ',')) + ' cm';
-}

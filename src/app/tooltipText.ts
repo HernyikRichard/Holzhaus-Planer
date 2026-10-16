@@ -1,5 +1,6 @@
 import type { Plan } from '../model/types';
 import type { Element, FastenerRef, Scene } from '../scene/types';
+import { formatCmNum } from '../ui/format';
 import { groupLength, neighbours } from '../scene/neighbours';
 
 const GROUP_NAMES: Record<string, string> = {
@@ -9,11 +10,7 @@ const GROUP_NAMES: Record<string, string> = {
 };
 const VERTICAL = new Set(['stud', 'cornerStud', 'gableStud', 'kingStud', 'jackStud', 'cripple']);
 
-/** mm → cm szám szöveggel: egész, ha egész, egyébként egy tizedes, tizedesvesszővel. */
-function c(mm: number): string {
-  const v = mm / 10;
-  return Math.abs(v - Math.round(v)) < 1e-6 ? String(Math.round(v)) : v.toFixed(1).replace('.', ',');
-}
+const c = formatCmNum;
 
 export function groupName(group: string): string {
   return GROUP_NAMES[group] ?? group;

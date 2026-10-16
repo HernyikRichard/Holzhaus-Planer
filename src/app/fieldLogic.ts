@@ -24,7 +24,10 @@ export function toDisplay(def: Pick<FieldDef, 'unit'>, value: number): string {
 export function toStored(def: Pick<FieldDef, 'unit'>, text: string): number | null {
   const n = parseNumberInput(text);
   if (n === null) return null;
-  return Math.round(n * FACTOR[def.unit ?? 'mm'] * 1e6) / 1e6;
+  const unit = def.unit ?? 'mm';
+  // hosszmezők egész mm-re kerekítve (1 mm pontosság); a fok és a százalék marad
+  if (unit === 'm' || unit === 'cm' || unit === 'mm') return Math.round(Math.round(n * FACTOR[unit] * 1e6) / 1e6);
+  return Math.round(n * FACTOR[unit] * 1e6) / 1e6;
 }
 
 /** Egy mező módosítása a mellékhatásokkal együtt (a draft-on). */

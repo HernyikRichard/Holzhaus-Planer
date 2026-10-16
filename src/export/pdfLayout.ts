@@ -1,6 +1,6 @@
 import type { Scene } from '../scene/types';
 import { cutSticks, cutVariants } from '../app/lineElements';
-import { formatDateHu, formatFt, formatQty, sectionLabelWithUnit } from '../ui/format';
+import { formatCm, formatCmNum, formatDateHu, formatFt, formatQty, sectionLabelWithUnit } from '../ui/format';
 import { CATEGORY_ORDER } from '../calc';
 import { isCart, orderList, type CostSummary } from '../pricing/cost';
 
@@ -79,8 +79,8 @@ export function cutPlanRows(scene: Scene): string[][] {
       const first = v[0];
       const cells: [string, string, string] = [
         `${first.category} – ${sectionLabelWithUnit(first.section.t, first.section.w)}`,
-        first.pieces.map(p => String(Math.round(p.length / 10))).join(' + ') + ' cm',
-        `${Math.max(0, Math.round(first.rest / 10))} cm`,
+        first.pieces.map(p => formatCmNum(p.length)).join(' + ') + ' cm',
+        formatCm(Math.max(0, first.rest)),
       ];
       const len = `${formatQty(first.stockLength / 1000, 2)} m`;
       const key = [cells[0], len, cells[1], cells[2]].join('|');

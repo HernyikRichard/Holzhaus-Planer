@@ -1,5 +1,6 @@
 import type { Mm } from '../model/types';
-import { cmText as cm, type StickPiece } from './selection';
+import type { StickPiece } from './selection';
+import { formatCm as cm } from '../ui/format';
 
 
 /** Arányos csík a szálról: a saját darab sárga, a testvérek kék (kattinthatók, ha elemhez tartoznak), a maradék szürke. */
