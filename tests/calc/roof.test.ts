@@ -1,4 +1,6 @@
 import { createDefaultPlan } from '../../src/model/defaults';
+import { calculate } from '../../src/calc';
+import type { Plan } from '../../src/model/types';
 import { calcRoofLayers, calcRoofStructure } from '../../src/calc/roof';
 import type { ModuleResult } from '../../src/calc/types';
 
@@ -59,4 +61,28 @@ test('osb decking and epdm', () => {
   expect(r.stats.osbSheets).toBe(q(r, 'roof.decking'));
   // (19,1218 + 14 m × 0,2 m) × 1,1 = 24,114 → 24,2
   expect(q(r, 'roof.epdm')).toBeCloseTo(24.2);
+});
+
+describe('héjazat–hajlás ellenőrzés', () => {
+  const pitchWarn = (covering: Plan['roof']['covering'], pitch: number) => {
+    const p = createDefaultPlan(); p.roof.shape = 'mono'; p.roof.covering = covering; p.roof.pitch = pitch;
+    return calcRoofLayers(p).warnings.filter(w => w.includes('tetőhajlást igényel'));
+  };
+  test.each([['tile', 22], ['shingle', 15], ['trapezoid', 5]] as const)('%s: a minimum alatt figyelmeztet, a minimumon nem', (c, min) => {
+    expect(pitchWarn(c, min - 0.5)).toHaveLength(1);
+    expect(pitchWarn(c, min)).toEqual([]);
+  });
+  test('EPDM sosem figyelmeztet', () => {
+    expect(pitchWarn('epdm', 5)).toEqual([]);
+    const p = createDefaultPlan(); p.roof.shape = 'flat'; p.roof.pitch = 1; p.roof.covering = 'epdm';
+    expect(calcRoofLayers(p).warnings).toEqual([]);
+  });
+  test('a szöveg a megfelelő héjazatokat ajánlja', () => {
+    expect(pitchWarn('tile', 10)).toEqual(['A cserép legalább 22°-os tetőhajlást igényel (most 10°). Válassz EPDM-et vagy trapézlemezt, vagy növeld a hajlást.']);
+    expect(pitchWarn('shingle', 4.5)[0]).toBe('A bitumenes zsindely legalább 15°-os tetőhajlást igényel (most 4,5°). Válassz EPDM-et, vagy növeld a hajlást.');
+  });
+  test('a figyelmeztetés a teljes számításban egyszer jelenik meg', () => {
+    const p = createDefaultPlan(); p.roof.shape = 'mono'; p.roof.pitch = 10;
+    expect(calculate(p).warnings.filter(w => w.includes('tetőhajlást igényel'))).toHaveLength(1);
+  });
 });

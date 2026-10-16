@@ -1,7 +1,7 @@
-import type { Plan } from '../model/types';
+import type { Plan, RoofCovering } from '../model/types';
 import type { MaterialLine, ModuleResult } from './types';
 import {
-  BATTEN_GAUGE, EPDM_UPTURN, OSB_SHEET, RAFTER_MAX_SPAN, SHINGLE_PACK_M2,
+  BATTEN_GAUGE, EPDM_UPTURN, MIN_PITCH, OSB_SHEET, RAFTER_MAX_SPAN, SHINGLE_PACK_M2,
   TILE_CLIP_EAVE_SPACING, TILE_CLIP_RAKE_SPACING, TILE_PER_M2, TRAPEZOID_EFFECTIVE_W, UNDERLAY_ROLL_M2, UNDERLAY_WASTE,
 } from '../catalog';
 import { ceilTo, emptyResult, hu, sectionKey, sectionLabel } from './util';
@@ -11,9 +11,30 @@ import { elementsToPieces } from '../scene/toPieces';
 import { missingSupplyWarning, type Supply } from '../pricing/supplyTypes';
 
 const OSB_AREA = (OSB_SHEET.w / 1000) * (OSB_SHEET.l / 1000);
-const COVERING_HU: Record<string, string> = {
+const COVERING_HU: Record<RoofCovering, string> = {
   tile: 'Cserép', trapezoid: 'Trapézlemez', shingle: 'Bitumenes zsindely', epdm: 'EPDM gumilemez',
 };
+
+/** Tárgyesetű név a javaslathoz („Válassz …”). */
+const COVERING_ACC: Record<RoofCovering, string> = {
+  tile: 'cserepet', trapezoid: 'trapézlemezt', shingle: 'zsindelyt', epdm: 'EPDM-et',
+};
+/** Névelő: magánhangzó előtt „Az”. */
+const article = (word: string): string => (/^[aáeéiíoóöőuúüű]/i.test(word) ? 'Az' : 'A');
+
+/** Héjazat–hajlás ellenőrzés: ha a hajlás a héjazat minimuma alatt van, a figyelmeztetés a megfelelő héjazatokkal; különben null. */
+export function pitchWarning(plan: Plan): string | null {
+  const { covering, pitch } = plan.roof;
+  const min = MIN_PITCH[covering];
+  if (!(pitch < min)) return null;
+  const name = COVERING_HU[covering].toLowerCase();
+  const ok = (Object.keys(MIN_PITCH) as RoofCovering[])
+    .filter(c => MIN_PITCH[c] <= pitch)
+    .sort((a, b) => MIN_PITCH[a] - MIN_PITCH[b])
+    .map(c => COVERING_ACC[c]);
+  const list = ok.length > 1 ? `${ok.slice(0, -1).join(', ')} vagy ${ok[ok.length - 1]}` : ok[0];
+  return `${article(name)} ${name} legalább ${hu(min)}°-os tetőhajlást igényel (most ${hu(pitch)}°). Válassz ${list}, vagy növeld a hajlást.`;
+}
 
 export function calcRoofStructure(plan: Plan): ModuleResult {
   const res = emptyResult();
@@ -50,6 +71,8 @@ export function calcRoofLayers(plan: Plan, supply?: Supply): ModuleResult {
   const layer = (kind: string) => layers.find(l => l.kind === kind);
   const forced = covering === 'shingle' || covering === 'epdm';
   const noBattens = forced;
+  const pw = pitchWarning(plan);
+  if (pw) res.warnings.push(pw);
 
   // Deszkázat / OSB
   const decking = layer('decking');

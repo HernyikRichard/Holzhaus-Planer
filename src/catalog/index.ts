@@ -48,6 +48,8 @@ export const TRAPEZOID_SIDE_OVERLAP = 53;
 export const TRAPEZOID_END_OVERLAP = 150;
 export const SHINGLE_PACK_M2 = 3;
 export const EPDM_UPTURN = 200;
+/** Héjazatonként a legkisebb tetőhajlás (°); alatta csak figyelmeztetés. Az EPDM-nek nincs korlátja. */
+export const MIN_PITCH: Record<RoofCovering, number> = { tile: 22, shingle: 15, trapezoid: 5, epdm: 0 };
 
 // Szarufa
 export const RAFTER_MAX_SPAN: Record<string, Mm> = {
