@@ -1,8 +1,8 @@
 import type { Mm, Plan, WallLayerKind, WallSide } from '../model/types';
-import { BATTEN_SECTION, BATTEN_SPACING_WALL } from '../catalog';
-import { studLengthAt, wallGeometry, type WallGeom } from '../calc/geometry';
+import { BATTEN_SECTION, BATTEN_SPACING_WALL, COUNTER_BATTEN_SECTION, FASCIA_SECTION, ROOF_BATTEN_SECTION } from '../catalog';
+import { roofGeometry, studLengthAt, wallGeometry, type WallGeom } from '../calc/geometry';
 import type { Element, ElementKind, Scene } from '../scene/types';
-import { floorTopZ, wallLayerStrips } from '../scene/layerStack';
+import { COVERING_T, DECKING_T, FOIL_T, floorTopZ, wallLayerStrips } from '../scene/layerStack';
 import { corners } from '../viewer/views/common';
 import { floorWallMap } from '../viewer/views/floorPlan';
 
@@ -333,6 +333,159 @@ function wallLayerSolids(plan: Plan, scene: Scene): Solid[] {
   return out;
 }
 
+// ---- tető és kiegészítők ----
+
+const GUTTER_R = 62.5;    // félköríves ereszcsatorna sugara (125 mm-es csatorna), csak megjelenítés
+const GUTTER_WALL = 3;
+const GUTTER_SEGMENTS = 12;
+
+/** Egy tetősík az eresz helyével és a gerinc / a túlsó vég felé mutató iránnyal a gerincre merőleges p tengelyen. */
+interface RoofPlane { group: string; pEave: number; dir: 1 | -1; pEnd: number }
+
+/** A sokszög (u, v)-ben az óramutatóval ellentétes körüljárással. */
+const ccw = (pts: P2[]): P2[] => (area(pts) < 0 ? [...pts].reverse() : pts);
+
+/**
+ * Tetőtestek. Minden test egy függőleges (p, z) profil, a gerinc irányában (r) kihúzva:
+ * `uAxis` = a gerincre merőleges vízszintes világirány (+p), `vAxis` = +Z, `nAxis` = a gerinc iránya (+r).
+ * p, r a `roofMap` koordinátái (p = 0 az x = 0 / y = 0 oldal külső síkja, r = 0 a gerinc menti épületkezdet);
+ * a tetősík (u, v) → p = `roofMap` P(v), r = −gableOverhang + u.
+ * A szarufák alsó síkja a metszetnézet zU(p)-je: az eresz fal külső síkján a koszorú teteje, onnan a hajlásszöggel
+ * emelkedik (madárszáj nélkül). A rétegek a szarufák felső síkjától a tetősík normálisa mentén, függőleges végvágással
+ * az eresznél és a gerincnél, mint a metszetnézetben. Lapos tető (`flat`): egy sík a kis hajlásszöggel (a falak
+ * teteje is ezt követi), ellenléc nélkül.
+ */
+function roofSolids(plan: Plan, scene: Scene): Solid[] {
+  const g = roofGeometry(plan);
+  const { eaveOverhang: oe, gableOverhang: og, rafterSection, covering, layers } = plan.roof;
+  const gable = g.shape === 'gable';
+  const flat = plan.roof.shape === 'flat';
+  const ridgeY = plan.roof.ridgeDirection === 'y';
+  const Pv: Vec3 = ridgeY ? [...X] : [...Y];
+  const Rv: Vec3 = ridgeY ? [...Y] : [...X];
+  const sin = Math.sin(g.pitchRad);
+  const cos = Math.cos(g.pitchRad);
+  const tan = Math.tan(g.pitchRad);
+  const W = g.W;
+  const Lr = g.roofLengthAlongRidge;
+  const zBase = wallBaseZ(plan) + plan.building.wallHeight; // a koszorú teteje az ereszfalon
+  const zU = (p: number): number => zBase + tan * (gable ? Math.min(p, W - p) : W - p);
+  const th = rafterSection.w / cos; // a szarufa függőleges metszetmagassága
+  const t = rafterSection.t;
+  const planes: RoofPlane[] = gable
+    ? [{ group: 'roof.L', pEave: -oe, dir: 1, pEnd: W / 2 }, { group: 'roof.R', pEave: W + oe, dir: -1, pEnd: W / 2 }]
+    : [{ group: 'roof.M', pEave: W + oe, dir: -1, pEnd: -oe }];
+  const planeOf = (group: string): RoofPlane => planes.find(pl => pl.group === group) ?? planes[0];
+  const pAt = (pl: RoofPlane, v: number): number => pl.pEave + pl.dir * v * cos;
+  /** Tetősík (v: a lejtő mentén az eresztől, n: a szarufa alsó síkjától a normális mentén) → (p, z). */
+  const inPlane = (pl: RoofPlane, v: number, n: number): P2 =>
+    [pl.pEave + pl.dir * (v * cos - n * sin), zU(pl.pEave) + v * sin + n * cos];
+  /** Függőleges végű sáv p ∈ [pa, pb] között, a szarufa alsó síkja fölött n0…n1 (merőleges) távolságban. */
+  const strip = (pa: number, pb: number, n0: number, n1: number): P2[] =>
+    [[pa, zU(pa) + n0 / cos], [pb, zU(pb) + n0 / cos], [pb, zU(pb) + n1 / cos], [pa, zU(pa) + n1 / cos]];
+  const out: Solid[] = [];
+  const push = (layer: Layer3dId, label: string, material: string, pts: P2[], r0: number, depth: number, elementId?: string): void => {
+    out.push({
+      layer, ...(elementId ? { elementId } : {}), label, material,
+      origin: add([0, 0, 0], Rv, r0), uAxis: [...Pv], vAxis: [...Z], nAxis: [...Rv],
+      outline: ccw(pts), holes: [], depth,
+    });
+  };
+  const els = scene.elements.filter(e => e.group.startsWith('roof.'));
+  const hasRidge = els.some(e => e.kind === 'ridge');
+  /** A gerincpalló két oldala: a szarufák eddig érnek. */
+  const toRidge = (pl: RoofPlane, p: number): number =>
+    !hasRidge ? p : pl.dir > 0 ? Math.min(p, W / 2 - t / 2) : Math.max(p, W / 2 + t / 2);
+
+  // tetőváz: szarufák (a gerincpallóig), gerincpalló, fogópárok
+  for (const e of els) {
+    const r0 = -og + e.geom.u;
+    if (e.kind === 'rafter') {
+      const pl = planeOf(e.group);
+      const pa = toRidge(pl, pAt(pl, e.geom.v));
+      const pb = toRidge(pl, pAt(pl, e.geom.v + e.geom.h));
+      push('roofFrame', e.label, 'timber', strip(pa, pb, 0, rafterSection.w), r0, e.geom.w, e.id);
+    } else if (e.kind === 'ridge') {
+      // gerincpalló: a teteje a két sík szarufáinak felső síkja szerint ferdén levágva, a csúcs a szarufák felső élén
+      const c = W / 2;
+      const h = t / 2;
+      const apex = zBase + g.rise + th;
+      const hgt = e.section?.w ?? rafterSection.w;
+      push('roofFrame', e.label, 'timber',
+        [[c - h, apex - hgt], [c + h, apex - hgt], [c + h, apex - h * tan], [c, apex], [c - h, apex - h * tan]], r0, e.geom.w, e.id);
+    } else if (e.kind === 'collar') {
+      // fogópár: vízszintes, a falnézettel egyezően a koszorú tetején; a vége a szarufa alsó síkjáig vágva
+      const piece = clipHalf(rect(e.geom.v, zBase, e.geom.v + e.geom.h, zBase + rafterSection.w), pt => zU(pt[0]) - pt[1]);
+      if (piece.length >= 3) push('roofFrame', e.label, 'timber', piece, r0, e.geom.w, e.id);
+    }
+  }
+
+  // tetőrétegek a szarufák felső síkjától, a rétegrend sorrendjében
+  const forced = covering === 'shingle' || covering === 'epdm';
+  const counters = flat ? [] : els.filter(e => e.kind === 'counterBatten');
+  const battens = els.filter(e => e.kind === 'roofBatten');
+  let n = rafterSection.w;
+  const sheet = (layer: Layer3dId, material: string, tk: number): void => {
+    for (const pl of planes) push(layer, LAYER3D_NAMES[layer], material, strip(pl.pEave, pl.pEnd, n, n + tk), -og, Lr);
+    n += tk;
+  };
+  for (const l of layers) {
+    if (l.kind === 'decking' && (l.enabled || forced)) sheet('decking', l.material, DECKING_T);
+    else if (l.kind === 'underlay' && l.enabled) sheet('underlay', 'foil', FOIL_T);
+    else if (l.kind === 'counterBatten' && counters.length > 0) {
+      const tk = COUNTER_BATTEN_SECTION.t;
+      for (const e of counters) {
+        const pl = planeOf(e.group);
+        push('counterBatten', e.label, 'timber', strip(pAt(pl, e.geom.v), pAt(pl, e.geom.v + e.geom.h), n, n + tk),
+          -og + e.geom.u, e.geom.w, e.id);
+      }
+      n += tk;
+    } else if (l.kind === 'batten' && battens.length > 0) {
+      const tk = ROOF_BATTEN_SECTION.t;
+      for (const e of battens) {
+        const pl = planeOf(e.group);
+        const { v, h } = e.geom;
+        push('roofBatten', e.label, 'timber',
+          [inPlane(pl, v, n), inPlane(pl, v + h, n), inPlane(pl, v + h, n + tk), inPlane(pl, v, n + tk)], -og + e.geom.u, e.geom.w, e.id);
+      }
+      n += tk;
+    }
+  }
+  sheet('covering', covering, COVERING_T[covering]);
+  const nTop = n;
+
+  // kiegészítők: homlokdeszka a szarufavégek előtt, oromdeszka a tetősík szélén kívül, ereszcsatorna
+  for (const e of scene.elements.filter(x => x.kind === 'fascia' || x.kind === 'barge')) {
+    const pl = planeOf(e.group);
+    const sec = e.section ?? FASCIA_SECTION;
+    if (e.kind === 'fascia') {
+      const atEave = e.geom.v + e.geom.h / 2 < g.rafterLength / 2;
+      const pe = atEave ? pl.pEave : pl.pEnd;
+      const pf = pe + (atEave ? -pl.dir : pl.dir) * sec.t; // kifelé
+      const top = zU(pe) + th;
+      push('accessories', e.label, 'timber', rect(Math.min(pe, pf), top - sec.w, Math.max(pe, pf), top), -og + e.geom.u, e.geom.w, e.id);
+    } else {
+      const outward = e.geom.u + e.geom.w / 2 < Lr / 2 ? -sec.t : sec.t;
+      push('accessories', e.label, 'timber', strip(pAt(pl, e.geom.v), pAt(pl, e.geom.v + e.geom.h), nTop - sec.w, nTop),
+        -og + e.geom.u + outward, e.geom.w, e.id);
+    }
+  }
+  if (plan.accessories.gutter) {
+    const fasciaT = plan.accessories.fascia ? FASCIA_SECTION.t : 0;
+    const eaves = gable ? planes : planes.filter(pl => pl.pEave > W);
+    for (const pl of eaves) {
+      const pc = pl.pEave - pl.dir * (fasciaT + GUTTER_R);
+      const rim = zU(pl.pEave) + th;
+      const arc = (r: number): P2[] => Array.from({ length: GUTTER_SEGMENTS + 1 }, (_, i): P2 => {
+        const a = Math.PI + (Math.PI * i) / GUTTER_SEGMENTS;
+        return [pc + r * Math.cos(a), rim + r * Math.sin(a)];
+      });
+      push('accessories', 'Ereszcsatorna', 'metal', [...arc(GUTTER_R), ...arc(GUTTER_R - GUTTER_WALL).reverse()], -og, Lr);
+    }
+  }
+  return out;
+}
+
 function foundationSolids(plan: Plan): Solid[] {
   const { width: W, length: L } = plan.building;
   const { slabOverhang: ov, slabThickness: st } = plan.foundation;
@@ -362,7 +515,8 @@ function floorSolids(plan: Plan, scene: Scene): Solid[] {
 
 /** A terv és a scene → 3D testek világkoordinátában (mm, Z = 0 a betonlemez teteje). Tiszta függvény. */
 export function buildModel3d(plan: Plan, scene: Scene): Model3d {
-  const solids = [...foundationSolids(plan), ...floorSolids(plan, scene), ...wallSolids(plan, scene), ...wallLayerSolids(plan, scene)];
+  const solids = [...foundationSolids(plan), ...floorSolids(plan, scene), ...wallSolids(plan, scene), ...wallLayerSolids(plan, scene),
+    ...roofSolids(plan, scene)];
   const present = new Set(solids.map(s => s.layer));
   const layers = LAYER_ORDER.filter(l => present.has(l));
   const min: Vec3 = [0, 0, 0];

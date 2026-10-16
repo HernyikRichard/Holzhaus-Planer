@@ -1,11 +1,12 @@
 import { createDefaultPlan } from '../../src/model/defaults';
 import type { Plan, WallSide } from '../../src/model/types';
-import { wallGeometry } from '../../src/calc/geometry';
+import { roofGeometry, wallGeometry } from '../../src/calc/geometry';
+import { COUNTER_BATTEN_SECTION, ROOF_BATTEN_SECTION } from '../../src/catalog';
 import { buildScene } from '../../src/scene/build';
 import {
   buildModel3d, FRAME_ONLY, LAYER3D_GROUPS, LAYER3D_NAMES, solidBounds, wallBaseZ, wallFrameOf, type Solid,
 } from '../../src/three-d/model';
-import { FOIL_T } from '../../src/scene/layerStack';
+import { COVERING_T, DECKING_T, FOIL_T } from '../../src/scene/layerStack';
 import { mono4x6Plan } from '../fixtures';
 
 const FRAME_KINDS = new Set(['stud', 'cornerStud', 'gableStud', 'kingStud', 'jackStud', 'cripple', 'sill', 'header', 'bottomPlate', 'topPlate']);
@@ -171,7 +172,7 @@ for (const [name, plan] of PLANS) {
         }
       }
       // a betonlemez túlnyúlása benne van
-      expect(m.bounds.min[0]).toBeCloseTo(-plan.foundation.slabOverhang, 6);
+      expect(m.bounds.min[0]).toBeLessThanOrEqual(-plan.foundation.slabOverhang + 1e-9); // a tető túlnyúlása ezen túl is lehet
       expect(m.bounds.min[2]).toBeCloseTo(-plan.foundation.slabThickness, 6);
     });
 
@@ -535,4 +536,245 @@ test('OSB sheet crossed by an opening is split around it', () => {
   for (const pt of [[u + w / 2, v - 10], [u + w / 2, v + h + 10], [u - 10, v + h / 2], [u + w + 10, v + h / 2]] as Pt2[]) {
     expect(osb.filter(s => covers(s, pt)), `${pt}`).toHaveLength(1);
   }
+});
+
+// ---- tető és kiegészítők ----
+const AXIS_OF = (p: Plan): { P: 0 | 1; R: 0 | 1 } => (p.roof.ridgeDirection === 'y' ? { P: 0, R: 1 } : { P: 1, R: 0 });
+/**
+ * A test (u, v) körvonalának világ-Z tartománya a gerincre merőleges világtengely (axis) `at` értékén.
+ * A tetőprofil-testek nAxis-a vízszintes (a gerinc irányában), így a körvonal síkja függőleges.
+ */
+function zRangeAt(s: Solid, axis: 0 | 1, at: number): [number, number] | null {
+  const pts = s.outline.map(([u, v]) => [0, 1, 2].map(i => s.origin[i] + u * s.uAxis[i] + v * s.vAxis[i]));
+  const zs: number[] = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    if (Math.abs(a[axis] - at) < 1e-9) zs.push(a[2]);
+    if ((a[axis] - at) * (b[axis] - at) < 0) zs.push(a[2] + ((b[2] - a[2]) * (at - a[axis])) / (b[axis] - a[axis]));
+  }
+  return zs.length ? [Math.min(...zs), Math.max(...zs)] : null;
+}
+function monoX(): Plan {
+  const p = mono4x6Plan();
+  p.roof.ridgeDirection = 'x';
+  return p;
+}
+function flatPlan(): Plan {
+  const p = createDefaultPlan();
+  p.roof.shape = 'flat';
+  p.roof.pitch = 3;
+  return p;
+}
+const ROOF_KIND_LAYER: Record<string, string> = {
+  rafter: 'roofFrame', ridge: 'roofFrame', collar: 'roofFrame', counterBatten: 'counterBatten', roofBatten: 'roofBatten',
+  fascia: 'accessories', barge: 'accessories',
+};
+const ROOF_PLANS: Array<[string, Plan]> = [
+  ['gable ridge y', createDefaultPlan()], ['gable ridge x', gableX()], ['mono ridge y', mono4x6Plan()],
+  ['mono ridge x', monoX()], ['flat', flatPlan()],
+];
+for (const [name, plan] of ROOF_PLANS) {
+  describe(`${name}: roof`, () => {
+    const scene = buildScene(plan);
+    const m = buildModel3d(plan, scene);
+    const g = roofGeometry(plan);
+    const { P, R } = AXIS_OF(plan);
+    const cos = Math.cos(g.pitchRad);
+    const zBase = wallBaseZ(plan) + plan.building.wallHeight;
+    const th = plan.roof.rafterSection.w / cos;
+    const flat = plan.roof.shape === 'flat';
+    const rafters = scene.elements.filter(e => e.kind === 'rafter');
+    const planeGroups = g.shape === 'gable' ? ['roof.L', 'roof.R'] : ['roof.M'];
+    /** A tetősík közepe (p) és a hozzá tartozó szintetizált lapok (a p-tartomány alapján). */
+    const mid = (group: string): number => (group === 'roof.L' ? g.W / 4 : group === 'roof.R' ? (3 * g.W) / 4 : g.W / 2);
+    const sheetsOf = (layer: string, group: string): Solid[] => m.solids.filter(s => {
+      if (s.layer !== layer || s.elementId) return false;
+      if (g.shape !== 'gable') return true;
+      const b = solidBounds(s);
+      return ((b.min[P] + b.max[P]) / 2 < g.W / 2) === (group === 'roof.L');
+    });
+
+    test('rafters rest on top plate', () => {
+      expect(rafters.length).toBeGreaterThan(0);
+      const sides: Array<[number, WallSide]> = P === 0 ? [[0, 'W'], [g.W, 'E']] : [[0, 'N'], [g.W, 'S']];
+      for (const [at, side] of sides) {
+        const plates = scene.elements.filter(e => e.group === `wall.${side}` && e.kind === 'topPlate');
+        const plateTop = Math.max(...plates.map(e => solidBounds(byId(m.solids, e.id)[0]).max[2]));
+        let n = 0;
+        for (const e of rafters) {
+          const [s] = byId(m.solids, e.id);
+          const r = zRangeAt(s, P, at);
+          if (!r) continue;
+          expect(Math.abs(r[0] - plateTop), `${e.id} @${side}`).toBeLessThanOrEqual(1);
+          expect(r[1] - r[0]).toBeCloseTo(th, 6);
+          n++;
+        }
+        // nyeregtetőnél síkonként, egyhajlásúnál minden szarufa mindkét falon fekszik
+        expect(n).toBe(g.shape === 'gable' ? rafters.length / 2 : rafters.length);
+      }
+    });
+
+    test('rafters run perpendicular to the ridge', () => {
+      for (const e of rafters) {
+        const [s] = byId(m.solids, e.id);
+        const b = solidBounds(s);
+        expect(b.max[P] - b.min[P], e.id).toBeGreaterThan(5 * (b.max[R] - b.min[R]));
+        expect(b.max[R] - b.min[R]).toBeCloseTo(plan.roof.rafterSection.t, 6);
+        expect(s.nAxis[2]).toBe(0);
+        expect(Math.abs(s.nAxis[R])).toBe(1);
+      }
+    });
+
+    test('every roof element has one solid', () => {
+      const els = scene.elements.filter(e => e.group.startsWith('roof.') || e.kind === 'fascia' || e.kind === 'barge');
+      expect(els.length).toBeGreaterThan(0);
+      for (const e of els) {
+        const s = byId(m.solids, e.id);
+        if (flat && e.kind === 'counterBatten') { expect(s, e.id).toHaveLength(0); continue; }
+        expect(s, e.id).toHaveLength(1);
+        expect(s[0].layer, e.id).toBe(ROOF_KIND_LAYER[e.kind]);
+        expect(s[0].label).toBe(e.label);
+      }
+    });
+
+    test('roof layers stack along normal', () => {
+      const hasCounter = m.layers.includes('counterBatten');
+      const hasBatten = m.layers.includes('roofBatten');
+      for (const group of planeGroups) {
+        const p = mid(group);
+        const rafter = byId(m.solids, rafters.find(e => e.group === group)!.id)[0];
+        const rr = zRangeAt(rafter, P, p)!;
+        const one = (layer: string): [number, number] => {
+          const ss = sheetsOf(layer, group);
+          expect(ss, `${group} ${layer}`).toHaveLength(1);
+          return zRangeAt(ss[0], P, p)!;
+        };
+        const d = one('decking');
+        const u = one('underlay');
+        const c = one('covering');
+        expect(d[0]).toBeCloseTo(rr[1], 6);
+        expect((d[1] - d[0]) * cos).toBeCloseTo(DECKING_T, 6);
+        expect(u[0]).toBeCloseTo(d[1], 6);
+        expect((u[1] - u[0]) * cos).toBeCloseTo(FOIL_T, 6);
+        expect((c[0] - u[1]) * cos).toBeCloseTo((hasCounter ? COUNTER_BATTEN_SECTION.t : 0) + (hasBatten ? ROOF_BATTEN_SECTION.t : 0), 6);
+        expect((c[1] - c[0]) * cos).toBeCloseTo(COVERING_T[plan.roof.covering], 6);
+        if (hasCounter) {
+          const cb = m.solids.find(s => s.layer === 'counterBatten' && s.elementId?.startsWith(`${group}.`))!;
+          expect(zRangeAt(cb, P, p)![0]).toBeCloseTo(u[1], 6);
+        }
+        if (hasBatten) {
+          // a tetőléc a gerinc mentén fut, az ellenléc (vagy a fólia) és a héjazat között
+          const below = u[1] + (hasCounter ? COUNTER_BATTEN_SECTION.t / cos : 0);
+          for (const s of m.solids.filter(x => x.layer === 'roofBatten' && x.elementId?.startsWith(`${group}.`))) {
+            const b = solidBounds(s);
+            expect(b.max[R] - b.min[R]).toBeCloseTo(g.roofLengthAlongRidge, 6);
+            const at = (b.min[P] + b.max[P]) / 2;
+            const r = zRangeAt(s, P, at)!;
+            const shift = (z: number): number => z + (p - at) * (group === 'roof.L' ? 1 : -1) * Math.tan(g.pitchRad);
+            expect(shift(r[0])).toBeGreaterThanOrEqual(below - 1e-6);
+            expect(shift(r[1])).toBeLessThanOrEqual(c[0] + 1e-6);
+          }
+        }
+      }
+    });
+
+    test('bounds include overhangs', () => {
+      const { eaveOverhang: oe, gableOverhang: og } = plan.roof;
+      const cov = m.solids.filter(s => s.layer === 'covering');
+      expect(cov).toHaveLength(g.planes);
+      expect(range(cov, P)[0]).toBeCloseTo(-oe, 6);
+      expect(range(cov, P)[1]).toBeCloseTo(g.W + oe, 6);
+      expect(range(cov, R)[0]).toBeCloseTo(-og, 6);
+      expect(range(cov, R)[1]).toBeCloseTo(g.L + og, 6);
+      expect(m.bounds.min[P]).toBeLessThanOrEqual(-oe + 1e-9);
+      expect(m.bounds.max[P]).toBeGreaterThanOrEqual(g.W + oe - 1e-9);
+      expect(m.bounds.min[R]).toBeLessThanOrEqual(-og + 1e-9);
+      expect(m.bounds.max[R]).toBeGreaterThanOrEqual(g.L + og - 1e-9);
+    });
+
+    test('gutter along each eave', () => {
+      const gut = m.solids.filter(s => s.layer === 'accessories' && !s.elementId);
+      expect(gut).toHaveLength(plan.accessories.gutter ? g.eaveCount : 0);
+      for (const s of gut) {
+        const b = solidBounds(s);
+        expect(b.max[R] - b.min[R]).toBeCloseTo(g.roofLengthAlongRidge, 6);
+        // az eresz alacsony oldalán, a túlnyúláson kívül
+        if (g.shape === 'gable') expect(b.max[P] <= -plan.roof.eaveOverhang + 1e-6 || b.min[P] >= g.W + plan.roof.eaveOverhang - 1e-6).toBe(true);
+        else expect(b.min[P]).toBeGreaterThanOrEqual(g.W + plan.roof.eaveOverhang - 1e-6);
+      }
+      const p = structuredClone(plan);
+      p.accessories.gutter = false;
+      expect(model(p).solids.filter(s => s.layer === 'accessories' && !s.elementId)).toHaveLength(0);
+    });
+
+    if (g.shape === 'gable') {
+      test('gable ridge in the middle at roofGeometry height', () => {
+        const ridge = scene.elements.filter(e => e.kind === 'ridge');
+        expect(ridge).toHaveLength(1);
+        const b = solidBounds(byId(m.solids, ridge[0].id)[0]);
+        expect((b.min[P] + b.max[P]) / 2).toBeCloseTo(g.W / 2, 6);
+        expect(Math.abs(b.max[2] - (zBase + g.rise + th))).toBeLessThanOrEqual(1);
+        expect(b.max[R] - b.min[R]).toBeCloseTo(g.roofLengthAlongRidge, 6);
+        // a két sík szarufái a gerincpallóig érnek
+        for (const e of rafters) {
+          const rb = solidBounds(byId(m.solids, e.id)[0]);
+          if (e.group === 'roof.L') expect(rb.max[P]).toBeCloseTo(b.min[P], 6);
+          else expect(rb.min[P]).toBeCloseTo(b.max[P], 6);
+        }
+      });
+
+      test('collars horizontal between the planes at plate height', () => {
+        const cs = scene.elements.filter(e => e.kind === 'collar');
+        expect(cs.length).toBeGreaterThan(0);
+        for (const e of cs) {
+          const b = solidBounds(byId(m.solids, e.id)[0]);
+          expect(b.min[2]).toBeCloseTo(zBase, 6);
+          expect(b.max[2]).toBeLessThanOrEqual(zBase + plan.roof.rafterSection.w + 1e-6);
+          expect(b.min[P]).toBeGreaterThanOrEqual(-1e-6);
+          expect(b.max[P]).toBeLessThanOrEqual(g.W + 1e-6);
+        }
+      });
+    } else {
+      test('mono roof: one plane, eave on the p = W side', () => {
+        expect(rafters.every(e => e.group === 'roof.M')).toBe(true);
+        const [cov] = m.solids.filter(s => s.layer === 'covering');
+        const low = zRangeAt(cov, P, g.W)!;
+        const high = zRangeAt(cov, P, 0)!;
+        expect(high[0] - low[0]).toBeCloseTo(g.rise, 6);
+        const highSide: WallSide = P === 0 ? 'W' : 'N';
+        expect(wallGeometry(plan).find(w => w.side === highSide)!.hStart).toBeCloseTo(plan.building.wallHeight + g.rise, 6);
+      });
+    }
+  });
+}
+
+test('flat roof has no counterBatten', () => {
+  const p = flatPlan();
+  const scene = buildScene(p);
+  expect(scene.elements.some(e => e.kind === 'counterBatten')).toBe(true);
+  const m = buildModel3d(p, scene);
+  expect(m.layers).not.toContain('counterBatten');
+  expect(m.layers).toContain('roofBatten');
+  expect(m.solids.filter(s => s.layer === 'covering')).toHaveLength(1);
+});
+
+test('roof layers present and absent per plan', () => {
+  const m = model(createDefaultPlan());
+  for (const l of ['roofFrame', 'decking', 'underlay', 'counterBatten', 'roofBatten', 'covering', 'accessories']) expect(m.layers).toContain(l);
+  // zsindely: kötelező deszkázat, nincs léc
+  const p = createDefaultPlan();
+  p.roof.covering = 'shingle';
+  p.roof.layers.find(l => l.kind === 'decking')!.enabled = false;
+  const s = model(p);
+  expect(s.layers).toContain('decking');
+  expect(s.layers).not.toContain('counterBatten');
+  expect(s.layers).not.toContain('roofBatten');
+  // alátétfólia kikapcsolva, kiegészítők nélkül
+  const q = createDefaultPlan();
+  q.roof.layers.find(l => l.kind === 'underlay')!.enabled = false;
+  q.accessories = { ...q.accessories, gutter: false, fascia: false, bargeBoard: false };
+  const n = model(q);
+  expect(n.layers).not.toContain('underlay');
+  expect(n.layers).not.toContain('accessories');
 });
