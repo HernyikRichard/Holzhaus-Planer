@@ -41,8 +41,8 @@ export function wallFrameElements(plan: Plan): { elements: Element[]; fasteners:
     }
     if (wall.full) {
       // L alakú sarok: a végoszlop mellett egy 90°-kal elforgatott oszlop (széles lapja a fal mentén, belső síkkal egy vonalban)
-      for (const [u, at] of [[t, 0], [len - t - w, len]] as const) {
-        const h = studLengthAt(plan, wall, at);
+      for (const u of [t, len - t - w]) {
+        const h = Math.min(studLengthAt(plan, wall, u), studLengthAt(plan, wall, u + w)); // lejtős falon a szélesség mentén a rövidebb
         drafts.push({ kind: 'cornerStud', pieceLabel: 'sarokoszlop', length: h, geom: { u, v: t, w, h }, rotated: true });
       }
     }

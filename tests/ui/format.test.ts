@@ -35,3 +35,9 @@ test('formatCm: whole cm stays whole, otherwise one decimal with comma', () => {
   expect(formatCm(4)).toBe('0,4 cm');
   expect(formatCm(1000.04)).toBe('100 cm');
 });
+
+test('formatCm negatives and half-mm rounding', () => {
+  expect(formatCm(-4)).toBe('-0,4 cm');
+  expect(formatCm(-0.4)).toBe('0 cm');
+  expect(formatCm(1000.5)).toBe('100,1 cm');
+});

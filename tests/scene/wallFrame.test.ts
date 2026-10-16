@@ -62,3 +62,26 @@ test('elementsToPieces equals calcWallFraming pieces', () => {
   const strip = (ps: typeof pieces) => ps.map(q => ({ ...q, id: undefined })).map(q => JSON.stringify(q)).sort();
   expect(strip(pieces)).toEqual(strip(calcWallFraming(createDefaultPlan()).pieces));
 });
+
+test('corner stud length on a sloped full wall is the minimum over its width', async () => {
+  const { wallGeometry, studLengthAt } = await import('../../src/calc/geometry');
+  let strictlyShorter = false;
+  for (const dir of ['x', 'y'] as const) {
+    const p = createDefaultPlan();
+    p.roof = { ...p.roof, shape: 'mono', pitch: 10, ridgeDirection: dir };
+    for (const wall of wallGeometry(p).filter(w => w.full)) {
+      const t = p.walls.studSection.t; const w = p.walls.studSection.w;
+      const cs = wallFrameElements(p).elements.filter(e => e.group === `wall.${wall.side}` && e.kind === 'cornerStud');
+      expect(cs.length).toBe(2);
+      for (const c of cs) {
+        const min = Math.min(studLengthAt(p, wall, c.geom.u), studLengthAt(p, wall, c.geom.u + w));
+        expect(c.length).toBeCloseTo(min, 6);
+        expect(c.geom.h).toBeCloseTo(min, 6);
+        const atEnd = studLengthAt(p, wall, c.geom.u < wall.length / 2 ? 0 : wall.length);
+        if (min < atEnd - 1) strictlyShorter = true;
+        void t;
+      }
+    }
+  }
+  expect(strictlyShorter).toBe(true);
+});

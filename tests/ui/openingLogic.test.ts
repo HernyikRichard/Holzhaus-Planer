@@ -55,3 +55,13 @@ test('openingsOnlyInvalid / invalidOpeningIds look at the openings.* error paths
   const ids = invalidOpeningIds(st([{ path: 'openings.1.width', message: 'x' }, { path: 'building.width', message: 'y' }, { path: 'openings.9.width', message: 'z' }]));
   expect([...ids]).toEqual([p.openings[1].id]);
 });
+
+test('moveOpening on a full wall clamps to 3t + w from each end; short wall keeps w + t', () => {
+  const p = createDefaultPlan(); const id = 'window-1';   // K fal 4000, ablak 600
+  moveOpening(p, id, 0);
+  expect(p.openings[1].offset).toBe(250);
+  moveOpening(p, id, 99999);
+  expect(p.openings[1].offset).toBe(4000 - 250 - 600);
+  moveOpening(p, 'door-1', 0);                              // D fal: rövid
+  expect(p.openings[0].offset).toBe(150);
+});

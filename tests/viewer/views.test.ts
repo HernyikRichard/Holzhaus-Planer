@@ -258,3 +258,18 @@ test('wall elevation draws the rotated corner stud with its 100 mm width', () =>
   expect(rects.length).toBeGreaterThan(0);
   expect(Number(rects[0].getAttribute('width'))).toBe(100);
 });
+
+test('floor plan L at W and N corners (N full on a wide building)', () => {
+  const rectOf = (plan: Plan, view: 'floor', id: string) => {
+    const doc = new DOMParser().parseFromString(
+      renderStandalone({ plan, scene: buildScene(plan), view, layers: all, palette: PRINT_PALETTE }), 'image/svg+xml');
+    const el = doc.querySelector(`[data-el="${id}"] rect`)!;
+    return ['x', 'y', 'width', 'height'].map(k => Number(el.getAttribute(k)));
+  };
+  // W fal (x = 0, belső sík x = 100): mélység 50…100 -> x 50…100
+  expect(rectOf(p, 'floor', 'wall.W.cornerStud.1')).toEqual([50, 50, 50, 100]);
+  expect(rectOf(p, 'floor', 'wall.W.cornerStud.2')).toEqual([50, 3850, 50, 100]);
+  const wide = createDefaultPlan(); wide.building = { ...wide.building, width: 4000, length: 3000 };
+  wide.openings = [];
+  expect(rectOf(wide, 'floor', 'wall.N.cornerStud.1')).toEqual([50, 50, 100, 50]);
+});

@@ -62,6 +62,15 @@ export function studLengthAt(plan: Plan, w: WallGeom, pos: Mm): Mm {
   return wallHeightAt(w, pos) - t - plates * t;
 }
 
+/**
+ * Legkisebb szabad hely a fal mindkét végén a nyílás előtt: teljes falon a végoszlop (t), az elforgatott sarokoszlop (w),
+ * majd a teljes és a kiváltó oszlop (2t); rövid falon a szélesség + vastagság.
+ */
+export function openingEndMargin(plan: Plan, wall: Pick<WallGeom, 'full'>): Mm {
+  const { t, w } = plan.walls.studSection;
+  return wall.full ? 3 * t + w : w + t;
+}
+
 export function studPositions(plan: Plan, wall: WallGeom, skipOpenings = true): Mm[] {
   const { t } = plan.walls.studSection;
   const spacing = plan.walls.studSpacing;

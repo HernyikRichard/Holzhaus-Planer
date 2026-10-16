@@ -1,5 +1,6 @@
+import { formatCm } from '../ui/format';
 import type { Plan, RoofShape } from './types';
-import { studLengthAt, wallGeometry } from '../calc/geometry';
+import { openingEndMargin, studLengthAt, wallGeometry } from '../calc/geometry';
 
 export interface ValidationError { path: string; message: string }
 
@@ -45,18 +46,18 @@ export function validatePlan(plan: Plan): ValidationError[] {
 
   const walls = wallGeometry(plan);
   const sw = plan.walls.studSection;
-  const margin = sw.w + sw.t;
   plan.openings.forEach((o, i) => {
     const p = `openings.${i}`;
     const wall = walls.find((w) => w.side === o.wall);
     if (!wall) return;
+    const margin = openingEndMargin(plan, wall);
     if (o.offset < margin) {
-      errors.push({ path: `${p}.offset`, message: `A nyílás távolsága a faltól legalább ${margin} mm legyen.` });
+      errors.push({ path: `${p}.offset`, message: `A nyílás távolsága a faltól legalább ${formatCm(margin)} legyen.` });
     }
     if (o.offset + o.width > wall.length - margin) {
       errors.push({
         path: `${p}.offset`,
-        message: `A nyílás nem fér el a falon (a fal hossza ${wall.length} mm, mindkét végén ${margin} mm szabad hely kell).`,
+        message: `A nyílás nem fér el a falon (a fal hossza ${formatCm(wall.length)}, mindkét végén ${formatCm(margin)} szabad hely kell).`,
       });
     }
     range(`${p}.width`, 'Nyílás szélessége', o.width, 300, 3000);
