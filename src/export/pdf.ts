@@ -3,14 +3,17 @@ import type { Plan, RoofShape, WallSide } from '../model/types';
 import { CATEGORY_ORDER, type CalcOutput } from '../calc';
 import { formatQty } from '../ui/format';
 import { buildScene } from '../scene/build';
+import { supplyFor } from '../pricing/supply';
 import { renderStandalone } from '../viewer/render';
 import { PRINT_PALETTE } from '../viewer/theme';
 import type { LayerId, ViewId } from '../viewer/layers';
 import regularUrl from 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf?url';
 import boldUrl from 'dejavu-fonts-ttf/ttf/DejaVuSans-Bold.ttf?url';
-import { CUT_PLAN_HEADER, cutPlanRows, fitRect, paginateRows, substituteCssVars, type TableItem } from './pdfLayout';
+import type { CostSummary } from '../pricing/cost';
+import { BUNDLED_PRICE_LIST } from '../prices';
+import { COST_TABLE_HEADER, costPageRows, type CostTableRow, CUT_PLAN_HEADER, cutPlanRows, fitRect, paginateRows, substituteCssVars, type TableItem } from './pdfLayout';
 
-export interface PdfOptions { drawings: boolean; materials: boolean; explanations: boolean; cutPlan: boolean }
+export interface PdfOptions { drawings: boolean; materials: boolean; explanations: boolean; cutPlan: boolean; cost?: boolean }
 
 const FONT = 'DejaVuSans';
 const MARGIN = 15;
@@ -43,7 +46,8 @@ function viewBoxSize(svg: string): { w: number; h: number } {
   return { w: Number(m[1]), h: Number(m[2]) };
 }
 
-export async function exportPdf(plan: Plan, output: CalcOutput, opts: PdfOptions): Promise<Blob> {
+/** A költségoldalak a `cost` összesítőből készülnek (alapból be; árlista nélkül kimaradnak). */
+export async function exportPdf(plan: Plan, output: CalcOutput, opts: PdfOptions, cost: CostSummary | null = null): Promise<Blob> {
   const [{ jsPDF: JsPDF }, { svg2pdf }, regular, bold] = await Promise.all([
     import('jspdf'), import('svg2pdf.js'), fontBase64(regularUrl), fontBase64(boldUrl),
   ]);
@@ -99,7 +103,7 @@ export async function exportPdf(plan: Plan, output: CalcOutput, opts: PdfOptions
 
   // 2. Rajzok
   if (opts.drawings) {
-    const scene = buildScene(plan);
+    const scene = buildScene(plan, supplyFor(plan));
     const svgOf = (view: ViewId) => renderStandalone({ plan, scene, view, layers: PDF_LAYERS, palette: PRINT_PALETTE });
     const fullPage = (title: string, view: ViewId) => {
       doc.addPage();
@@ -199,7 +203,7 @@ export async function exportPdf(plan: Plan, output: CalcOutput, opts: PdfOptions
 
   // 3b. Vágási terv
   if (opts.cutPlan) {
-    const rows = cutPlanRows(buildScene(plan));
+    const rows = cutPlanRows(buildScene(plan, supplyFor(plan)));
     const colW = [58, 38, 62, 22];
     const colX = colW.map((_, i) => MARGIN + colW.slice(0, i).reduce((a, b) => a + b, 0));
     const PAD = 1.5; const LH = 3.8; const FS = 8.5; const HEADER_H = 7;
@@ -224,6 +228,102 @@ export async function exportPdf(plan: Plan, output: CalcOutput, opts: PdfOptions
         cells[i].forEach((c, k) => doc.text(c, colX[k] + PAD, ty + PAD + 2.8, { lineHeightFactor: lhf }));
         doc.line(MARGIN, ty + items[i].height, MARGIN + CONTENT_W, ty + items[i].height);
         ty += items[i].height;
+      }
+    });
+  }
+
+  // 3c. Költség
+  if (opts.cost !== false && cost) {
+    const data = costPageRows(cost, {
+      pickup: plan.pricing.pickup, feeSet: plan.pricing.shippingFee !== undefined,
+      freeAbove: BUNDLED_PRICE_LIST?.shipping.freeAbove ?? 0,
+    });
+    const colW = [78, 20, 17, 31, 34];
+    const colX = colW.map((_, i) => MARGIN + colW.slice(0, i).reduce((a, b) => a + b, 0));
+    const PAD = 1.5; const LH = 3.8; const FS = 8.5; const HEADER_H = 7;
+    const lhf = LH / (FS * 0.3528);
+    const RIGHT = [1, 3, 4];
+    const tableRight = MARGIN + CONTENT_W;
+
+    // Összesítő oldal
+    doc.addPage();
+    pageTitle('Költség');
+    let sy = BODY_TOP + 4;
+    for (const [label, value] of data.summary) {
+      const big = label === 'Végösszeg';
+      setText(big ? 13 : 11, big || label !== '' ? 'bold' : 'normal');
+      if (label) doc.text(label, MARGIN, sy);
+      setText(big ? 13 : 11, big ? 'bold' : 'normal');
+      doc.text(value, MARGIN + 45, sy);
+      sy += big ? 9 : 7;
+    }
+    if (data.missingNote) {
+      setText(10);
+      doc.setTextColor(160, 40, 40);
+      doc.text(doc.splitTextToSize(data.missingNote, CONTENT_W) as string[], MARGIN, sy + 2);
+      sy += 10;
+    }
+    setText(8);
+    doc.setTextColor(90);
+    doc.text(doc.splitTextToSize(data.footnote, CONTENT_W) as string[], MARGIN, sy + 8);
+
+    // Táblázatok: Káplár-kosár, majd máshonnan beszerzendő
+    interface CRow { item: TableItem; title?: string; row?: CostTableRow; cells?: string[][] }
+    const crows: CRow[] = [];
+    setText(FS);
+    const addTable = (title: string, list: CostTableRow[]) => {
+      if (list.length === 0) return;
+      crows.push({ item: { kind: 'subtitle', height: 8 }, title });
+      for (const r of list) {
+        const cells = r.cells.map((c, i) => (c ? doc.splitTextToSize(c, colW[i] - 2 * PAD) as string[] : []));
+        crows.push({ item: { kind: 'row', height: Math.max(...cells.map(c => c.length), 1) * LH + 2 * PAD }, row: r, cells });
+      }
+    };
+    addTable('Káplár-kosár', data.cart);
+    addTable('Máshonnan beszerzendő', data.others);
+    const pages = paginateRows(crows.map(r => r.item), BODY_BOTTOM - BODY_TOP, HEADER_H);
+    pages.forEach((idxs, pi) => {
+      doc.addPage();
+      pageTitle(pi === 0 ? 'Rendelési lista' : 'Rendelési lista (folytatás)');
+      let ty = BODY_TOP;
+      doc.setFillColor(230, 230, 226);
+      doc.rect(MARGIN, ty, CONTENT_W, HEADER_H, 'F');
+      setText(FS, 'bold');
+      COST_TABLE_HEADER.forEach((h, i) => {
+        if (RIGHT.includes(i)) doc.text(h, colX[i] + colW[i] - PAD, ty + HEADER_H / 2 + 1.3, { align: 'right' });
+        else doc.text(h, colX[i] + PAD, ty + HEADER_H / 2 + 1.3);
+      });
+      ty += HEADER_H;
+      doc.setDrawColor(200);
+      doc.setLineWidth(0.15);
+      for (const i of idxs) {
+        const r = crows[i];
+        if (r.title !== undefined) {
+          setText(10, 'bold');
+          doc.text(r.title, MARGIN, ty + 5.5);
+          doc.line(MARGIN, ty + 7, tableRight, ty + 7);
+        } else if (r.cells && r.row) {
+          const base = ty + PAD + 2.8;
+          setText(FS);
+          r.cells.forEach((c, k) => {
+            if (c.length === 0) return;
+            if (k === 0 && r.row!.url) {
+              doc.setTextColor(0, 0, 170);
+              doc.text(c, colX[0] + PAD, base, { lineHeightFactor: lhf });
+              doc.link(colX[0], ty, colW[0], r.item.height, { url: r.row!.url });
+              doc.setTextColor(0);
+            } else if (RIGHT.includes(k)) doc.text(c, colX[k] + colW[k] - PAD, base, { align: 'right' });
+            else doc.text(c, colX[k] + PAD, base, { lineHeightFactor: lhf });
+          });
+          doc.line(MARGIN, ty + r.item.height, tableRight, ty + r.item.height);
+        }
+        ty += r.item.height;
+      }
+      if (pi === pages.length - 1) {
+        setText(8);
+        doc.setTextColor(90);
+        const fn = doc.splitTextToSize(data.footnote, CONTENT_W) as string[];
+        if (ty + 4 + fn.length * 3.5 <= BODY_BOTTOM) doc.text(fn, MARGIN, ty + 6);
       }
     });
   }

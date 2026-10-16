@@ -176,3 +176,93 @@ button.cutstrip-piece:hover:not(:disabled) { background: #4a90d9; }
 .cut-stick-count { margin: 0.5rem 0 0; font-size: 0.85rem; font-weight: 600; }
 .cut-variant > summary { cursor: pointer; font-size: 0.8rem; color: var(--muted); }
 .cutstrip-piece.noel { cursor: default; }
+
+/* Anyaglista: árak */
+.material-table details.category > summary { display: flex; justify-content: space-between; gap: 1rem; }
+.material-table .subtotal { color: var(--muted); font-weight: 600; }
+.material-table details.line > summary > * { flex: none; }
+.material-table details.line > summary > .name { flex: 1 1 10rem; min-width: 0; overflow-wrap: anywhere; }
+.material-table .qty { width: 4.5rem; }
+.material-table .unit { width: 3.2rem; }
+.material-table .secondary { width: 4.5rem; }
+.material-table .product-link { display: block; font-size: 0.8rem; color: var(--muted); text-decoration: none; }
+.material-table .product-link:hover { color: var(--select); text-decoration: underline; }
+.material-table .name .line-warning { display: block; margin: 0; font-size: 0.8rem; }
+.price-cell { width: 8.2rem; display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.2rem; }
+.price-btn { background: none; border: 1px dashed transparent; border-radius: 4px; color: inherit; font: inherit; cursor: text; padding: 0 0.25rem; }
+.price-btn:hover { border-color: var(--muted); }
+.price-reset { background: none; border: 1px solid var(--accent); border-radius: 4px; color: var(--muted); cursor: pointer; padding: 0 0.3rem; line-height: 1.3; }
+.price-input { width: 6rem; text-align: right; }
+.price-input[aria-invalid="true"] { border-color: var(--error); outline-color: var(--error); }
+.price-error { flex-basis: 100%; text-align: right; color: var(--error); font-size: 0.75rem; }
+.material-table .total { width: 6.5rem; text-align: right; font-weight: 600; }
+.material-table .source { width: 5.6rem; display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; }
+.material-table .tag { font-size: 0.75rem; border: 1px solid currentColor; border-radius: 3px; padding: 0 0.35rem; }
+.material-table .tag.ok { color: var(--ok); }
+.material-table .tag.manual { color: var(--select); }
+.material-table .tag.miss { color: var(--error); }
+.material-table .other-source { font-size: 0.7rem; color: var(--muted); }
+.material-table .show-slot, .material-table button.show { width: 1.7rem; box-sizing: border-box; padding: 0; text-align: center; }
+.product-picker { display: flex; gap: 0.5rem; align-items: center; margin: 0.2rem 0.4rem 0.5rem; font-size: 0.85rem; color: var(--muted); }
+.product-picker input { flex: 1; max-width: 32rem; }
+.material-total { display: flex; justify-content: space-between; margin-top: 0.8rem; padding: 0.5rem 0.2rem; border-top: 2px solid var(--accent); font-size: 1rem; }
+.material-table .cols { display: flex; gap: 0.6rem; padding: 0 0.2rem 0.2rem; color: var(--muted); font-size: 0.75rem; border-bottom: 1px solid var(--accent); }
+.material-table .cols > * { flex: none; }
+.material-table .cols > .name { flex: 1 1 10rem; }
+.material-table .cols > .price-cell, .material-table .cols > .total { text-align: right; justify-content: flex-end; }
+.material-table .name .secondary { width: auto; display: block; font-size: 0.8rem; }
+.price-cell { width: 10.5rem; }
+.price-caption { flex-basis: 100%; text-align: right; font-size: 0.75rem; color: var(--muted); }
+.material-table .qty { width: 4rem; }
+.material-table .source { width: 5.2rem; }
+.material-table details.line > summary { flex-wrap: wrap; gap: 0.2rem 0.4rem; }
+.material-table details.line > summary > .name { flex: 1 1 14rem; min-width: 14rem; }
+.material-table .cols { gap: 0.2rem 0.4rem; }
+.material-table .cols > .name { flex: 1 1 14rem; min-width: 14rem; }
+.material-table .qty { width: 3.6rem; }
+.material-table .unit { width: 3rem; }
+.price-cell { width: 9.5rem; }
+.material-table .total { width: 5.6rem; }
+.material-table .source { width: 4.8rem; }
+.material-table .show-slot, .material-table button.show { width: 1.5rem; }
+@media (max-width: 1350px) { .material-table .cols { display: none; } }
+
+/* Költség és rendelés */
+.cost-view { padding: 0.6rem 0.4rem 2rem; display: flex; flex-direction: column; gap: 1.2rem; }
+.cost-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.8rem; }
+.cost-card { background: var(--panel); border: 1px solid var(--accent); border-radius: 6px; padding: 0.7rem 0.9rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.cost-card h3 { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.cost-card .big { font-size: 1.35rem; }
+.cost-card .sub { font-size: 0.8rem; color: var(--muted); }
+.cost-card .check, .cost-card .fee { display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem; }
+.cost-card .shipping-fee { width: 7rem; text-align: right; }
+.cost-card .shipping-fee[aria-invalid="true"] { border-color: var(--error); outline-color: var(--error); }
+.total-card { border-color: var(--select); }
+.total-card .big { font-size: 2rem; color: var(--select); }
+.warn-card { border-color: var(--warn); }
+.warn-card h3 { color: var(--warn); }
+.warn-card button { align-self: flex-start; }
+.cost-bars { display: flex; flex-direction: column; gap: 0.5rem; }
+.bar-label { font-size: 0.85rem; margin-bottom: 0.15rem; }
+.bar-track { background: var(--panel); border-radius: 3px; height: 0.7rem; }
+.bar-fill { background: var(--accent); height: 100%; border-radius: 3px; min-width: 2px; }
+.cost-section h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.cart-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.cart-table th, .cart-table td { padding: 0.3rem 0.5rem; text-align: left; border-bottom: 1px solid var(--accent); }
+.cart-table .num { text-align: right; }
+.cart-table th { color: var(--muted); font-weight: 500; font-size: 0.75rem; }
+.cart-table tfoot td { font-weight: 700; border-bottom: none; border-top: 2px solid var(--accent); }
+.cart-table a { color: var(--line); }
+.other-list { list-style: none; margin: 0; padding: 0; }
+.other-list li { display: flex; gap: 0.6rem; align-items: center; padding: 0.3rem 0.2rem; border-bottom: 1px solid var(--accent); flex-wrap: wrap; }
+.other-list .name { flex: 1 1 14rem; }
+.other-list .qty { width: 7rem; text-align: right; }
+.other-list .total { width: 6rem; text-align: right; font-weight: 600; }
+.cost-note, .cost-view .muted, .no-prices { color: var(--muted); font-size: 0.8rem; }
+.missing-filter { display: flex; gap: 0.6rem; align-items: center; margin: 0.4rem 0; color: var(--warn); font-size: 0.85rem; }
+.tag.info { font-size: 0.75rem; border: 1px solid var(--muted); border-radius: 3px; padding: 0 0.35rem; color: var(--muted); }
+.summary-total { white-space: nowrap; font-weight: 700; }
+.summary-total small { font-weight: 400; }
+.field-check { display: flex; align-items: center; gap: 0.5rem; }
+.price-date { margin: 0.3rem 0; font-size: 0.85rem; }
+.price-stale { margin: 0.3rem 0; font-size: 0.85rem; color: #b45309; }

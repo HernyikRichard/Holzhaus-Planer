@@ -1,3 +1,4 @@
+import type { Supply } from '../pricing/supplyTypes';
 import type { Plan } from '../model/types';
 import type { TimberPiece } from '../calc/types';
 import { assignCuts } from '../calc/cutting';
@@ -9,9 +10,9 @@ import { accessoryElements, floorElements, foundationElements } from './misc';
 import { elementsToPieces } from './toPieces';
 import type { Element, FastenerRef, Scene } from './types';
 
-export function buildScene(plan: Plan): Scene {
+export function buildScene(plan: Plan, supply?: Supply): Scene {
   const wall = wallFrameElements(plan);
-  const osb = wallOsbElements(plan, wall.elements);
+  const osb = wallOsbElements(plan, wall.elements, supply);
   const roof = roofElements(plan);
   const elements: Element[] = [
     ...foundationElements(plan), ...floorElements(plan), ...wall.elements, ...osb.elements,
@@ -20,5 +21,5 @@ export function buildScene(plan: Plan): Scene {
   const fasteners: FastenerRef[] = [...wall.fasteners, ...osb.fasteners, ...roof.fasteners];
   // a fali lécek pozíció nélküli darabok (nincs Elementjük), de a vágási kiosztásban szerepelniük kell
   const pieces: TimberPiece[] = [...elementsToPieces(elements), ...wallBattenPieces(plan)];
-  return { elements, fasteners, cut: assignCuts(pieces, plan.settings.stockLengths) };
+  return { elements, fasteners, cut: assignCuts(pieces, plan.settings.stockLengths, supply) };
 }

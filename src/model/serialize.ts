@@ -1,10 +1,12 @@
 import type { Plan } from './types';
-import { createDefaultPlan } from './defaults';
+import { createDefaultPlan, DEFAULT_PRICING } from './defaults';
 
-export const CURRENT_VERSION = 1;
+export const CURRENT_VERSION = 2;
 
-/** MIGRATIONS[v] a v verziójú nyers adatot v+1 verzióra alakítja. Az 1-es verzióhoz nincs lépés. */
-export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {};
+/** MIGRATIONS[v] a v verziójú nyers adatot v+1 verzióra alakítja. */
+export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {
+  1: raw => ({ ...raw, version: 2, pricing: structuredClone(DEFAULT_PRICING) }),
+};
 
 export type ParseResult = { ok: true; plan: Plan } | { ok: false; error: string };
 
@@ -20,7 +22,14 @@ class FieldError extends Error {}
 // A nullable mezők (az alapértelmezett érték objektum, de a fájlban null is lehet).
 const NULLABLE_PATHS = new Set(['floor.insulation']);
 
+// Nyílt térképek: a kulcsokat a fájlból vesszük át, az értékeket a checkShape ellenőrzi.
+const OPEN_MAP_PATHS = new Set(['pricing.overrides', 'pricing.custom', 'pricing.productChoice']);
+
 function merge(def: unknown, src: unknown, path: string): unknown {
+  if (OPEN_MAP_PATHS.has(path)) {
+    if (!isPlainObject(src)) throw new FieldError(`A(z) „${path}” mező értéke nem objektum.`);
+    return structuredClone(src);
+  }
   if (NULLABLE_PATHS.has(path) && src === null) return null;
   if (Array.isArray(def)) {
     if (!Array.isArray(src)) throw new FieldError(`A(z) „${path}” mező értéke nem lista.`);
@@ -33,6 +42,7 @@ function merge(def: unknown, src: unknown, path: string): unknown {
       const p = path ? `${path}.${key}` : key;
       out[key] = key in src ? merge(def[key], src[key], p) : structuredClone(def[key]);
     }
+    if (path === 'pricing' && 'shippingFee' in src) out.shippingFee = src.shippingFee;
     return out;
   }
   if (typeof src !== typeof def || (typeof src === 'number' && !Number.isFinite(src))) {
@@ -91,6 +101,13 @@ function checkShape(plan: Plan): string | null {
     checks.push(['floor.insulation.thickness', oneOf(ins.thickness, [50, 100, 150])]);
   }
   for (const [path, ok] of checks) if (!ok) return path;
+
+  const pr = plan.pricing;
+  for (const k of ['overrides', 'custom'] as const) {
+    for (const [id, v] of Object.entries(pr[k])) if (!isNum(v) || (v as number) < 0) return `pricing.${k}.${id}`;
+  }
+  for (const [id, v] of Object.entries(pr.productChoice)) if (typeof v !== 'string') return `pricing.productChoice.${id}`;
+  if (pr.shippingFee !== undefined && (!isNum(pr.shippingFee) || pr.shippingFee < 0)) return 'pricing.shippingFee';
 
   const sl = plan.settings.stockLengths;
   if (sl.length === 0 || !sl.every(v => isNum(v) && v >= 500)) return 'settings.stockLengths';

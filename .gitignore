@@ -5,3 +5,6 @@ dist
 .superpowers/
 .claude/
 docs/superpowers/
+
+# letöltőszkript részleges kimenete (ARAK_LIMIT)
+src/prices/kaplar.partial.json

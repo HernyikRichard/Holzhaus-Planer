@@ -6,6 +6,8 @@ export interface UiState {
   layers: Record<LayerId, boolean>; cameras: Partial<Record<ViewId, Camera>>; detailOpen: boolean;
   /** Anyaglista: keresés, kinyitott sorok, összecsukott kategóriák (a lépésváltáson át megmaradnak). */
   matQuery: string; matOpen: string[]; matClosed: string[];
+  /** Anyaglista: csak az ár nélküli tételek (a Költség fül „Mutasd” gombja). */
+  matOnlyMissing: boolean;
 }
 export interface UiStore {
   get(): UiState;
@@ -15,7 +17,7 @@ export interface UiStore {
 
 /** Új vagy betöltött terv: nincs kijelölés, kiemelés, tárolt kamera, nyitott adatlap. */
 export const CLEAR_UI: Partial<UiState> = {
-  selected: null, selectedOpening: null, hovered: null, highlight: [], cameras: {}, detailOpen: false,
+  selected: null, selectedOpening: null, hovered: null, highlight: [], cameras: {}, detailOpen: false, matOnlyMissing: false,
 };
 
 const LAYERS_KEY = 'favazas.layers.v1';
@@ -40,7 +42,7 @@ function loadLayers(): Record<LayerId, boolean> {
 export function createUiStore(): UiStore {
   let state: UiState = {
     step: 'building', view: 'floor', selected: null, selectedOpening: null, hovered: null, highlight: [],
-    layers: loadLayers(), cameras: {}, detailOpen: false, matQuery: '', matOpen: [], matClosed: [],
+    layers: loadLayers(), cameras: {}, detailOpen: false, matQuery: '', matOpen: [], matClosed: [], matOnlyMissing: false,
   };
   const listeners = new Set<() => void>();
   return {
@@ -49,7 +51,7 @@ export function createUiStore(): UiStore {
       let next = { ...state, ...patch };
       if (patch.step !== undefined && patch.step !== state.step) {
         const def = STEPS.find(s => s.id === patch.step)!;
-        next = { ...next, view: patch.view ?? def.defaultView, selected: patch.selected ?? null, selectedOpening: patch.selectedOpening ?? null, highlight: patch.highlight ?? [], detailOpen: patch.detailOpen ?? false };
+        next = { ...next, view: patch.view ?? def.defaultView, selected: patch.selected ?? null, selectedOpening: patch.selectedOpening ?? null, highlight: patch.highlight ?? [], detailOpen: patch.detailOpen ?? false, matOnlyMissing: patch.matOnlyMissing ?? false };
       }
       if (patch.layers) {
         try { localStorage.setItem(LAYERS_KEY, JSON.stringify(patch.layers)); } catch { /* nem kritikus */ }

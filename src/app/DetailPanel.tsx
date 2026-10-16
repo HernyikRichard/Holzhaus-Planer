@@ -1,9 +1,9 @@
-import { useEffect, useMemo } from 'preact/hooks';
+import { useEffect } from 'preact/hooks';
 import type { Store } from '../ui/store';
 import type { UiStore } from './uiStore';
 import { useStore, useUi } from './hooks';
-import { calculate } from '../calc';
 import { KERF, OSB_SHEET } from '../catalog';
+import { supplyFor } from '../pricing/supply';
 import { elementPoly } from '../viewer/views/world';
 import { CutStrip } from './CutStrip';
 import { formatQty } from '../ui/format';
@@ -23,7 +23,7 @@ export function DetailPanel({ store, ui }: { store: Store; ui: UiStore }) {
   const state = useStore(store, s => s);
   const { plan, scene } = drawSource(state, view);
 
-  const osbOrder = useMemo(() => { try { return calculate(plan).lines.find(l => l.id === 'wall.osb')?.quantity; } catch { return undefined; } }, [plan]);
+  const osbOrder = state.output.lines.find(l => l.id === 'wall.osb')?.quantity;
   const el = selected ? scene.elements.find(e => e.id === selected) : undefined;
   const fx = selected ? scene.fasteners.find(f => f.id === selected) : undefined;
 
@@ -49,9 +49,10 @@ export function DetailPanel({ store, ui }: { store: Store; ui: UiStore }) {
     let osb: string | null = null;
     if (el.kind === 'osbSheet') {
       const sheets = scene.elements.filter(e => e.kind === 'osbSheet');
-      const cutSheets = sheets.filter(e => e.geom.w < OSB_SHEET.w - 1e-6 || e.geom.h < OSB_SHEET.l - 1e-6).length;
-      let order = 0;
-      order = osbOrder ?? 0;
+      const wallOsb = plan.walls.layers.find(l => l.kind === 'osb' && l.enabled);
+      const full = (wallOsb && supplyFor(plan)?.osbSheet(wallOsb.thickness)) || OSB_SHEET;
+      const cutSheets = sheets.filter(e => e.geom.w < full.w - 1e-6 || e.geom.h < full.l - 1e-6).length;
+      const order = osbOrder ?? 0;
       osb = `kiosztás: ${sheets.length} darab (ebből ${cutSheets} vágott), rendelés: ${order} tábla`;
     }
     return (

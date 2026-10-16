@@ -1,4 +1,5 @@
 import type { Plan } from '../model/types';
+import type { Supply } from '../pricing/supplyTypes';
 import { OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING, OSB_SCREW_LABEL, OSB_SHEET } from '../catalog';
 import { wallGeometry, wallHeightAt } from '../calc/geometry';
 import type { WallGeom } from '../calc/geometry';
@@ -35,11 +36,12 @@ function along(length: number, step: number): number[] {
 /** Ennél alacsonyabb maradék sávba nem kerül tábla (és csavar sem). */
 const MIN_SHEET_H = 100;
 
-export function wallOsbElements(plan: Plan, frameElements?: Element[]): { elements: Element[]; fasteners: FastenerRef[] } {
+export function wallOsbElements(plan: Plan, frameElements?: Element[], supply?: Supply): { elements: Element[]; fasteners: FastenerRef[] } {
   const elements: Element[] = [];
   const fasteners: FastenerRef[] = [];
   const osb = plan.walls.layers.find(l => l.kind === 'osb');
   if (!osb?.enabled) return { elements, fasteners };
+  const sheetSize = supply?.osbSheet(osb.thickness) ?? OSB_SHEET;
   const frame = frameElements ?? wallFrameElements(plan).elements;
 
   for (const wall of wallGeometry(plan)) {
@@ -48,12 +50,12 @@ export function wallOsbElements(plan: Plan, frameElements?: Element[]): { elemen
     const holes = frame.filter(e => e.group === group && e.kind === 'opening').map(e => e.geom);
     const len = wall.length;
     let n = 0;
-    for (let u = 0; u < len - 1e-9; u += OSB_SHEET.w) {
-      const w = Math.min(OSB_SHEET.w, len - u);
+    for (let u = 0; u < len - 1e-9; u += sheetSize.w) {
+      const w = Math.min(sheetSize.w, len - u);
       const hMax = topMax(wall, u, u + w);
       // a tábla téglalap a oszlop legmagasabb pontjáig; a 100 mm-nél alacsonyabb maradék sáv kimarad
-      for (let v = 0; hMax - v >= MIN_SHEET_H - 1e-9; v += OSB_SHEET.l) {
-        const h = Math.min(OSB_SHEET.l, hMax - v);
+      for (let v = 0; hMax - v >= MIN_SHEET_H - 1e-9; v += sheetSize.l) {
+        const h = Math.min(sheetSize.l, hMax - v);
         n++;
         const id = `${group}.osbSheet.${n}`;
         const sheet: Element = {

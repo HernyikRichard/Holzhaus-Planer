@@ -1,4 +1,4 @@
-import { createDefaultPlan } from '../../src/model/defaults';
+import { createDefaultPlan, DEFAULT_PRICING } from '../../src/model/defaults';
 import { CURRENT_VERSION, MIGRATIONS, parsePlan, serializePlan } from '../../src/model/serialize';
 
 test('roundtrip', () => {
@@ -7,7 +7,7 @@ test('roundtrip', () => {
   expect(r).toEqual({ ok: true, plan: p });
 });
 test('serializePlan uses 2-space indentation', () => {
-  expect(serializePlan(createDefaultPlan())).toContain('\n  "version": 1');
+  expect(serializePlan(createDefaultPlan())).toContain('\n  "version": 2');
 });
 test('garbage and future versions are rejected with Hungarian messages', () => {
   expect(parsePlan('nem json')).toEqual({ ok: false, error: 'A fájl nem érvényes JSON.' });
@@ -15,7 +15,7 @@ test('garbage and future versions are rejected with Hungarian messages', () => {
     ok: false,
     error: 'A fájl egy újabb programverzióval készült (v99), ezt a verziót nem tudom betölteni.',
   });
-  expect(CURRENT_VERSION).toBe(1);
+  expect(CURRENT_VERSION).toBe(2);
 });
 test('missing or invalid version is rejected', () => {
   const p: any = createDefaultPlan(); delete p.version;
@@ -47,8 +47,31 @@ test('wrong types are rejected naming the field path', () => {
   expect(r.ok).toBe(false);
   expect(!r.ok && r.error).toContain('building.width');
 });
-test('MIGRATIONS is an empty record for v1', () => {
-  expect(MIGRATIONS).toEqual({});
+test('MIGRATIONS has exactly the v1 -> v2 step', () => {
+  expect(Object.keys(MIGRATIONS)).toEqual(['1']);
+});
+test('v1 file migrates to v2 with default pricing', () => {
+  const v1: any = createDefaultPlan(); delete v1.pricing; v1.version = 1; v1.name = 'Régi';
+  const r = parsePlan(JSON.stringify(v1));
+  expect(r.ok).toBe(true);
+  if (r.ok) {
+    expect(r.plan.version).toBe(2);
+    expect(r.plan.pricing).toEqual(DEFAULT_PRICING);
+    expect(r.plan.pricing).not.toBe(DEFAULT_PRICING);
+    expect(r.plan.name).toBe('Régi');
+  }
+});
+test('createDefaultPlan pricing is a fresh copy', () => {
+  const a = createDefaultPlan(), b = createDefaultPlan();
+  expect(a.pricing).toEqual(DEFAULT_PRICING);
+  expect(a.pricing).not.toBe(DEFAULT_PRICING);
+  expect(a.pricing.overrides).not.toBe(b.pricing.overrides);
+});
+test('pricing roundtrip keeps open-map keys and shippingFee', () => {
+  const p = createDefaultPlan();
+  p.pricing = { useSupply: false, overrides: { 'wall.osb': 1234 }, custom: { 'x.y': 0 },
+    productChoice: { 'wall.osb': 'osb-12-b' }, pickup: true, shippingFee: 9000 };
+  expect(parsePlan(serializePlan(p))).toEqual({ ok: true, plan: p });
 });
 
 describe('shape validation', () => {
@@ -66,6 +89,16 @@ describe('shape validation', () => {
   test('wall layer list missing a kind', () => bad(p => { p.walls.layers.pop(); }, 'walls.layers'));
   test('roof layer null', () => bad(p => { p.roof.layers = [null]; }, 'roof.layers[0]'));
   test('bad layer material', () => bad(p => { p.roof.layers[0].material = 'x'; }, 'roof.layers[0].material'));
+  test('negative override', () => bad(p => { p.pricing.overrides = { abc: -1 }; }, 'pricing.overrides.abc'));
+  test('string override', () => bad(p => { p.pricing.overrides = { abc: '5' }; }, 'pricing.overrides.abc'));
+  test('negative custom', () => bad(p => { p.pricing.custom = { q: -5 }; }, 'pricing.custom.q'));
+  test('non-string productChoice', () => bad(p => { p.pricing.productChoice = { q: 3 }; }, 'pricing.productChoice.q'));
+  test('negative shippingFee', () => bad(p => { p.pricing.shippingFee = -1; }, 'pricing.shippingFee'));
+  test('string shippingFee', () => bad(p => { p.pricing.shippingFee = 'x'; }, 'pricing.shippingFee'));
+  test('non-boolean pickup', () => {
+    const p: any = createDefaultPlan(); p.pricing.pickup = 'igen';
+    expect(parsePlan(JSON.stringify(p)).ok).toBe(false);
+  });
   test('layers are reordered to default order', () => {
     const p: any = createDefaultPlan(); p.walls.layers.reverse();
     expect(parsePlan(JSON.stringify(p))).toEqual({ ok: true, plan: createDefaultPlan() });

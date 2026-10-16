@@ -1,4 +1,10 @@
-import { toCsv } from '../../src/export/csv';
+import { calculate } from '../../src/calc';
+import { createDefaultPlan } from '../../src/model/defaults';
+import { supplyFromPriceList } from '../../src/pricing/supply';
+import { costOf, orderList } from '../../src/pricing/cost';
+import { MATCH_FIXTURE } from '../fixtures/priceList';
+import { BUNDLED_PRICE_LIST } from '../../src/prices';
+import { toCsv, toOrderCsv } from '../../src/export/csv';
 import { planFileSlug } from '../../src/export/filename';
 
 test('toCsv', () => {
@@ -22,4 +28,72 @@ test('planFileSlug', () => {
   expect(planFileSlug('Új terv')).toBe('uj-terv');
   expect(planFileSlug('  Kerti ház / árvíztűrő  ')).toBe('kerti-haz-arvizturo');
   expect(planFileSlug('!!!')).toBe('terv');
+});
+
+describe('költséges CSV', () => {
+  const pl = MATCH_FIXTURE;
+  const plan = createDefaultPlan();
+  const output = calculate(plan, supplyFromPriceList(pl));
+  const summary = costOf(plan, output, pl);
+
+  test('toCsv a költségoszlopokkal: fejléc és egész Ft-os sor', () => {
+    const csv = toCsv(output.lines, summary);
+    const rows = csv.split('\r\n');
+    expect(rows[0]).toBe('﻿Kategória;Anyag;Mennyiség;Egység;Kiegészítő;Számítás;Káplár-mennyiség;Káplár-egység;Egységár;Összeg;Forrás;Káplár-termék');
+    const cl = summary.lines.find(l => l.source === 'kaplar')!;
+    const row = rows.find(r => r.includes(`;${cl.unitPrice};${cl.total};Káplár;`))!;
+    expect(row).toBeDefined();
+    expect(row.endsWith(`;${cl.productName}`) || row.endsWith(`;"${cl.productName}"`)).toBe(true);
+    expect(csv).not.toMatch(/;\d+,\d+;(Káplár|kézi|egyéni);/);
+  });
+  test('forrásértékek: nincs ár és tájékoztató üres árral', () => {
+    const csv = toCsv(output.lines, summary);
+    const info = summary.lines.find(l => l.informational)!;
+    const missing = summary.lines.find(l => !l.informational && l.source === 'missing')!;
+    const rowOf = (id: string) => csv.split('\r\n')[1 + output.lines.findIndex(l => l.id === id)];
+    expect(rowOf(info.lineId)).toMatch(/;;;tájékoztató;$/);
+    expect(rowOf(missing.lineId)).toMatch(/;;;nincs ár;$/);
+  });
+  test('forrás: kézi és egyéni', () => {
+    const p = createDefaultPlan();
+    const base = costOf(p, calculate(p, supplyFromPriceList(pl)), pl);
+    const kap = base.lines.find(l => l.source === 'kaplar')!;
+    const miss = base.lines.find(l => !l.informational && l.source === 'missing')!;
+    const p2 = { ...p, pricing: { ...p.pricing, overrides: { [kap.lineId]: 1234 }, custom: { [miss.lineId]: 99 } } };
+    const out2 = calculate(p2, supplyFromPriceList(pl));
+    const csv = toCsv(out2.lines, costOf(p2, out2, pl));
+    expect(csv).toContain(';1234;');
+    expect(csv).toMatch(/;kézi;/);
+    expect(csv).toMatch(/;99;\d+;egyéni;;?/);
+  });
+  test('Káplár-mennyiség és -egység: a lambéria m² helyett csomagban, a hiányzó sornál üres', () => {
+    const bpl = BUNDLED_PRICE_LIST!;
+    const p = createDefaultPlan();
+    const out = calculate(p, supplyFromPriceList(bpl));
+    const s = costOf(p, out, bpl);
+    const csv = toCsv(out.lines, s);
+    const rowOf = (id: string) => csv.split('\r\n')[1 + out.lines.findIndex(l => l.id === id)];
+    const lam = s.lines.find(l => l.lineId === 'wall.exteriorCladding')!;
+    const line = out.lines.find(l => l.id === 'wall.exteriorCladding')!;
+    expect(line.unit).toBe('m²');
+    expect(lam.unit).toBe('csomag');
+    expect(rowOf(lam.lineId)).toContain(`;m²;`);
+    expect(rowOf(lam.lineId)).toContain(`;${lam.qty};csomag;${lam.unitPrice};${lam.total};Káplár;`);
+    const miss = s.lines.find(l => !l.informational && l.source === 'missing')!;
+    expect(rowOf(miss.lineId)).toMatch(/;;;;;nincs ár;$/);
+  });
+  test('toCsv költség nélkül változatlan', () => {
+    expect(toCsv(output.lines).split('\r\n')[0]).toBe('﻿Kategória;Anyag;Mennyiség;Egység;Kiegészítő;Számítás');
+  });
+  test('toOrderCsv: fejléc, sorok száma, összesen sor', () => {
+    const csv = toOrderCsv(summary);
+    const rows = csv.split('\r\n');
+    expect(rows[0]).toBe('﻿Termék;Mennyiség;Egység;Egységár;Összeg;Link');
+    expect(csv.endsWith('\r\n')).toBe(true);
+    const n = orderList(summary).length;
+    expect(rows.length).toBe(1 + n + 1 + 1); // fejléc + sorok + összesen + záró üres
+    expect(rows[1 + n]).toBe(`Összesen;;;;${summary.kaplarSubtotal};`);
+    const first = orderList(summary)[0];
+    expect(rows[1]).toContain(`;${first.unitPrice};${first.total};${first.url}`);
+  });
 });

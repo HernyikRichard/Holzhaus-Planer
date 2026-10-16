@@ -32,9 +32,19 @@ test('summary button opens the material list', () => {
   fireEvent.click(screen.getByRole('button', { name: /Teljes anyaglista/ }));
   expect(ui.get().step).toBe('materials');
 });
-test('summary is hidden on the materials step', () => {
+test('materials step: no rows, total still shown', () => {
   const { root } = setup('materials');
-  expect(root.textContent).toBe('');
+  expect(root.querySelectorAll('.summary-row').length).toBe(0);
+  expect(root.textContent).toContain('≈');
+});
+test('total shows on every step and opens the cost view', () => {
+  const { ui, root } = setup('building');
+  const btn = screen.getByRole('button', { name: 'Becsült végösszeg – költség megnyitása' });
+  expect(btn.textContent).toMatch(/^≈\s\d[\d\s]*Ft/);
+  expect(root.textContent).toContain('Ft');
+  fireEvent.click(btn);
+  expect(ui.get().step).toBe('materials');
+  expect(ui.get().view).toBe('cost');
 });
 
 test('section labels: mm below 30 mm, cm otherwise', () => {

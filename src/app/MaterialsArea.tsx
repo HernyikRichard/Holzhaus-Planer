@@ -2,9 +2,10 @@ import type { Store } from '../ui/store';
 import type { UiStore } from './uiStore';
 import { useUi } from './hooks';
 import { MaterialTable } from './MaterialTable';
+import { CostView } from './CostView';
 import { CutPlanView } from './CutPlanView';
 
-const TABS = [{ id: 'table', name: 'Anyaglista' }, { id: 'cutplan', name: 'Vágási terv' }] as const;
+const TABS = [{ id: 'table', name: 'Anyaglista' }, { id: 'cutplan', name: 'Vágási terv' }, { id: 'cost', name: 'Költség és rendelés' }] as const;
 
 /** Az Anyaglista lépés: a vászon helyén füles táblázat / vágási terv. */
 export function MaterialsArea({ store, ui }: { store: Store; ui: UiStore }) {
@@ -20,7 +21,9 @@ export function MaterialsArea({ store, ui }: { store: Store; ui: UiStore }) {
         </div>
       </div>
       <div class="materials-body">
-        {view === 'cutplan' ? <CutPlanView store={store} ui={ui} /> : <MaterialTable store={store} ui={ui} />}
+        {view === 'cutplan' ? <CutPlanView store={store} ui={ui} />
+          : view === 'cost' ? <CostView store={store} ui={ui} />
+          : <MaterialTable store={store} ui={ui} />}
       </div>
     </main>
   );

@@ -1,7 +1,12 @@
+import { calculate } from '../../src/calc';
+import { supplyFromPriceList } from '../../src/pricing/supply';
+import { costOf, orderList } from '../../src/pricing/cost';
+import { MATCH_FIXTURE } from '../fixtures/priceList';
+import { formatFt } from '../../src/ui/format';
 import { buildScene } from '../../src/scene/build';
 import { createDefaultPlan } from '../../src/model/defaults';
 import { cutSticks } from '../../src/app/lineElements';
-import { CUT_PLAN_HEADER, cutPlanRows, DEFAULT_PALETTE, substituteCssVars, fitRect, paginateRows, type TableItem } from '../../src/export/pdfLayout';
+import { costPageRows, CUT_PLAN_HEADER, cutPlanRows, DEFAULT_PALETTE, substituteCssVars, fitRect, paginateRows, type TableItem } from '../../src/export/pdfLayout';
 
 test('substituteCssVars replaces known variables with palette values', () => {
   const svg = '<rect fill="var(--fill-wood)" stroke="var(--line)"/><text fill="var(--line)">x</text>';
@@ -77,4 +82,49 @@ test('cutPlanRows: 4 columns, grouped identical sticks, remainder in cm', () => 
 test('substituteCssVars maps the standalone SVG font family too', () => {
   const out = substituteCssVars('<svg font-family="DejaVu Sans, sans-serif"></svg>', {}, 'DejaVuSans');
   expect(out).toBe('<svg font-family="DejaVuSans"></svg>');
+});
+
+describe('costPageRows', () => {
+  const pl = MATCH_FIXTURE;
+  const plan = createDefaultPlan();
+  const summary = costOf(plan, calculate(plan, supplyFromPriceList(pl)), pl);
+  const ctx = { pickup: false, feeSet: false, freeAbove: pl.shipping.freeAbove };
+
+  test('összesítő: végösszeg, Káplár/egyéb, szállítás, hiányzók', () => {
+    const r = costPageRows(summary, ctx);
+    const flat = r.summary.map(x => x.join(' ')).join('\n');
+    expect(flat).toContain(formatFt(summary.total));
+    expect(flat).toContain(`Káplár: ${formatFt(summary.kaplarSubtotal)}`);
+    expect(flat).toContain('Szállítás');
+    expect(r.missingNote).toBe(summary.missingCount > 0 ? `${summary.missingCount} tétel ára hiányzik, a végösszeg ezek nélkül értendő.` : null);
+    expect(r.summary[r.summary.length - 1][0]).toBe('Végösszeg');
+  });
+  test('szállítás indoklása', () => {
+    const ship = (c: typeof ctx, s = summary) => costPageRows(s, c).summary.find(x => x[0] === 'Szállítás')![1];
+    expect(ship({ ...ctx, pickup: true })).toBe('személyes átvétel: 0 Ft');
+    expect(ship({ ...ctx, feeSet: true })).toBe(formatFt(summary.shipping));
+    expect(ship(ctx, { ...summary, shipping: 0, kaplarSubtotal: 600000 })).toBe(`ingyenes (${formatFt(500000)} felett)`);
+    expect(ship(ctx, { ...summary, shipping: 14990, kaplarSubtotal: 1000 })).toBe(formatFt(14990));
+  });
+  test('kosár: sorok az orderList szerint, linkkel', () => {
+    const r = costPageRows(summary, ctx);
+    expect(r.cart.length).toBe(orderList(summary).length);
+    for (const c of r.cart) {
+      expect(c.url).toMatch(/^https:\/\//);
+      expect(c.cells).toHaveLength(5);
+      expect(c.cells[4]).toMatch(/\sFt$/);
+    }
+  });
+  test('máshonnan: tájékoztató ár nélkül, hiányzó "nincs ár"', () => {
+    const r = costPageRows(summary, ctx);
+    const info = summary.lines.find(l => l.informational)!;
+    const row = r.others.find(o => o.cells[0] === info.name)!;
+    expect(row.cells[3]).toBe('tájékoztató');
+    expect(row.cells[4]).toBe('');
+    const miss = summary.lines.find(l => !l.informational && l.source === 'missing' && l.otherSource)!;
+    expect(r.others.find(o => o.cells[0] === miss.name)!.cells[3]).toBe('nincs ár');
+  });
+  test('lábjegyzet: forrás és dátum', () => {
+    expect(costPageRows(summary, ctx).footnote).toContain('Káplár Fatelep, 2026. 10. 01.');
+  });
 });

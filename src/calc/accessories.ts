@@ -23,7 +23,7 @@ export function calcAccessories(plan: Plan): ModuleResult {
     const need = g.eaveCount * eaveM;
     const qty = ceilTo(need, 0.1);
     add({
-      id: 'acc.gutter', name: 'Ereszcsatorna', quantity: qty, unit: 'm',
+      id: 'acc.gutter', name: 'Ereszcsatorna', quantity: qty, unit: 'm', eaveLength: eave, eaveCount: g.eaveCount,
       explanation: `${g.eaveCount} eresz × ${hu(eaveM)} m = ${hu(need, 3)} m → ${hu(qty, 1)} m`,
     });
     add({
@@ -32,7 +32,7 @@ export function calcAccessories(plan: Plan): ModuleResult {
     });
     const joinersPer = Math.max(0, Math.ceil(eave / GUTTER_PIECE_LENGTH - 1e-9) - 1);
     add({
-      id: 'acc.gutterJoiners', name: 'Ereszcsatorna toldó', quantity: g.eaveCount * joinersPer, unit: 'db',
+      id: 'acc.gutterJoiners', name: 'Ereszcsatorna toldó', quantity: g.eaveCount * joinersPer, unit: 'db', eaveLength: eave, eaveCount: g.eaveCount,
       explanation: `Ereszenként max(0; ⌈${hu(eaveM)} m / ${hu(GUTTER_PIECE_LENGTH / 1000)} m⌉ − 1) = ${joinersPer} toldó × ${g.eaveCount} eresz = ${g.eaveCount * joinersPer} db`,
     });
     const per = Math.ceil(eave / GUTTER_BRACKET_SPACING - 1e-9) + 1;

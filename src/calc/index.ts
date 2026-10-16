@@ -7,6 +7,7 @@ import { calcRoofLayers, calcRoofStructure } from './roof';
 import { calcAccessories } from './accessories';
 import { calcFasteners } from './fasteners';
 import { cutTimber } from './cutting';
+import type { Supply } from '../pricing/supplyTypes';
 
 export interface CalcOutput { lines: MaterialLine[]; warnings: string[] }
 
@@ -18,10 +19,10 @@ const STAT_KEYS: (keyof CalcStats)[] = [
   'frameScrewCount', 'osbScrewCount', 'hurricaneTieCount',
 ];
 
-export function calculate(plan: Plan): CalcOutput {
+export function calculate(plan: Plan, supply?: Supply): CalcOutput {
   const results: ModuleResult[] = [
-    calcFoundation(plan), calcFloor(plan), calcWallFraming(plan), calcWallLayers(plan),
-    calcRoofStructure(plan), calcRoofLayers(plan), calcAccessories(plan),
+    calcFoundation(plan), calcFloor(plan, supply), calcWallFraming(plan), calcWallLayers(plan, supply),
+    calcRoofStructure(plan), calcRoofLayers(plan, supply), calcAccessories(plan),
   ];
 
   const stats = Object.fromEntries(STAT_KEYS.map(k => [k, 0])) as unknown as CalcStats;
@@ -29,8 +30,8 @@ export function calculate(plan: Plan): CalcOutput {
 
   const pieces: TimberPiece[] = results.flatMap(r => r.pieces);
   const moduleLines = results.flatMap(r => r.lines);
-  const timberLines = cutTimber(pieces, plan.settings.stockLengths, plan.settings.waste.timber);
-  const all = [...moduleLines, ...timberLines, ...calcFasteners(stats)];
+  const timberLines = cutTimber(pieces, plan.settings.stockLengths, plan.settings.waste.timber, supply);
+  const all = [...moduleLines, ...timberLines, ...calcFasteners(stats, supply)];
 
   const rank = (l: MaterialLine) => CATEGORY_ORDER.indexOf(l.category);
   const lines = all

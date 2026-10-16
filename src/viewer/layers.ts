@@ -1,5 +1,5 @@
 export type ViewId = 'floor' | 'wall.N' | 'wall.E' | 'wall.S' | 'wall.W' | 'section' | 'roof' | 'gable'
-  | 'foundation' | 'table' | 'cutplan';
+  | 'foundation' | 'table' | 'cutplan' | 'cost';
 export type LayerId = 'frame' | 'sheathing' | 'battens' | 'fasteners' | 'dims' | 'grid' | 'mesh';
 
 const WALL: LayerId[] = ['frame', 'sheathing', 'fasteners', 'dims', 'grid'];
@@ -13,12 +13,13 @@ export const VIEW_LAYERS: Record<ViewId, LayerId[]> = {
   foundation: ['mesh', 'dims', 'grid'],
   table: [],
   cutplan: [],
+  cost: [],
 };
 
 export const VIEW_NAMES: Record<ViewId, string> = {
   floor: 'Alaprajz', 'wall.N': 'É fal', 'wall.E': 'K fal', 'wall.S': 'D fal', 'wall.W': 'Ny fal',
   section: 'Metszet', roof: 'Tetőnézet', gable: 'Oromfal', foundation: 'Alap',
-  table: 'Anyaglista', cutplan: 'Vágásterv',
+  table: 'Anyaglista', cutplan: 'Vágásterv', cost: 'Költség és rendelés',
 };
 
 export const LAYER_NAMES: Record<LayerId, string> = {

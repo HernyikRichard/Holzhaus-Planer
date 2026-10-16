@@ -3,7 +3,8 @@ import type { UiStore } from './uiStore';
 import type { Category, MaterialLine } from '../calc/types';
 import { useStore, useUi } from './hooks';
 import type { StepId } from './steps';
-import { formatQty, sectionLabelWithUnit } from '../ui/format';
+import { useCost } from './useCost';
+import { formatFt, formatQty, sectionLabelWithUnit } from '../ui/format';
 
 const CATEGORIES: Record<StepId, Category[]> = {
   building: ['Fal', 'Tető'],
@@ -37,14 +38,21 @@ export function summaryRows(lines: MaterialLine[], categories: Category[]): Row[
 export function StepSummary({ store, ui }: { store: Store; ui: UiStore }) {
   const step = useUi(ui, s => s.step);
   const lines = useStore(store, s => s.output.lines);
-  if (step === 'materials') return null;
+  const { cost } = useCost(store);
   const rows = summaryRows(lines, CATEGORIES[step]);
   return (
     <footer class="summary" aria-label="Összesítő">
       <ul class="summary-rows">
         {rows.map(r => <li key={r.key} class="summary-row">{r.text}</li>)}
       </ul>
-      <button type="button" class="summary-more" onClick={() => ui.set({ step: 'materials' })}>Teljes anyaglista →</button>
+      {step !== 'materials' && <button type="button" class="summary-more" onClick={() => ui.set({ step: 'materials' })}>Teljes anyaglista →</button>}
+      {cost && (
+        <button type="button" class="summary-total" aria-label="Becsült végösszeg – költség megnyitása"
+          onClick={() => ui.set({ step: 'materials', view: 'cost' })}>
+          ≈ {formatFt(cost.total)}
+          {cost.missingCount > 0 && <small> (+{cost.missingCount} tétel ár nélkül)</small>}
+        </button>
+      )}
     </footer>
   );
 }

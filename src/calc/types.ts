@@ -5,6 +5,14 @@ export type Unit = 'kg' | 'zsák' | 'db' | 'szál' | 'm' | 'm²' | 'm³' | 't' |
 export interface MaterialLine {
   id: string; category: Category; name: string; quantity: number;
   unit: Unit; secondary?: string; explanation: string; warnings?: string[];
+  /** Csomag-/tekercsméret (m²), amivel a mennyiség készült; a termékpárosításhoz (nem a magyarázatból olvassuk). */
+  unitM2?: number;
+  /** A fedendő terület (m²) a mennyiség előtt, a termékpárosítás átváltásához. */
+  needM2?: number;
+  /** Trapézlemez-kiosztáshoz: ereszhossz (mm), szarufahossz (mm), tetősíkok száma. */
+  alongRidge?: number; rafterLength?: number; planes?: number;
+  /** Ereszcsatornához: egy eresz hossza (mm) és az ereszek száma. */
+  eaveLength?: number; eaveCount?: number;
 }
 export interface TimberPiece { id?: string; category: Category; section: Section; length: Mm; label: string }
 export interface CalcStats { // kötőelem-számításhoz, minden modul a sajátját tölti, a hiányzó 0

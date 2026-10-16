@@ -3,7 +3,9 @@ import type { Store } from '../ui/store';
 import { createDirtyTracker } from './dirty';
 import { createDefaultPlan } from '../model/defaults';
 import { parsePlan, serializePlan } from '../model/serialize';
-import { toCsv } from '../export/csv';
+import { toCsv, toOrderCsv } from '../export/csv';
+import { BUNDLED_PRICE_LIST } from '../prices';
+import { computeCost } from './useCost';
 import { planFileSlug } from '../export/filename';
 import { downloadBlob } from '../export/download';
 import { STEPS, stepHasError } from './steps';
@@ -26,6 +28,7 @@ function PdfDialog({ store, dialogRef }: { store: Store; dialogRef: { current: H
   const materials = useRef<HTMLInputElement>(null);
   const explanations = useRef<HTMLInputElement>(null);
   const cutPlan = useRef<HTMLInputElement>(null);
+  const costBox = useRef<HTMLInputElement>(null);
 
   const close = () => {
     const dlg = dialogRef.current;
@@ -36,14 +39,18 @@ function PdfDialog({ store, dialogRef }: { store: Store; dialogRef: { current: H
   async function create(): Promise<void> {
     setBusy(true);
     try {
-      const { lastValidPlan, output } = store.get();
+      const state = store.get();
+      const { lastValidPlan, output } = state;
+      // az utolsó érvényes geometria az aktuális árazási beállításokkal (a szállítás felirata is ebből)
+      const { plan, cost } = computeCost(state, BUNDLED_PRICE_LIST);
       const { exportPdf } = await import('../export/pdf');
-      const blob = await exportPdf(lastValidPlan, output, {
+      const blob = await exportPdf(plan, output, {
         drawings: drawings.current!.checked,
         materials: materials.current!.checked,
         explanations: materials.current!.checked && explanations.current!.checked,
         cutPlan: cutPlan.current!.checked,
-      });
+        cost: costBox.current!.checked,
+      }, cost);
       downloadBlob(blob, `${planFileSlug(lastValidPlan.name)}.pdf`);
       close();
     } catch (err) {
@@ -63,6 +70,7 @@ function PdfDialog({ store, dialogRef }: { store: Store; dialogRef: { current: H
       <label><input type="checkbox" name="explanations" ref={explanations} defaultChecked
         disabled={!materialsOn} /> Számítás oszlop</label>
       <label><input type="checkbox" name="cutPlan" ref={cutPlan} defaultChecked /> Vágási terv</label>
+      <label><input type="checkbox" name="cost" ref={costBox} defaultChecked /> Költség</label>
       <div class="pdf-dialog-buttons">
         <button type="button" data-action="pdf-create" disabled={busy} onClick={create}>
           {busy ? 'PDF készül…' : 'Létrehozás'}
@@ -116,9 +124,17 @@ export function TopBar({ store, ui }: { store: Store; ui: UiStore }) {
     dirty.current!.markClean();
   };
   const onCsv = () => {
-    const { plan, output } = store.get();
-    downloadBlob(new Blob([toCsv(output.lines)], { type: 'text/csv;charset=utf-8' }),
+    const state = store.get();
+    const { plan, output } = state;
+    downloadBlob(new Blob([toCsv(output.lines, computeCost(state, BUNDLED_PRICE_LIST).cost ?? undefined)], { type: 'text/csv;charset=utf-8' }),
       `${planFileSlug(plan.name)}-anyaglista.csv`);
+  };
+  const onOrderCsv = () => {
+    const state = store.get();
+    const { cost } = computeCost(state, BUNDLED_PRICE_LIST);
+    if (!cost) { setMessage('Nincs árlista, a rendelési lista nem készíthető.'); return; }
+    downloadBlob(new Blob([toOrderCsv(cost)], { type: 'text/csv;charset=utf-8' }),
+      `${planFileSlug(state.plan.name)}-rendeles.csv`);
   };
   const onFile = () => {
     const input = fileInput.current!;
@@ -169,6 +185,7 @@ export function TopBar({ store, ui }: { store: Store; ui: UiStore }) {
         <button type="button" data-action="save" onClick={onSave}>Mentés</button>
         <button type="button" data-action="load" onClick={() => fileInput.current!.click()}>Megnyitás</button>
         <button type="button" data-action="csv" onClick={onCsv}>CSV</button>
+        <button type="button" data-action="order-csv" onClick={onOrderCsv}>Rendelési lista CSV</button>
         <button type="button" data-action="pdf" onClick={onPdf}>PDF</button>
         <input type="file" accept=".json" hidden ref={fileInput} onChange={onFile} />
       </div>

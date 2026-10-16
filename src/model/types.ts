@@ -34,4 +34,14 @@ export interface Plan {
   accessories: { gutter: boolean; downpipe: boolean; fascia: boolean; bargeBoard: boolean;
     ridgeTiles: boolean; ridgeVent: boolean };
   settings: { waste: { timber: number; sheet: number; foil: number; tile: number }; stockLengths: Mm[] };
+  pricing: PlanPricing;
+}
+
+export interface PlanPricing {
+  useSupply: boolean;
+  overrides: Record<string, number>;
+  custom: Record<string, number>;
+  productChoice: Record<string, string>;
+  pickup: boolean;
+  shippingFee?: number;
 }
