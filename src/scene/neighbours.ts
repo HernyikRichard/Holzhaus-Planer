@@ -1,4 +1,5 @@
 import type { Mm, Plan, WallSide } from '../model/types';
+import { formatCm } from '../ui/format';
 import { roofGeometry, wallGeometry } from '../calc/geometry';
 import type { Element, ElementKind, Scene } from './types';
 
@@ -98,7 +99,7 @@ export function neighbours(scene: Scene, groupLen: Mm, elementId: string): Neigh
   return info;
 }
 
-const cm = (mm: Mm): string => `${Math.round(mm / 10)} cm`;
+const cm = formatCm;
 
 export function tempDimensions(scene: Scene, groupLen: Mm, elementId: string): TempDim[] {
   const el = scene.elements.find(e => e.id === elementId);

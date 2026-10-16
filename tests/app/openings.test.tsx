@@ -274,3 +274,19 @@ test('opening added while another field is invalid stays selectable, editable an
   expect(ui.get().selectedOpening).toBeNull();
   expect(root.querySelector('.opening-fields')).toBeNull();
 });
+
+test('a typed offset of 152,5 cm is stored as 1525 mm (no snapping) and drawn as 152,5 cm', async () => {
+  const { store, row, field } = panel();
+  fireEvent.click(row('window-1').querySelector('button')!);
+  const i = field<HTMLInputElement>('offset');
+  i.value = '152,5'; fireEvent.change(i);
+  expect(store.get().plan.openings.find(x => x.id === 'window-1')!.offset).toBe(1525);
+  const { buildScene } = await import('../../src/scene/build');
+  const { renderView } = await import('../../src/viewer/render');
+  const { SCREEN_PALETTE } = await import('../../src/viewer/theme');
+  const plan = store.get().plan;
+  const all = { frame: true, sheathing: true, battens: true, fasteners: true, dims: true, grid: true, mesh: true };
+  const svg = renderView({ plan, scene: buildScene(plan), view: 'floor', layers: all, palette: SCREEN_PALETTE }).svg;
+  expect(svg).toContain('152,5 cm');
+  expect(store.get().plan.openings.find(x => x.id === 'window-1')!.offset).toBe(1525); // újrarajzolás után is
+});

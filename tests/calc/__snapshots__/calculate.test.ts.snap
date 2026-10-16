@@ -89,7 +89,7 @@ exports[`reference: 3×4 gable tile (default) 1`] = `
   ],
   [
     "timber.Fal.50x100.5000",
-    18,
+    16,
     "szál",
   ],
   [
@@ -349,12 +349,12 @@ exports[`reference: 4×6 mono trapezoid with floor 1`] = `
   ],
   [
     "timber.Fal.50x100.5000",
-    10,
+    9,
     "szál",
   ],
   [
     "timber.Fal.50x100.6000",
-    29,
+    28,
     "szál",
   ],
   [

@@ -1,5 +1,6 @@
 import type { Mm } from '../model/types';
 import type { Bounds } from './camera';
+import { formatCm } from '../ui/format';
 
 export type Pt = [Mm, Mm];
 
@@ -12,10 +13,8 @@ export function n(v: number): string {
   return String(Number.isFinite(v) ? Math.round(v * 10) / 10 : 0);
 }
 
-/** Hosszméret cm-ben, egész számra kerekítve: "300 cm". */
-export function cm(mm: Mm): string {
-  return `${Math.round(mm / 10)} cm`;
-}
+/** Hosszméret cm-ben (a közös formatCm): "300 cm", "152,5 cm". */
+export const cm = formatCm;
 
 export function emptyBounds(): Bounds {
   return { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };

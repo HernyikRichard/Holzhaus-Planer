@@ -4,7 +4,8 @@ import { createStore } from '../../src/ui/store';
 
 test('dragOffset snaps and clamps', () => {
   const p = createDefaultPlan();
-  expect(dragOffset(p, 'door-1', 1500, 73)).toBe(1550);
+  expect(dragOffset(p, 'door-1', 1500, 73)).toBe(1570); // 10 mm-es rács
+  expect(dragOffset(p, 'door-1', 1500, 76)).toBe(1580);
   expect(dragOffset(p, 'door-1', 1500, 99999)).toBe(1750);
   expect(dragOffset(p, 'door-1', 1500, -99999)).toBe(150);
 });
@@ -12,7 +13,7 @@ test('dragSill clamps window sill', () => {
   const p = createDefaultPlan();
   expect(dragSill(p, 'window-1', 1200, -5000)).toBe(100);
   expect(dragSill(p, 'window-1', 1200, 99999)).toBe(1550); // 2400 − 50 − 100 (koszorú) − 600 magasság − 100 fal-szélesség
-  expect(dragSill(p, 'window-1', 1200, 120)).toBe(1300);
+  expect(dragSill(p, 'window-1', 1200, 123)).toBe(1320);
 });
 test('dragSill leaves a door on the floor', () => {
   expect(dragSill(createDefaultPlan(), 'door-1', 0, 500)).toBe(0);

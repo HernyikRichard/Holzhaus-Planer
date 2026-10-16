@@ -55,3 +55,19 @@ test('every numeric/section panel field has a range check', () => {
     }
   }
 });
+
+test('on a full wall an opening keeps the corner stud, king and jack clear (3t + w = 250 mm)', async () => {
+  const { createDefaultPlan } = await import('../../src/model/defaults');
+  const p = createDefaultPlan();
+  const w = p.openings.find(o => o.id === 'window-1')!; // K fal, 4000 mm: teljes fal
+  w.offset = 150;
+  const e = validatePlan(p).find(x => x.path === 'openings.1.offset');
+  expect(e?.message).toContain('25 cm');
+  w.offset = 250;
+  expect(validatePlan(p).filter(x => x.path.startsWith('openings.1.'))).toEqual([]);
+  w.offset = 4000 - 250 - w.width + 50;
+  expect(validatePlan(p).some(x => x.path === 'openings.1.offset')).toBe(true);
+  expect(validatePlan(createDefaultPlan())).toEqual([]);
+  const q = createDefaultPlan(); q.openings.find(o => o.id === 'door-1')!.offset = 150; // D fal: rövid, marad 150
+  expect(validatePlan(q)).toEqual([]);
+});

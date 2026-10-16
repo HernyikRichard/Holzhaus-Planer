@@ -1,9 +1,12 @@
 import type { AppState } from './store';
 import type { Mm, Opening, Plan, WallSide } from '../model/types';
-import { wallGeometry } from '../calc/geometry';
+import { openingEndMargin, wallGeometry } from '../calc/geometry';
 import { validatePlan } from '../model/validate';
 
-export const SNAP: Mm = 50;
+/** Húzás/beszúrás rácsa (1 cm); a beírt értékek nem igazodnak rácshoz. */
+export const SNAP: Mm = 10;
+/** A szabad hely keresésének lépése (addFreeOpening). */
+const SCAN_STEP: Mm = 50;
 export const WALL_NAME: Record<WallSide, string> = { N: 'É', E: 'K', S: 'D', W: 'Ny' };
 export const WALLS: WallSide[] = ['N', 'E', 'S', 'W'];
 export const DEFAULTS = {
@@ -11,14 +14,17 @@ export const DEFAULTS = {
   window: { width: 600, height: 600, sillHeight: 1200 },
 };
 
+function wallOf(plan: Plan, wall: WallSide) {
+  return wallGeometry(plan).find(g => g.side === wall)!;
+}
 function wallLength(plan: Plan, wall: WallSide): Mm {
-  return wallGeometry(plan).find(g => g.side === wall)!.length;
+  return wallOf(plan, wall).length;
 }
 
 export function snapClamp(plan: Plan, wall: WallSide, width: Mm, offset: Mm): Mm {
-  const { w, t } = plan.walls.studSection;
-  const margin = w + t;
-  const max = wallLength(plan, wall) - margin - width;
+  const g = wallOf(plan, wall);
+  const margin = openingEndMargin(plan, g);
+  const max = g.length - margin - width;
   return Math.max(margin, Math.min(Math.round(offset / SNAP) * SNAP, max));
 }
 
@@ -61,11 +67,11 @@ export function invalidOpeningIds(state: AppState): Set<string> {
 
 // Az első szabad, érvényes hely a D falon az új nyílásnak (típus szerinti alapméret); ha nincs, null és nem kerül hozzá semmi.
 export function addFreeOpening(plan: Plan, type: 'door' | 'window'): Opening | null {
-  const margin = plan.walls.studSection.w + plan.walls.studSection.t;
+  const margin = openingEndMargin(plan, wallOf(plan, 'S'));
   const o = addOpening(plan, 'S', type, 0);
   const last = plan.openings.length - 1;
   const max = wallLength(plan, 'S') - margin - o.width;
-  for (let off = margin; off <= max; off += SNAP) {
+  for (let off = margin; off <= max; off += SCAN_STEP) {
     o.offset = off;
     if (!validatePlan(plan).some(e => e.path.startsWith(`openings.${last}.`))) return o;
   }

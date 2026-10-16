@@ -1,10 +1,10 @@
 import { createDefaultPlan } from '../../src/model/defaults';
 import { addOpening, moveOpening } from '../../src/ui/openingLogic';
 
-test('addOpening centers on click and snaps to 50 mm', () => {
+test('addOpening centers on click and snaps to 10 mm', () => {
   const p = createDefaultPlan();
   const o = addOpening(p, 'E', 'window', 2013);
-  expect(o.offset).toBe(1700);         // 2013 − 300 = 1713 → 1700
+  expect(o.offset).toBe(1710);         // 2013 − 300 = 1713 → 1710
   expect(p.openings).toContain(o);
 });
 
@@ -26,7 +26,7 @@ test('moveOpening clamps inside wall', () => {
   moveOpening(p, id, -5);
   expect(p.openings[0].offset).toBe(150);
   moveOpening(p, id, 1013);
-  expect(p.openings[0].offset).toBe(1000);
+  expect(p.openings[0].offset).toBe(1010);
 });
 
 
@@ -54,4 +54,14 @@ test('openingsOnlyInvalid / invalidOpeningIds look at the openings.* error paths
   expect(openingsOnlyInvalid(st([{ path: 'openings.0.offset', message: 'x' }, { path: 'building.width', message: 'y' }]))).toBe(false);
   const ids = invalidOpeningIds(st([{ path: 'openings.1.width', message: 'x' }, { path: 'building.width', message: 'y' }, { path: 'openings.9.width', message: 'z' }]));
   expect([...ids]).toEqual([p.openings[1].id]);
+});
+
+test('moveOpening on a full wall clamps to 3t + w from each end; short wall keeps w + t', () => {
+  const p = createDefaultPlan(); const id = 'window-1';   // K fal 4000, ablak 600
+  moveOpening(p, id, 0);
+  expect(p.openings[1].offset).toBe(250);
+  moveOpening(p, id, 99999);
+  expect(p.openings[1].offset).toBe(4000 - 250 - 600);
+  moveOpening(p, 'door-1', 0);                              // D fal: rövid
+  expect(p.openings[0].offset).toBe(150);
 });

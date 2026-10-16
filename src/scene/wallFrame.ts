@@ -6,12 +6,12 @@ import { studLengthAt, studPositions, wallGeometry } from '../calc/geometry';
 import type { Element, ElementKind, FastenerRef, Geom } from './types';
 
 const LABELS: Partial<Record<ElementKind, string>> = {
-  stud: 'Oszlop', cornerStud: 'Sarokoszlop', gableStud: 'Oromoszlop', kingStud: 'Teljes oszlop',
+  stud: 'Oszlop', cornerStud: 'Sarokoszlop (elforgatva)', gableStud: 'Oromoszlop', kingStud: 'Teljes oszlop',
   jackStud: 'Kiváltó oszlop', cripple: 'Rövid oszlop', sill: 'Könyöklő', header: 'Áthidaló', topPlate: 'Koszorú',
 };
 const VERTICAL = new Set<ElementKind>(['stud', 'cornerStud', 'gableStud', 'kingStud', 'jackStud', 'cripple']);
 
-interface Draft { kind: ElementKind; pieceLabel?: string; length: number; geom: Geom; openingId?: string; label?: string }
+interface Draft { kind: ElementKind; pieceLabel?: string; length: number; geom: Geom; openingId?: string; label?: string; rotated?: boolean }
 
 export function wallFrameElements(plan: Plan): { elements: Element[]; fasteners: FastenerRef[] } {
   const section = plan.walls.studSection;
@@ -40,9 +40,10 @@ export function wallFrameElements(plan: Plan): { elements: Element[]; fasteners:
       timber('stud', 'oszlop', h, { u: p, v: t, w: t, h });
     }
     if (wall.full) {
-      for (const u of [t, 2 * t, len - 2 * t, len - 3 * t]) {
-        const h = studLengthAt(plan, wall, u <= len / 2 ? 0 : len);
-        timber('cornerStud', 'sarokoszlop', h, { u, v: t, w: t, h });
+      // L alakú sarok: a végoszlop mellett egy 90°-kal elforgatott oszlop (széles lapja a fal mentén, belső síkkal egy vonalban)
+      for (const u of [t, len - t - w]) {
+        const h = Math.min(studLengthAt(plan, wall, u), studLengthAt(plan, wall, u + w)); // lejtős falon a szélesség mentén a rövidebb
+        drafts.push({ kind: 'cornerStud', pieceLabel: 'sarokoszlop', length: h, geom: { u, v: t, w, h }, rotated: true });
       }
     }
     if (wall.gableRise > 0) {
@@ -91,6 +92,7 @@ export function wallFrameElements(plan: Plan): { elements: Element[]; fasteners:
         ...(d.pieceLabel ? { pieceLabel: d.pieceLabel, section } : {}),
         length: d.length, geom: d.geom, fasteners: [],
         ...(d.openingId ? { openingId: d.openingId } : {}),
+        ...(d.rotated ? { rotated: true } : {}),
       });
     }
 

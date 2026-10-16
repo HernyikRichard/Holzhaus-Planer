@@ -11,6 +11,7 @@ export interface Element {
   pieceLabel?: string;         // a régi TimberPiece.label (csak faanyagnál)
   section?: Section; length: Mm; geom: Geom;
   fasteners: string[];         // FastenerRef.id-k
+  rotated?: boolean;           // 90°-kal elforgatott oszlop: a széles lapja a fal mentén (sarokoszlop)
   openingId?: string;          // kind==='opening' vagy a nyíláshoz tartozó keretelem
 }
 export type FastenerKind = 'anchor' | 'frameScrew' | 'osbScrew' | 'hurricaneTie';

@@ -39,3 +39,14 @@ export function formatDateHu(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
   return m ? `${m[1]}. ${m[2]}. ${m[3]}.` : iso;
 }
+
+/** mm → cm szám szöveggel, 0,1 cm-re kerekítve: egész, ha egész ("60"), egyébként tizedesvesszővel ("152,5"). */
+export function formatCmNum(mm: number): string {
+  const v = Math.round(mm / 10 * 10) / 10;
+  return String(v).replace('.', ',');
+}
+
+/** mm → "N cm" (0,1 cm-re kerekítve, tizedesvessző, a ",0" elhagyva): 600 → "60 cm", 1525 → "152,5 cm". */
+export function formatCm(mm: number): string {
+  return `${formatCmNum(mm)} cm`;
+}

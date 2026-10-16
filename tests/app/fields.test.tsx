@@ -204,3 +204,13 @@ describe('Árak beállítások', () => {
     expect(r.container.textContent).toContain('Nincs árlista');
   });
 });
+
+test('toStored rounds length fields to whole mm', async () => {
+  const { toStored } = await import('../../src/app/fieldLogic');
+  expect(toStored({ unit: 'cm' }, '152,5')).toBe(1525);
+  expect(toStored({ unit: 'm' }, '3,255')).toBe(3255);
+  expect(toStored({ unit: 'cm' }, '152,55')).toBe(1526);
+  expect(toStored({ unit: 'mm' }, '12,4')).toBe(12);
+  expect(toStored({ unit: '°' }, '12,5')).toBe(12.5);
+  expect(toStored({ unit: '%' }, '12,5')).toBe(0.125);
+});

@@ -68,9 +68,9 @@ test('cutPlanRows: 4 columns, grouped identical sticks, remainder in cm', () => 
   const rows = cutPlanRows(scene);
   expect(rows.length).toBeGreaterThan(0);
   expect(rows.every(r => r.length === 4)).toBe(true);
-  expect(rows.every(r => /^\d+ cm$/.test(r[3]))).toBe(true);
+  expect(rows.every(r => /^\d+(,\d)? cm$/.test(r[3]))).toBe(true);
   expect(rows.every(r => /^[\d,.]+ m × \d+$/.test(r[1]))).toBe(true);
-  expect(rows.every(r => /^\d+( \+ \d+)* cm$/.test(r[2]))).toBe(true);
+  expect(rows.every(r => /^\d+(,\d)?( \+ \d+(,\d)?)* cm$/.test(r[2]))).toBe(true);
   const keys = rows.map(r => [r[0], r[1].split(" × ")[0], r[2], r[3]].join("|"));
   expect(new Set(keys).size).toBe(keys.length);
   expect(rows[0][0]).toMatch(/ (mm|cm)$/);

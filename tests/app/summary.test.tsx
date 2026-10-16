@@ -19,7 +19,7 @@ afterEach(cleanup);
 
 test('summary shows wall timber', () => {
   const { root } = setup('walls');
-  expect(root.textContent).toContain('5×10 cm: 32 szál');
+  expect(root.textContent).toContain('5×10 cm: 30 szál');
 });
 test('summary has at most 5 rows, timber first', () => {
   const { root } = setup('roof');

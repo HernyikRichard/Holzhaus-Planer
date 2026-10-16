@@ -4,7 +4,8 @@ import type { TempDim } from '../scene/neighbours';
 import type { AppState, Store } from '../ui/store';
 import type { UiStore } from './uiStore';
 import { snapClamp, SNAP } from '../ui/openingLogic';
-import { cmText, drawSource } from './selection';
+import { drawSource } from './selection';
+import { formatCm } from '../ui/format';
 
 function find(plan: Plan, id: string): Opening {
   const o = plan.openings.find(x => x.id === id);
@@ -12,13 +13,13 @@ function find(plan: Plan, id: string): Opening {
   return o;
 }
 
-/** Húzás közben az új távolság a fal elejétől: 50 mm-es rács, a `moveOpening` szorításával. */
+/** Húzás közben az új távolság a fal elejétől: 10 mm-es rács, a `moveOpening` szorításával. */
 export function dragOffset(plan: Plan, openingId: string, startOffset: Mm, deltaU: Mm): Mm {
   const o = find(plan, openingId);
   return snapClamp(plan, o.wall, o.width, startOffset + deltaU);
 }
 
-/** Ablak mellvédje húzás közben: 50 mm-es rács, [studSection.t + 50, szálhossz − magasság − studSection.w]; ajtónál változatlan. */
+/** Ablak mellvédje húzás közben: 10 mm-es rács, [studSection.t + 50, szálhossz − magasság − studSection.w]; ajtónál változatlan. */
 export function dragSill(plan: Plan, openingId: string, startSill: Mm, deltaV: Mm, atOffset?: Mm): Mm {
   const o = find(plan, openingId);
   if (o.type !== 'window') return startSill;
@@ -35,7 +36,7 @@ export function liveDims(plan: Plan, openingId: string, offset: Mm, sill: Mm): T
   const wallLen = wallGeometry(plan).find(g => g.side === o.wall)!.length;
   const y = plan.walls.studSection.t + sill;
   const end = offset + o.width;
-  const dim = (x1: Mm, x2: Mm): TempDim => ({ x1, y1: y, x2, y2: y, offset: 0, text: cmText(x2 - x1) });
+  const dim = (x1: Mm, x2: Mm): TempDim => ({ x1, y1: y, x2, y2: y, offset: 0, text: formatCm(x2 - x1) });
   const out = [dim(0, offset), dim(end, wallLen)];
   let best: { from: Mm; to: Mm } | undefined;
   for (const q of plan.openings) {

@@ -5,7 +5,7 @@ import { DEFAULTS, WALL_NAME, WALLS } from '../ui/openingLogic';
 import type { UiStore } from './uiStore';
 import { useStore, useUi } from './hooks';
 import { toDisplay, toStored } from './fieldLogic';
-import { cmText } from './selection';
+import { formatCm, formatCmNum } from '../ui/format';
 import { openingIdOfElement, selectOpening } from './openingDrag';
 
 type NumKey = 'offset' | 'width' | 'height' | 'sillHeight';
@@ -104,7 +104,7 @@ export function OpeningList({ store, ui }: { store: Store; ui: UiStore }) {
         const n = ++counts[o.type];
         const rowErrors = errors.filter(e => e.path.startsWith(`openings.${i}.`));
         const sel = o.id === selectedId;
-        const summary = `${TYPE_NAME[o.type]} #${n} · ${WALL_NAME[o.wall]} fal · ${cmText(o.width).slice(0, -3)}×${cmText(o.height)}`;
+        const summary = `${TYPE_NAME[o.type]} #${n} · ${WALL_NAME[o.wall]} fal · ${formatCmNum(o.width)}×${formatCm(o.height)}`;
         const bad = (k: string) => rowErrors.some(e => e.path === `openings.${i}.${k}`);
         return (
           <div key={o.id} data-opening-row={o.id} class={`opening-row${sel ? ' selected' : ''}${rowErrors.length ? ' has-error' : ''}`}>
