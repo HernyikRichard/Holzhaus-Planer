@@ -5,6 +5,7 @@ import { buildScene } from '../../src/scene/build';
 import {
   buildModel3d, FRAME_ONLY, LAYER3D_GROUPS, LAYER3D_NAMES, solidBounds, wallBaseZ, wallFrameOf, type Solid,
 } from '../../src/three-d/model';
+import { FOIL_T } from '../../src/scene/layerStack';
 import { mono4x6Plan } from '../fixtures';
 
 const FRAME_KINDS = new Set(['stud', 'cornerStud', 'gableStud', 'kingStud', 'jackStud', 'cripple', 'sill', 'header', 'bottomPlate', 'topPlate']);
@@ -263,4 +264,275 @@ test('layer metadata', () => {
   expect(LAYER3D_GROUPS.map(g => g.name)).toEqual(['Alap', 'Fal', 'Tető', 'Egyéb']);
   expect(LAYER3D_GROUPS.flatMap(g => g.layers)).toHaveLength(Object.keys(LAYER3D_NAMES).length);
   expect(FRAME_ONLY).toEqual(['foundation', 'floor', 'wallFrame', 'roofFrame', 'openings']);
+});
+
+// ---- fali réteglapok ----
+type Pt2 = [number, number];
+const SIDES: WallSide[] = ['N', 'E', 'S', 'W'];
+const PANEL_LAYERS = ['interiorCladding', 'vaporBarrier', 'insulation', 'breatherMembrane', 'exteriorCladding'] as const;
+const KIND_TO_LAYER = {
+  interiorCladding: 'interiorCladding', vaporBarrier: 'vaporBarrier', insulation: 'insulation', osb: 'wallOsb',
+  breatherMembrane: 'breatherMembrane', battens: 'wallBattens', exteriorCladding: 'exteriorCladding',
+} as const;
+const sameVec = (a: number[], b: number[]): boolean => a.every((x, i) => Math.abs(x - b[i]) < 1e-9);
+const rect = (u0: number, v0: number, u1: number, v1: number): Pt2[] => [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
+/** Az adott fal (nAxis szerint azonosítva) adott rétegű testjei. */
+function onWall(p: Plan, solids: Solid[], side: WallSide, layer: string): Solid[] {
+  const n = wallFrameOf(p, side).nAxis;
+  return solids.filter(s => s.layer === layer && sameVec(s.nAxis, n));
+}
+function inPoly(poly: Pt2[], [x, y]: Pt2): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i];
+    const [xj, yj] = poly[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+const covers = (s: Solid, p: Pt2): boolean => inPoly(s.outline, p) && !s.holes.some(h => inPoly(h, p));
+const key = (pts: Pt2[]): string => pts.map(([u, v]) => `${u.toFixed(6)}|${v.toFixed(6)}`).sort().join(';');
+const range = (ss: Solid[], axis: number): [number, number] => {
+  const bs = ss.map(solidBounds);
+  return [Math.min(...bs.map(b => b.min[axis])), Math.max(...bs.map(b => b.max[axis]))];
+};
+function gableX(): Plan {
+  const p = createDefaultPlan();
+  p.roof.ridgeDirection = 'x';
+  return p;
+}
+
+const LAYER_PLANS: Array<[string, Plan]> = [...PLANS, ['gable ridge x', gableX()]];
+for (const [name, plan] of LAYER_PLANS) {
+  describe(`${name}: wall layers`, () => {
+    const scene = buildScene(plan);
+    const m = buildModel3d(plan, scene);
+
+    test('all enabled wall layers present', () => {
+      for (const l of Object.values(KIND_TO_LAYER)) expect(m.layers).toContain(l);
+      for (const side of SIDES) for (const l of PANEL_LAYERS) expect(onWall(plan, m.solids, side, l), `${side} ${l}`).toHaveLength(1);
+    });
+
+    test('opening is a hole in every wall layer', () => {
+      for (const side of SIDES) {
+        const ops = scene.elements.filter(e => e.group === `wall.${side}` && e.kind === 'opening');
+        for (const l of PANEL_LAYERS) {
+          const [s] = onWall(plan, m.solids, side, l);
+          expect(s.elementId).toBeUndefined();
+          expect(s.holes, `${side} ${l}`).toHaveLength(ops.length);
+          expect(s.holes.map(key).sort()).toEqual(ops.map(o => key(rect(o.geom.u, o.geom.v, o.geom.u + o.geom.w, o.geom.v + o.geom.h))).sort());
+          for (const h of s.holes) for (const p of h) expect(inPoly(s.outline, p), `${side} ${l} hole in outline`).toBe(true);
+        }
+      }
+    });
+
+    test('OSB sheets and battens keep openings free', () => {
+      for (const side of SIDES) {
+        const ops = scene.elements.filter(e => e.group === `wall.${side}` && e.kind === 'opening');
+        const pieces = [...onWall(plan, m.solids, side, 'wallOsb'), ...onWall(plan, m.solids, side, 'wallBattens')];
+        expect(pieces.length).toBeGreaterThan(0);
+        for (const o of ops) {
+          const { u, v, w, h } = o.geom;
+          for (let i = 1; i < 20; i++) for (let j = 1; j < 20; j++) {
+            const p: Pt2 = [u + (w * i) / 20, v + (h * j) / 20];
+            for (const s of pieces) expect(covers(s, p), `${s.label} covers ${o.id}`).toBe(false);
+          }
+        }
+      }
+    });
+
+    test('every osbSheet has a wallOsb solid', () => {
+      const sheets = scene.elements.filter(e => e.group.startsWith('wall.') && e.kind === 'osbSheet');
+      expect(sheets.length).toBeGreaterThan(0);
+      for (const e of sheets) expect(byId(m.solids, e.id).length, e.id).toBeGreaterThanOrEqual(1);
+      expect(m.solids.filter(s => s.layer === 'wallOsb').every(s => s.elementId?.includes('.osbSheet.'))).toBe(true);
+    });
+
+    test('layers stack outward / inward, no overlap', () => {
+      const sw = plan.walls.studSection.w;
+      // É fal: n = +Y, kifelé csökkenő Y
+      const y = (l: string): [number, number] => range(onWall(plan, m.solids, 'N', l), 1);
+      const osb = y('wallOsb');
+      const br = y('breatherMembrane');
+      const bat = y('wallBattens');
+      const ext = y('exteriorCladding');
+      expect(osb[1]).toBeCloseTo(0, 6);
+      expect(osb[0]).toBeCloseTo(-12, 6);
+      expect(br[1]).toBeCloseTo(osb[0], 6);
+      expect(br[0]).toBeCloseTo(osb[0] - FOIL_T, 6);
+      expect(bat[1]).toBeCloseTo(br[0], 6);
+      expect(bat[0]).toBeCloseTo(br[0] - 24, 6);
+      expect(ext[1]).toBeLessThanOrEqual(br[0] + EPS);
+      expect(ext[1]).toBeCloseTo(bat[0], 6);
+      expect(ext[0]).toBeCloseTo(bat[0] - 19, 6);
+      expect(y('insulation')).toEqual([0, sw]);
+      const vb = y('vaporBarrier');
+      const ic = y('interiorCladding');
+      expect(vb[0]).toBeGreaterThanOrEqual(sw - EPS);
+      expect(vb[0]).toBeCloseTo(sw, 6);
+      expect(ic[0]).toBeCloseTo(vb[1], 6);
+      expect(ic[1]).toBeCloseTo(vb[1] + 12, 6);
+    });
+
+    test('layer outline spans from the bottom plate to the wall top', () => {
+      for (const g of wallGeometry(plan)) {
+        const [s] = onWall(plan, m.solids, g.side, 'exteriorCladding');
+        const b = solidBounds(s);
+        expect(b.min[2]).toBeCloseTo(wallBaseZ(plan), 6);
+        expect(b.max[2]).toBeGreaterThanOrEqual(wallBaseZ(plan) + Math.max(g.hStart, g.hEnd) + g.gableRise - EPS);
+      }
+    });
+
+    test('corners not doubled, outer corner closed', () => {
+      const vol = (a: Solid[], b: Solid[]): number => {
+        let v = 1;
+        for (let k = 0; k < 3; k++) {
+          const ra = range(a, k);
+          const rb = range(b, k);
+          v *= Math.max(0, Math.min(ra[1], rb[1]) - Math.max(ra[0], rb[0]));
+        }
+        return v;
+      };
+      const pairs: [WallSide, WallSide][] = [['N', 'E'], ['E', 'S'], ['S', 'W'], ['W', 'N']];
+      for (const l of [...PANEL_LAYERS, 'wallOsb']) {
+        for (const [a, b] of pairs) {
+          expect(vol(onWall(plan, m.solids, a, l), onWall(plan, m.solids, b, l)), `${l} ${a}/${b}`).toBeLessThan(1e-6);
+        }
+      }
+      // a külső burkolat négy fala együtt az épület köré zárt téglalapot ad
+      const { width: W, length: L } = plan.building;
+      const ext = SIDES.flatMap(s => onWall(plan, m.solids, s, 'exteriorCladding'));
+      const T = -range(onWall(plan, m.solids, 'N', 'exteriorCladding'), 1)[0];
+      expect(range(ext, 0)[0]).toBeCloseTo(-T, 6);
+      expect(range(ext, 0)[1]).toBeCloseTo(W + T, 6);
+      expect(range(ext, 1)[0]).toBeCloseTo(-T, 6);
+      expect(range(ext, 1)[1]).toBeCloseTo(L + T, 6);
+      // a teljes fal külső rétegei a sarkon a rövid fal külső rétegeinek vastagságával túlnyúlnak
+      for (const g of wallGeometry(plan).filter(x => x.full)) {
+        for (const l of ['wallOsb', 'breatherMembrane', 'wallBattens', 'exteriorCladding']) {
+          const r = range(onWall(plan, m.solids, g.side, l), g.side === 'N' || g.side === 'S' ? 0 : 1);
+          expect(r[0], `${g.side} ${l}`).toBeCloseTo(-T, 6);
+        }
+      }
+    });
+
+    test('battens are vertical BATTEN_SECTION pieces', () => {
+      const bats = m.solids.filter(s => s.layer === 'wallBattens');
+      expect(bats.length).toBeGreaterThan(20);
+      for (const s of bats) {
+        const us = s.outline.map(p => p[0]);
+        expect(Math.max(...us) - Math.min(...us)).toBeLessThanOrEqual(48 + 1e-6);
+        expect(s.depth).toBe(24);
+        expect(s.material).toBe('timber');
+        expect(s.elementId).toBeUndefined();
+      }
+    });
+  });
+}
+
+test('wall layers only when enabled', () => {
+  for (const kind of Object.keys(KIND_TO_LAYER) as (keyof typeof KIND_TO_LAYER)[]) {
+    const p = createDefaultPlan();
+    p.walls.layers.find(l => l.kind === kind)!.enabled = false;
+    const m = model(p);
+    const id = KIND_TO_LAYER[kind];
+    expect(m.layers, kind).not.toContain(id);
+    expect(m.solids.some(s => s.layer === id), kind).toBe(false);
+    for (const other of Object.values(KIND_TO_LAYER)) if (other !== id) expect(m.layers, `${kind} off`).toContain(other);
+  }
+});
+
+test('transparent wall layers have foil / insulation material, foils at least FOIL_T', () => {
+  const m = model(createDefaultPlan());
+  let n = 0;
+  for (const s of m.solids) {
+    if (s.layer === 'vaporBarrier' || s.layer === 'breatherMembrane') {
+      expect(s.material).toBe('foil');
+      expect(s.depth).toBeGreaterThanOrEqual(FOIL_T);
+      n++;
+    }
+    if (s.layer === 'insulation') expect(s.material).toBe('insulation');
+  }
+  expect(n).toBe(8);
+});
+
+test('opening near corner keeps valid outline', () => {
+  const p = createDefaultPlan();
+  const full = wallGeometry(p).find(g => g.full)!;
+  const o = p.openings.find(x => x.type === 'window')!;
+  o.wall = full.side;
+  o.offset = 250;
+  const scene = buildScene(p);
+  const m = buildModel3d(p, scene);
+  const op = scene.elements.find(e => e.kind === 'opening' && e.openingId === o.id)!;
+  expect(op.geom.u).toBe(250);
+  for (const l of PANEL_LAYERS) {
+    const [s] = onWall(p, m.solids, full.side, l);
+    expect(s.holes.length).toBeGreaterThan(0);
+    for (const h of s.holes) for (const pt of h) expect(inPoly(s.outline, pt), `${l} ${pt}`).toBe(true);
+  }
+  // az OSB táblák és a lécek sem takarják a nyílást
+  const pieces = [...onWall(p, m.solids, full.side, 'wallOsb'), ...onWall(p, m.solids, full.side, 'wallBattens')];
+  for (const s of pieces) expect(covers(s, [260, op.geom.v + 10]), s.label).toBe(false);
+  // a nyílás melletti sávot viszont fedi OSB
+  expect(onWall(p, m.solids, full.side, 'wallOsb').some(s => covers(s, [240, op.geom.v + 10]))).toBe(true);
+});
+
+test('gable wall layer follows gable', () => {
+  const p = createDefaultPlan();
+  const m = model(p);
+  const gables = wallGeometry(p).filter(g => g.gableRise > 0);
+  expect(gables).toHaveLength(2);
+  for (const g of gables) {
+    for (const l of PANEL_LAYERS) {
+      const [s] = onWall(p, m.solids, g.side, l);
+      expect(s.outline, `${g.side} ${l}`).toHaveLength(5);
+      expect(solidBounds(s).max[2]).toBeCloseTo(wallBaseZ(p) + g.hStart + g.gableRise, 6);
+    }
+  }
+});
+
+test('gable studs stay under the gable line', () => {
+  const p = createDefaultPlan();
+  const scene = buildScene(p);
+  const m = buildModel3d(p, scene);
+  let n = 0;
+  for (const g of wallGeometry(p).filter(x => x.gableRise > 0)) {
+    const half = g.length / 2;
+    const line = (u: number): number => wallBaseZ(p) + g.hStart + g.gableRise * (1 - Math.abs(u - half) / half);
+    for (const e of scene.elements.filter(x => x.group === `wall.${g.side}` && x.kind === 'gableStud')) {
+      const s = byId(m.solids, e.id)[0];
+      for (const u of [e.geom.u, e.geom.u + e.geom.w]) {
+        expect(topZAt(s, u), `${e.id} @${u}`).toBeLessThanOrEqual(line(u) + 1e-6);
+        n++;
+      }
+    }
+  }
+  expect(n).toBeGreaterThan(4);
+});
+
+test('OSB sheet crossed by an opening is split around it', () => {
+  const p = createDefaultPlan();
+  const full = wallGeometry(p).find(g => g.full)!;
+  const o = p.openings.find(x => x.type === 'window')!;
+  Object.assign(o, { wall: full.side, offset: 1000, width: 600 });
+  const scene = buildScene(p);
+  const m = buildModel3d(p, scene);
+  const op = scene.elements.find(e => e.kind === 'opening' && e.openingId === o.id)!;
+  const sheets = scene.elements.filter(e => e.group === `wall.${full.side}` && e.kind === 'osbSheet');
+  const crossed = sheets.filter(e => e.geom.u < 1000 && e.geom.u + e.geom.w > 1000 + 1e-6 || (e.geom.u > 1000 && e.geom.u < 1600));
+  expect(crossed.length).toBeGreaterThan(0);
+  const osb = onWall(p, m.solids, full.side, 'wallOsb');
+  const { u, v, w, h } = op.geom;
+  // a lyukak mindig a körvonalon belül vannak (érvényes sokszög), a keresztezett táblák darabokra bomlanak
+  for (const s of osb) for (const hole of s.holes) for (const pt of hole) expect(inPoly(s.outline, pt), `${s.elementId} hole`).toBe(true);
+  expect(osb.length).toBeGreaterThan(sheets.length);
+  for (let i = 1; i < 30; i++) for (let j = 1; j < 30; j++) {
+    const pt: Pt2 = [u + (w * i) / 30, v + (h * j) / 30];
+    expect(osb.some(s => covers(s, pt)), `${pt}`).toBe(false);
+  }
+  // a nyílás alatt, fölött és mellette van OSB
+  for (const pt of [[u + w / 2, v - 10], [u + w / 2, v + h + 10], [u - 10, v + h / 2], [u + w + 10, v + h / 2]] as Pt2[]) {
+    expect(osb.filter(s => covers(s, pt)), `${pt}`).toHaveLength(1);
+  }
 });

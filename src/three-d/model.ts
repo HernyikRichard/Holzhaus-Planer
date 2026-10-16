@@ -1,6 +1,9 @@
-import type { Mm, Plan, WallSide } from '../model/types';
+import type { Mm, Plan, WallLayerKind, WallSide } from '../model/types';
+import { BATTEN_SECTION, BATTEN_SPACING_WALL } from '../catalog';
 import { studLengthAt, wallGeometry, type WallGeom } from '../calc/geometry';
 import type { Element, ElementKind, Scene } from '../scene/types';
+import { floorTopZ, wallLayerStrips } from '../scene/layerStack';
+import { corners } from '../viewer/views/common';
 import { floorWallMap } from '../viewer/views/floorPlan';
 
 export type Layer3dId = 'foundation' | 'floor' | 'wallFrame' | 'interiorCladding' | 'vaporBarrier' | 'insulation'
@@ -56,7 +59,7 @@ const rect = (u0: number, v0: number, u1: number, v1: number): [number, number][
  * (zFloor = párnafa `joistSection.w` + `osbThickness`), padló nélkül a betonlemezre (0).
  */
 export function wallBaseZ(plan: Plan): Mm {
-  return plan.floor.enabled ? plan.floor.joistSection.w + plan.floor.osbThickness : 0;
+  return floorTopZ(plan);
 }
 
 /**
@@ -91,16 +94,6 @@ export function solidBounds(s: Solid): { min: Vec3; max: Vec3 } {
     }
   }
   return { min, max };
-}
-
-/** Az elem téglalapja a csoport (u, v) síkjában, az `angle` elforgatással ((u, v) körül). */
-function corners(e: Element): [number, number][] {
-  const { u, v, w, h } = e.geom;
-  if (!e.geom.angle) return rect(u, v, u + w, v + h);
-  const a = (e.geom.angle * Math.PI) / 180;
-  const c = Math.cos(a);
-  const s = Math.sin(a);
-  return [[0, 0], [w, 0], [w, h], [0, h]].map(([x, y]): [number, number] => [u + x * c - y * s, v + x * s + y * c]);
 }
 
 /** Függőleges falelem körvonala: lejtős koszorú alatt ferdére vágott tető, oromoszlopnál az oromvonalig. */
@@ -177,6 +170,169 @@ function wallSolids(plan: Plan, scene: Scene): Solid[] {
   return out;
 }
 
+// ---- fali réteglapok ----
+
+type P2 = [number, number];
+interface Rect { u: number; v: number; w: number; h: number }
+const GEOM_EPS = 1e-6;
+
+/** Konvex sokszög vágása az f(p) ≥ 0 félsíkra (f lineáris; Sutherland–Hodgman). */
+function clipHalf(poly: P2[], f: (p: P2) => number): P2[] {
+  const out: P2[] = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i];
+    const b = poly[(i + 1) % poly.length];
+    const fa = f(a);
+    const fb = f(b);
+    if (fa >= 0) out.push(a);
+    if ((fa >= 0) !== (fb >= 0)) {
+      const t = fa / (fa - fb);
+      out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+    }
+  }
+  return out;
+}
+
+/** Az a→b él bal oldala (az óramutatóval ellentétes körüljárású sokszög belseje) ≥ 0. */
+const leftOf = (a: P2, b: P2) => (p: P2): number => (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
+
+function clipConvex(poly: P2[], convex: P2[]): P2[] {
+  let out = poly;
+  for (let i = 0; i < convex.length && out.length > 0; i++) out = clipHalf(out, leftOf(convex[i], convex[(i + 1) % convex.length]));
+  return out;
+}
+
+function area(poly: P2[]): number {
+  let a = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const [x0, y0] = poly[i];
+    const [x1, y1] = poly[(i + 1) % poly.length];
+    a += x0 * y1 - x1 * y0;
+  }
+  return a / 2;
+}
+
+const rectPts = (r: Rect): P2[] => rect(r.u, r.v, r.u + r.w, r.v + r.h);
+
+/**
+ * Konvex lap a nyílások kivágásával. A lapon belül teljesen bent fekvő nyílás lyuk lesz; ha valamelyik nyílás
+ * a lap szélébe metsz, a lapot a nyílások u-élei mentén függőleges sávokra, a sávokat a nyílások alá/fölé bontja.
+ */
+function cutOpenings(poly: P2[], ops: Rect[]): { outline: P2[]; holes: P2[][] }[] {
+  if (poly.length < 3 || area(poly) < 1) return [];
+  const edges = poly.map((a, i) => leftOf(a, poly[(i + 1) % poly.length]));
+  const len = (i: number): number => Math.hypot(poly[(i + 1) % poly.length][0] - poly[i][0], poly[(i + 1) % poly.length][1] - poly[i][1]);
+  const strictlyInside = (r: Rect): boolean =>
+    rectPts(r).every(p => edges.every((f, i) => f(p) / len(i) > GEOM_EPS));
+  const hits = ops.filter(r => area(clipConvex(rectPts(r), poly)) > GEOM_EPS);
+  if (hits.every(strictlyInside)) return [{ outline: poly, holes: hits.map(rectPts) }];
+  const us = poly.map(p => p[0]);
+  const cuts = [...new Set([Math.min(...us), Math.max(...us), ...hits.flatMap(r => [r.u, r.u + r.w])])]
+    .filter(u => u >= Math.min(...us) && u <= Math.max(...us)).sort((a, b) => a - b);
+  const out: { outline: P2[]; holes: P2[][] }[] = [];
+  for (let i = 0; i + 1 < cuts.length; i++) {
+    const [a, b] = [cuts[i], cuts[i + 1]];
+    if (b - a < GEOM_EPS) continue;
+    const strip = clipHalf(clipHalf(poly, p => p[0] - a), p => b - p[0]);
+    const across = hits.filter(r => r.u <= a + GEOM_EPS && r.u + r.w >= b - GEOM_EPS).sort((x, y) => x.v - y.v);
+    let lo = -Infinity;
+    for (const r of [...across, null]) {
+      const hi = r ? r.v : Infinity;
+      let piece = strip;
+      if (lo > -Infinity) piece = clipHalf(piece, p => p[1] - lo);
+      if (hi < Infinity) piece = clipHalf(piece, p => hi - p[1]);
+      if (piece.length >= 3 && area(piece) >= 1) out.push({ outline: piece, holes: [] });
+      if (r) lo = r.v + r.h;
+    }
+  }
+  return out;
+}
+
+/**
+ * A fali réteg körvonala az [u0, u1] sávban: lejtős falon trapéz (a fal lejtésének meghosszabbításával),
+ * oromfalon ötszög (a csúcs a fal közepén, a végek a váz oromvonalán, a vázon kívül a fal tetején).
+ */
+function layerOutline(wall: WallGeom, u0: number, u1: number): P2[] {
+  if (wall.gableRise > 0) {
+    const half = wall.length / 2;
+    const gable = (u: number): number => wall.hStart + wall.gableRise * Math.max(0, 1 - Math.abs(u - half) / half);
+    return [[u0, 0], [u1, 0], [u1, gable(u1)], [half, wall.hStart + wall.gableRise], [u0, gable(u0)]];
+  }
+  const h = (u: number): number => wall.hStart + ((wall.hEnd - wall.hStart) * u) / wall.length;
+  return [[u0, 0], [u1, 0], [u1, h(u1)], [u0, h(u0)]];
+}
+
+const LAYER_OF: Record<WallLayerKind, Layer3dId> = {
+  interiorCladding: 'interiorCladding', vaporBarrier: 'vaporBarrier', insulation: 'insulation', osb: 'wallOsb',
+  breatherMembrane: 'breatherMembrane', battens: 'wallBattens', exteriorCladding: 'exteriorCladding',
+};
+
+/**
+ * Fali réteglapok (a bekapcsolt rétegekből, a `wallLayerStrips` sávjaiban). Sarokszabály: a teljes (futó) fal
+ * külső rétegei a sarkon a külső rétegek teljes vastagságával túlnyúlnak, a rövid falé a futó fal vázának külső
+ * síkjáig ér; belül a futó fal rétegei a rövid falak belső síkjai között futnak, a rövid falé ezek közé ér.
+ * A szigetelés a váz mélységében, a váz hosszán. Így egy sarokban minden térrészt pontosan egy fal lapja fed.
+ */
+function wallLayerSolids(plan: Plan, scene: Scene): Solid[] {
+  const sw = plan.walls.studSection.w;
+  const strips = wallLayerStrips(plan, true);
+  const qs = [...strips.values()];
+  const tOut = -Math.min(0, ...qs.map(q => q[0]));
+  const tIn = Math.max(sw, ...qs.map(q => q[1])) - sw;
+  const out: Solid[] = [];
+  for (const wall of wallGeometry(plan)) {
+    const len = wall.length;
+    if (len <= 0) continue;
+    const group = `wall.${wall.side}`;
+    const f = wallFrameOf(plan, wall.side);
+    const ops: Rect[] = scene.elements.filter(e => e.group === group && e.kind === 'opening').map(e => e.geom);
+    const span = (q: [number, number]): [number, number] => {
+      if (q[1] <= GEOM_EPS) return wall.full ? [-tOut, len + tOut] : [-sw, len + sw];
+      if (q[0] >= sw - GEOM_EPS) return wall.full ? [sw, len - sw] : [tIn, len - tIn];
+      return [0, len];
+    };
+    const push = (layer: Layer3dId, label: string, material: string, q: [number, number],
+      pieces: { outline: P2[]; holes: P2[][] }[], elementId?: string): void => {
+      for (const pc of pieces) {
+        out.push({
+          layer, ...(elementId ? { elementId } : {}), label, material,
+          origin: add(f.origin, f.nAxis, q[0]), uAxis: [...f.uAxis], vAxis: [...f.vAxis], nAxis: [...f.nAxis],
+          outline: pc.outline, holes: pc.holes, depth: q[1] - q[0],
+        });
+      }
+    };
+    for (const l of plan.walls.layers) {
+      const q = strips.get(l.kind);
+      if (!l.enabled || !q) continue;
+      const layer = LAYER_OF[l.kind];
+      const [u0, u1] = span(q);
+      const outline = layerOutline(wall, u0, u1);
+      if (l.kind === 'osb') {
+        // az OSB táblák egyenként; a fal végén álló tábla a sarokszabály szerint a rétegsáv végéig nyúlik
+        for (const e of scene.elements.filter(x => x.group === group && x.kind === 'osbSheet')) {
+          const { u, v, w, h } = e.geom;
+          const a = u <= GEOM_EPS ? u0 : u;
+          const b = u + w >= len - GEOM_EPS ? u1 : u + w;
+          push(layer, e.label, 'osb', q, cutOpenings(clipConvex(rect(a, v, b, v + h), outline), ops), e.id);
+        }
+      } else if (l.kind === 'battens') {
+        // függőleges lécek BATTEN_SPACING_WALL osztással, a nyílásoknál megszakítva (csak megjelenítés)
+        const bw = BATTEN_SECTION.w;
+        const xs: number[] = [];
+        for (let x = u0; x <= u1 - bw + GEOM_EPS; x += BATTEN_SPACING_WALL) xs.push(x);
+        if (xs.length === 0 || xs[xs.length - 1] < u1 - bw - GEOM_EPS) xs.push(u1 - bw);
+        const top = Math.max(...outline.map(p => p[1])) + 1;
+        for (const x of xs) push(layer, LAYER3D_NAMES[layer], 'timber', q, cutOpenings(clipConvex(rect(x, 0, x + bw, top), outline), ops));
+      } else {
+        const material = l.kind === 'vaporBarrier' || l.kind === 'breatherMembrane' ? 'foil'
+          : l.kind === 'insulation' ? 'insulation' : l.material;
+        push(layer, LAYER3D_NAMES[layer], material, q, cutOpenings(outline, ops));
+      }
+    }
+  }
+  return out;
+}
+
 function foundationSolids(plan: Plan): Solid[] {
   const { width: W, length: L } = plan.building;
   const { slabOverhang: ov, slabThickness: st } = plan.foundation;
@@ -206,7 +362,7 @@ function floorSolids(plan: Plan, scene: Scene): Solid[] {
 
 /** A terv és a scene → 3D testek világkoordinátában (mm, Z = 0 a betonlemez teteje). Tiszta függvény. */
 export function buildModel3d(plan: Plan, scene: Scene): Model3d {
-  const solids = [...foundationSolids(plan), ...floorSolids(plan, scene), ...wallSolids(plan, scene)];
+  const solids = [...foundationSolids(plan), ...floorSolids(plan, scene), ...wallSolids(plan, scene), ...wallLayerSolids(plan, scene)];
   const present = new Set(solids.map(s => s.layer));
   const layers = LAYER_ORDER.filter(l => present.has(l));
   const min: Vec3 = [0, 0, 0];
