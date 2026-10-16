@@ -33,7 +33,7 @@ test('changing step sets the default view and clears selection', () => {
   expect(ui.get().selected).toBeNull();
 });
 test('step table', () => {
-  expect(STEPS.map(s => s.title)).toEqual(['Épület', 'Alap', 'Falak', 'Nyílászárók', 'Tető', 'Anyaglista']);
+  expect(STEPS.map(s => s.title)).toEqual(['Épület', 'Alap', 'Falak', 'Nyílászárók', 'Tető', 'Anyaglista', 'Szerelés']);
   expect(STEPS.find(s => s.id === 'foundation')!.sections).toEqual(['foundation', 'floor']);
   expect(STEPS.find(s => s.id === 'materials')!.defaultView).toBe('table');
 });

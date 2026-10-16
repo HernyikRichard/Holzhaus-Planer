@@ -13,6 +13,7 @@ const CATEGORIES: Record<StepId, Category[]> = {
   openings: ['Fal'],
   roof: ['Tető', 'Kiegészítők'],
   materials: [],
+  assembly: [],
 };
 const MAX_ROWS = 5;
 

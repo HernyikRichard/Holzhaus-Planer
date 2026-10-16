@@ -2,7 +2,7 @@ import type { ValidationError } from '../model/validate';
 import type { ViewId } from '../viewer/layers';
 export type { ViewId, LayerId } from '../viewer/layers';
 
-export type StepId = 'building' | 'foundation' | 'walls' | 'openings' | 'roof' | 'materials';
+export type StepId = 'building' | 'foundation' | 'walls' | 'openings' | 'roof' | 'materials' | 'assembly';
 
 export interface StepDef { id: StepId; title: string; sections: string[]; views: ViewId[]; defaultView: ViewId }
 
@@ -13,6 +13,7 @@ export const STEPS: StepDef[] = [
   { id: 'openings', title: 'Nyílászárók', sections: [], views: ['floor', 'wall.N', 'wall.E', 'wall.S', 'wall.W'], defaultView: 'floor' },
   { id: 'roof', title: 'Tető', sections: ['roof', 'accessories'], views: ['roof', 'gable', 'section'], defaultView: 'roof' },
   { id: 'materials', title: 'Anyaglista', sections: ['settings'], views: ['table', 'cutplan', 'cost'], defaultView: 'table' },
+  { id: 'assembly', title: 'Szerelés', sections: [], views: ['assembly'], defaultView: 'assembly' },
 ];
 
 const PREFIXES: Record<StepId, string[]> = {
@@ -22,6 +23,7 @@ const PREFIXES: Record<StepId, string[]> = {
   openings: ['openings'],
   roof: ['roof', 'accessories'],
   materials: ['settings'],
+  assembly: [],
 };
 
 export function stepHasError(step: StepId, errors: ValidationError[]): boolean {

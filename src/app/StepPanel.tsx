@@ -8,6 +8,7 @@ import { WallsStep } from './steps/WallsStep';
 import { OpeningsStep } from './steps/OpeningsStep';
 import { RoofStep } from './steps/RoofStep';
 import { MaterialsSettingsStep } from './steps/MaterialsSettingsStep';
+import { AssemblyStepList } from './AssemblyView';
 
 export function StepPanel({ store, ui }: { store: Store; ui: UiStore }) {
   const step = useUi(ui, s => s.step);
@@ -21,6 +22,7 @@ export function StepPanel({ store, ui }: { store: Store; ui: UiStore }) {
       {step === 'openings' && <OpeningsStep store={store} ui={ui} />}
       {step === 'roof' && <RoofStep store={store} />}
       {step === 'materials' && <MaterialsSettingsStep store={store} />}
+      {step === 'assembly' && <AssemblyStepList store={store} ui={ui} />}
     </aside>
   );
 }
