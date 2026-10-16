@@ -5,9 +5,11 @@ import { createDefaultPlan } from '../../src/model/defaults';
 import type { Plan } from '../../src/model/types';
 import { createUiStore } from '../../src/app/uiStore';
 import { TopBar } from '../../src/app/TopBar';
-import { Window3d, rendererLoader } from '../../src/app/Window3d';
+import { Window3d, rendererLoader, windowRect } from '../../src/app/Window3d';
+import { Viewer } from '../../src/app/Viewer';
+import { App } from '../../src/app/App';
 import { sceneFor } from '../../src/app/selection';
-import { FRAME_ONLY, LAYER3D_GROUPS, type Layer3dId } from '../../src/three-d/model';
+import { buildModel3d, FRAME_ONLY, LAYER3D_GROUPS, type Layer3dId } from '../../src/three-d/model';
 
 interface FakeRenderer {
   canvas: HTMLCanvasElement; log: string[];
@@ -19,6 +21,7 @@ const fake = vi.hoisted(() => ({
   instances: [] as unknown[],
   fail: null as Error | null,
   pick: null as { elementId?: string; label: string } | null,
+  setModelError: null as Error | null,
 }));
 vi.mock('../../src/three-d/renderer', () => ({
   createRenderer(canvas: HTMLCanvasElement) {
@@ -27,7 +30,7 @@ vi.mock('../../src/three-d/renderer', () => ({
     const fn = <T,>(name: string, ret?: () => T) => vi.fn((..._a: unknown[]) => { log.push(name); return ret?.(); });
     const r = {
       canvas, log,
-      setModel: fn('setModel'), setVisible: fn('setVisible'), setHighlight: fn('setHighlight'), setHover: fn('setHover'),
+      setModel: fn('setModel', () => { const e = fake.setModelError; fake.setModelError = null; if (e) throw e; }), setVisible: fn('setVisible'), setHighlight: fn('setHighlight'), setHover: fn('setHover'),
       pick: fn('pick', () => fake.pick), setView: fn('setView'), resize: fn('resize'), dispose: fn('dispose'),
     };
     fake.instances.push(r);
@@ -41,6 +44,11 @@ class PointerEventStub extends MouseEvent {
   constructor(type: string, init: MouseEventInit & { pointerId?: number } = {}) { super(type, init); this.pointerId = init.pointerId ?? 0; }
 }
 
+vi.mock('../../src/three-d/model', async importOriginal => {
+  const m = await importOriginal<typeof import('../../src/three-d/model')>();
+  return { ...m, buildModel3d: vi.fn(m.buildModel3d) };
+});
+
 const ALL: Layer3dId[] = LAYER3D_GROUPS.flatMap(g => g.layers);
 const last = () => fake.instances[fake.instances.length - 1] as FakeRenderer;
 
@@ -53,6 +61,7 @@ beforeEach(() => {
   fake.instances.length = 0;
   fake.fail = null;
   fake.pick = null;
+  fake.setModelError = null;
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
@@ -311,4 +320,97 @@ test('keys inside the 3D window do not reach the 2D shortcuts', async () => {
   fireEvent.keyDown(q('.window3d canvas')!, { key: 'Escape' });
   document.removeEventListener('keydown', outer);
   expect(outer).not.toHaveBeenCalled();
+});
+
+test('default position leaves the 2D zoom buttons free', () => {
+  const v = { open: true, x: -1, y: -1, w: 420, h: 320, maximized: false, layers: {} };
+  // 44 px nagyítógomb-sáv alul: az ablak alja fölötte (8 px hézaggal)
+  expect(windowRect(v, { w: 800, h: 600 }, 44)).toEqual({ x: 364, y: 600 - 320 - 52, w: 420, h: 320 });
+  // kicsi vászon: a magasság csökken, a gombokat akkor sem takarja
+  const small = windowRect(v, { w: 800, h: 300 }, 44);
+  expect(small.y + small.h).toBeLessThanOrEqual(300 - 44);
+  expect(small.h).toBeGreaterThanOrEqual(180);
+  // elmozgatott ablaknál nincs tartalék sáv
+  expect(windowRect({ ...v, x: 0, y: 280 }, { w: 800, h: 600 }, 44)).toEqual({ x: 0, y: 280, w: 420, h: 320 });
+});
+
+test('in the viewer the default window sits above the measured zoom buttons', async () => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+  const rectOf = (x: number, y: number, w: number, h: number) =>
+    ({ x, y, left: x, top: y, width: w, height: h, right: x + w, bottom: y + h, toJSON() {} }) as DOMRect;
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    if (this.classList.contains('viewer-canvas')) return rectOf(0, 100, 900, 500);
+    if (this.classList.contains('zoom-buttons')) return rectOf(780, 100 + 500 - 12 - 40, 108, 40);
+    return rectOf(0, 0, 0, 0);
+  });
+  const store = createStore(createDefaultPlan());
+  const ui = createUiStore();
+  ui.set({ step: 'walls', view3d: { ...ui.get().view3d, open: true } });
+  const r = render(<Viewer store={store} ui={ui} />);
+  await ready();
+  const win = r.container.querySelector<HTMLElement>('.window3d')!;
+  const b = box(win);
+  expect(b.x + b.w).toBeLessThanOrEqual(900);
+  expect(b.y + b.h).toBeLessThanOrEqual(500 - 12 - 40); // a nagyítógombok teteje a vásznon belül
+  expect(b.y + b.h).toBeGreaterThan(500 - 12 - 40 - 20); // de továbbra is a jobb alsó sarokban
+});
+
+test('detail panel stacks above the 3D window', async () => {
+  // A jsdom nem számol rétegsorrendet: a szabályokat és a DOM-sorrendet ellenőrizzük.
+  // a nyers CSS (a ?raw import a Vitestben üres); az útvonal a projektgyökérhez képest
+  const { readFileSync } = await vi.importActual<{ readFileSync(p: string, enc: 'utf8'): string }>('node:fs');
+  const css = readFileSync('src/app/app.css', 'utf8');
+  const viewerRule = /\n\.viewer \{([^}]*)\}/.exec(css)![1];
+  expect(viewerRule).toMatch(/isolation:\s*isolate/); // a 3D ablak z-indexe a .viewer-en belül marad
+  expect(viewerRule).not.toMatch(/z-index/);
+  const detailZ = /\.detail \{[^}]*grid-area: viewer;[^}]*z-index:\s*(\d+)/.exec(css)!;
+  expect(Number(detailZ[1])).toBeGreaterThan(0);
+  const store = createStore(createDefaultPlan());
+  const ui = createUiStore();
+  ui.set({ step: 'walls', view3d: { ...ui.get().view3d, open: true, maximized: true } });
+  const r = render(<App store={store} ui={ui} />);
+  await ready();
+  const viewer = r.container.querySelector('.viewer')!;
+  const detail = r.container.querySelector('.detail')!;
+  expect(viewer.contains(r.container.querySelector('.window3d'))).toBe(true);
+  expect(viewer.contains(detail)).toBe(false);
+  expect(viewer.compareDocumentPosition(detail) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test('model build failure is logged and explained', async () => {
+  const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.mocked(buildModel3d).mockImplementationOnce(() => { throw new Error('rossz terv'); });
+  const { q } = setup();
+  await vi.waitFor(() => expect(fake.instances.length).toBe(1));
+  await vi.waitFor(() => expect(q('.window3d')!.textContent).toContain('A 3D modell nem építhető fel ebből a tervből.'));
+  expect(err).toHaveBeenCalled();
+  expect(last().setModel).not.toHaveBeenCalled();
+});
+
+test('other renderer start errors show a retryable message', async () => {
+  const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+  fake.fail = new Error('shader');
+  const { q } = setup();
+  await vi.waitFor(() => expect(q('.window3d')!.textContent).toContain('A 3D nézet nem indítható el.'));
+  expect(q('.window3d')!.textContent).not.toContain('WebGL');
+  expect(err).toHaveBeenCalled();
+  fake.fail = null;
+  await act(() => { fireEvent.click(q('[data-action="3d-retry"]')!); });
+  await ready();
+  expect(q('.window3d')!.textContent).not.toContain('A 3D nézet nem indítható el.');
+});
+
+test('an error while setting up the renderer does not hang in loading', async () => {
+  const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+  fake.setModelError = new Error('gpu');
+  const { q } = setup();
+  await vi.waitFor(() => expect(q('.window3d')!.textContent).toContain('A 3D nézet nem indítható el.'));
+  expect(q('.window3d')!.textContent).not.toContain('3D betöltése…');
+  expect(err).toHaveBeenCalled();
+  const first = last();
+  await act(() => { fireEvent.click(q('[data-action="3d-retry"]')!); });
+  await vi.waitFor(() => expect(fake.instances).toHaveLength(2));
+  expect(first.dispose).toHaveBeenCalledTimes(1);
+  await vi.waitFor(() => expect(last().setModel).toHaveBeenCalled());
+  expect(q('.w3d-msg')).toBeNull();
 });

@@ -13,6 +13,8 @@ const MIN_W = 240;
 const MIN_H = 180;
 /** Alaphelyzetben (x/y = −1) ekkora margó a vászon jobb alsó sarkától. */
 const MARGIN = 16;
+/** Hézag a 2D nagyítógombok fölött. */
+const RESERVE_GAP = 8;
 /** Ennél kisebb elmozdulás kattintás, nem forgatás. */
 const CLICK_PX = 4;
 /** A terv változása után ennyi ms múlva épül újra a 3D modell. */
@@ -37,17 +39,24 @@ export const rendererLoader = { load: () => import('../three-d/renderer') };
 
 interface Rect { x: number; y: number; w: number; h: number }
 interface Size { w: number; h: number }
-type Status = 'loading' | 'ready' | 'import' | 'webgl';
+/** import: a chunk nem töltődött be; webgl: nincs WebGL; start: egyéb indítási hiba. */
+type Status = 'loading' | 'ready' | 'import' | 'webgl' | 'start';
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-/** Az ablak helye a vásznon: nagyítva a teljes vászon, egyébként a vásznon belül tartva, legalább 240×180. */
-export function windowRect(v: View3dState, b: Size): Rect {
+/**
+ * Az ablak helye a vásznon: nagyítva a teljes vászon, egyébként a vásznon belül tartva, legalább 240×180.
+ * Alaphelyzetben (y < 0) a jobb alsó sarokban, de a 2D nagyítógombok (`reserveBottom` px sáv) fölött;
+ * ha nem fér el, előbb a magasság csökken (legfeljebb 180-ig).
+ */
+export function windowRect(v: View3dState, b: Size, reserveBottom = 0): Rect {
   if (v.maximized) return { x: 0, y: 0, w: b.w, h: b.h };
   const w = clamp(v.w, Math.min(MIN_W, b.w), b.w);
-  const h = clamp(v.h, Math.min(MIN_H, b.h), b.h);
+  const bottom = v.y < 0 ? Math.max(MARGIN, reserveBottom > 0 ? reserveBottom + RESERVE_GAP : 0) : 0;
+  const minH = Math.min(MIN_H, b.h);
+  const h = clamp(v.h, minH, Math.max(minH, b.h - bottom));
   const x = v.x < 0 ? b.w - w - MARGIN : v.x;
-  const y = v.y < 0 ? b.h - h - MARGIN : v.y;
+  const y = v.y < 0 ? b.h - h - bottom : v.y;
   return { x: clamp(x, 0, b.w - w), y: clamp(y, 0, b.h - h), w, h };
 }
 
@@ -58,17 +67,29 @@ function visibility(model: Model3d, layers: View3dState['layers']): Partial<Reco
   return out;
 }
 
+/** A 3D modell; hibánál naplóz és null (a hívó az előző modellt tartja meg). */
 function tryBuild(plan: Plan): Model3d | null {
-  try { return buildModel3d(plan, sceneFor(plan)); } catch { return null; }
+  try {
+    return buildModel3d(plan, sceneFor(plan));
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
 }
 
 /** Lebegő 3D ablak a rajzvászon fölött; csak nyitott állapotban van a DOM-ban. */
-export function Window3d({ store, ui, bounds }: { store: Store; ui: UiStore; bounds: Size }) {
-  const open = useUi(ui, s => s.view3d.open);
-  return open ? <Window3dOpen store={store} ui={ui} bounds={bounds} /> : null;
+interface Window3dProps {
+  store: Store; ui: UiStore; bounds: Size;
+  /** A vászon aljából a 2D nagyítógombok sávja (px); az alaphelyzetű ablak ezt szabadon hagyja. */
+  reserveBottom?: number;
 }
 
-function Window3dOpen({ store, ui, bounds }: { store: Store; ui: UiStore; bounds: Size }) {
+export function Window3d(props: Window3dProps) {
+  const open = useUi(props.ui, s => s.view3d.open);
+  return open ? <Window3dOpen {...props} /> : null;
+}
+
+function Window3dOpen({ store, ui, bounds, reserveBottom = 0 }: Window3dProps) {
   const v = useUi(ui, s => s.view3d);
   const selected = useUi(ui, s => s.selected);
   const plan = useStore(store, s => s.lastValidPlan);
@@ -85,7 +106,7 @@ function Window3dOpen({ store, ui, bounds }: { store: Store; ui: UiStore; bounds
   const builtFor = useRef(plan);
   const modelRef = useRef(model);
   modelRef.current = model;
-  const rect = live ?? windowRect(v, bounds);
+  const rect = live ?? windowRect(v, bounds, reserveBottom);
   const rectRef = useRef(rect);
   rectRef.current = rect;
   const gesture = useRef<{ kind: 'move' | 'resize'; sx: number; sy: number; start: Rect; cur: Rect } | null>(null);
@@ -113,21 +134,27 @@ function Window3dOpen({ store, ui, bounds }: { store: Store; ui: UiStore; bounds
       try {
         r = mod.createRenderer(canvas.current);
       } catch (err) {
-        if (!(err instanceof Error && err.message === 'webgl')) console.error(err);
-        setStatus('webgl');
+        if (err instanceof Error && err.message === 'webgl') { setStatus('webgl'); return; }
+        console.error(err);
+        setStatus('start');
         return;
       }
-      renderer.current = r;
-      const size = measureRef.current();
-      r.resize(size.w, size.h); // a valódi méret az első (perspektív) igazítás előtt
-      const sel = ui.get().selected;
-      r.setHighlight(sel ? [sel] : []);
-      const m = modelRef.current;
-      if (m) {
-        r.setVisible(visibility(m, ui.get().view3d.layers));
-        r.setModel(m);
+      renderer.current = r; // a takarítás (bezárás / Újra) hiba esetén is elengedi
+      try {
+        const size = measureRef.current();
+        r.resize(size.w, size.h); // a valódi méret az első (perspektív) igazítás előtt
+        const sel = ui.get().selected;
+        r.setHighlight(sel ? [sel] : []);
+        const m = modelRef.current;
+        if (m) {
+          r.setVisible(visibility(m, ui.get().view3d.layers));
+          r.setModel(m);
+        }
+        setStatus('ready');
+      } catch (err) {
+        console.error(err);
+        setStatus('start');
       }
-      setStatus('ready');
     }, () => { if (!cancelled) setStatus('import'); });
     return () => {
       cancelled = true;
@@ -259,9 +286,12 @@ function Window3dOpen({ store, ui, bounds }: { store: Store; ui: UiStore; bounds
   };
 
   const ready = status === 'ready';
-  const message = status === 'loading' ? '3D betöltése…'
-    : status === 'import' ? 'A 3D nézet nem tölthető be.'
-    : status === 'webgl' ? 'A 3D nézethez WebGL-képes böngésző szükséges.' : null;
+  const message = status === 'import' ? 'A 3D nézet nem tölthető be.'
+    : status === 'webgl' ? 'A 3D nézethez WebGL-képes böngésző szükséges.'
+    : status === 'start' ? 'A 3D nézet nem indítható el.'
+    : !model ? 'A 3D modell nem építhető fel ebből a tervből.'
+    : status === 'loading' ? '3D betöltése…' : null;
+  const canRetry = status === 'import' || status === 'start';
 
   return (
     <section class={`window3d${v.maximized ? ' maximized' : ''}`} aria-label="3D nézet"
@@ -311,9 +341,9 @@ function Window3dOpen({ store, ui, bounds }: { store: Store; ui: UiStore; bounds
         )}
         {tip && <div class="w3d-tip" style={{ left: `${tip.x}px`, top: `${tip.y}px` }}>{tip.label}</div>}
         {message !== null && (
-          <div class="w3d-msg" role={status === 'loading' ? 'status' : 'alert'}>
+          <div class="w3d-msg" role={status === 'loading' && model ? 'status' : 'alert'}>
             <span>{message}</span>
-            {status === 'import' && <button type="button" data-action="3d-retry" onClick={() => setAttempt(attempt + 1)}>Újra</button>}
+            {canRetry && <button type="button" data-action="3d-retry" onClick={() => setAttempt(attempt + 1)}>Újra</button>}
           </div>
         )}
       </div>
