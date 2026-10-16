@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Layer3dId, Model3d, Solid, Vec3 } from './model';
+import { SCREEN_PALETTE } from '../viewer/theme';
 
 /**
  * A `Model3d` → Three.js jelenetfa, WebGL nélkül (Node/jsdom alatt is tesztelhető).
@@ -55,7 +56,6 @@ const FALLBACK: MatSpec = { color: '#c6cad0' };
 /** Élvonalak ezeken a fa/OSB anyagokon (küszöbszög 30°). */
 const EDGED = new Set(['timber', 'osb', 'boards']);
 const EDGE_ANGLE = 30;
-const HIGHLIGHT_COLOR = '#ffd166';   // a 2D tervrajz kiemelőszíne (SCREEN_PALETTE.highlight)
 const HOVER_COLOR = '#8fd0ff';
 
 function makeMaterial(key: string, edged: boolean): THREE.MeshStandardMaterial {
@@ -162,7 +162,7 @@ export function buildThreeModel(model: Model3d): ThreeModel {
     return m;
   };
   const edgeMaterial = new THREE.LineBasicMaterial({ color: '#4a3a26', transparent: true, opacity: 0.45, depthWrite: false });
-  const highlightMaterial = overlayMaterial(HIGHLIGHT_COLOR, 1);
+  const highlightMaterial = overlayMaterial(SCREEN_PALETTE.highlight, 1);
   const hoverMaterial = overlayMaterial(HOVER_COLOR, 2);
 
   const entries = new Map<THREE.Object3D, Entry>();
@@ -184,7 +184,10 @@ export function buildThreeModel(model: Model3d): ThreeModel {
     let b = buckets.get(key);
     if (!b) buckets.set(key, (b = { layer: s.layer, material: s.material, solids: [] }));
     b.solids.push(s);
-    if (s.elementId) byId.set(s.elementId, [...(byId.get(s.elementId) ?? []), s]);
+    if (s.elementId) {
+      const list = byId.get(s.elementId);
+      if (list) list.push(s); else byId.set(s.elementId, [s]);
+    }
   }
   for (const b of buckets.values()) {
     let grp = groups.get(b.layer);
@@ -216,7 +219,10 @@ export function buildThreeModel(model: Model3d): ThreeModel {
   /** Kiemelő réteg: a megadott testek rétegenként egy kis mesh-ben, a rétegmesh fölött. */
   const overlay = (solids: Solid[], material: THREE.Material, name: string): THREE.Mesh[] => {
     const perLayer = new Map<Layer3dId, Solid[]>();
-    for (const s of solids) perLayer.set(s.layer, [...(perLayer.get(s.layer) ?? []), s]);
+    for (const s of solids) {
+      const list = perLayer.get(s.layer);
+      if (list) list.push(s); else perLayer.set(s.layer, [s]);
+    }
     const out: THREE.Mesh[] = [];
     for (const [layer, list] of perLayer) {
       const { geometry, starts } = mergeSolids(list);

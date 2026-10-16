@@ -135,7 +135,7 @@ describe('pick', () => {
     tm.root.updateMatrixWorld(true);
     // az északi fal egyik középső oszlopa: a fal normálisa mentén kívülről belőve csak ezt találja a falvázban
     const studs = model.solids.filter(s => s.layer === 'wallFrame' && s.elementId && s.nAxis[1] === 1 && s.vAxis[2] === 1
-      && /.stud./.test(s.elementId));
+      && /\.stud\./.test(s.elementId));
     expect(studs.length).toBeGreaterThan(0);
     const mid = plan.building.width / 2;
     const target = [...studs].sort((p, q) => Math.abs(cx(p) - mid) - Math.abs(cx(q) - mid))[0];
