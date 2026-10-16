@@ -245,3 +245,16 @@ describe('lapostetőre váltás és a héjazat', () => {
     expect(root.querySelector('[data-notice="pitch"]')?.textContent).toContain('legalább 22°-os');
   });
 });
+
+test('héjazat-választó: állókorcos lemez, és a gerinccserép kapcsoló gerincfedőként jelenik meg', () => {
+  const { store, root, field } = setup('roof');
+  const sel = field<HTMLSelectElement>('roof.covering');
+  expect(Array.from(sel.options).map(o => o.value)).toContain('standingSeam');
+  expect(Array.from(sel.options).find(o => o.value === 'standingSeam')!.textContent).toBe('Állókorcos alumíniumlemez');
+  const caption = () => field('accessories.ridgeTiles').closest('label')!.querySelector('.caption')!.textContent;
+  expect(caption()).toBe('Gerinccserép');
+  sel.value = 'standingSeam'; fireEvent.change(sel);
+  expect(store.get().plan.roof.covering).toBe('standingSeam');
+  expect(caption()).toBe('Gerincfedő');
+  expect(root.querySelector('[data-notice="pitch"]')).toBeNull();
+});

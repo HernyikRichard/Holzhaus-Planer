@@ -24,7 +24,7 @@ A felület hat lépésre bomlik, amelyek között szabadon lehet ugrálni:
 | **2. Alap** | betonlemez vastagsága, betonminőség, sóderágy, betonháló, opcionális fa padló |
 | **3. Falak** | oszlop-keresztmetszet és -kiosztás, koszorú, rétegrend (belső burkolat, párazáró, szigetelés, OSB, szélzáró, léc, külső burkolat) |
 | **4. Nyílászárók** | ajtók és ablakok mérete, helye, mellvédmagassága; húzással is mozgathatók |
-| **5. Tető** | dőlésszög, szarufa, túlnyúlások, deszkázat / OSB, alátétfólia, ellenléc, tetőléc, héjazat (cserép, trapézlemez, zsindely, EPDM), kiegészítők |
+| **5. Tető** | dőlésszög, szarufa, túlnyúlások, deszkázat / OSB, alátétfólia, ellenléc, tetőléc, héjazat (cserép, trapézlemez, zsindely, EPDM, állókorcos alumíniumlemez), kiegészítők |
 | **6. Anyaglista** | ráhagyások, kereshető anyaglista, vágási terv |
 
 A lépésjelen ✓ mutatja, ha minden mező rendben van, és piros pötty, ha valahol hiba van. A program ilyenkor is az utolsó érvényes állapotot rajzolja és számolja.
@@ -111,5 +111,6 @@ A számítás és a rajz **ugyanabból az elemlistából** dolgozik, ezért ami 
 ## ⚠️ Fontos tudnivalók
 
 - A program **nem végez statikai méretezést**. Ha a szarufa fesztávja a keresztmetszetéhez képest túl nagy, figyelmeztet, de a szerkezetet építés előtt **szakemberrel ellenőriztesd**.
+- A **tetőhajlást a héjazathoz** is ellenőrzi (cserép legalább 22°, zsindely 15°, trapézlemez 5°, állókorcos lemez 3°; az EPDM-nek nincs alsó határa): túl lapos tetőnél figyelmeztet, és megfelelő héjazatot ajánl. Lapostetőre váltáskor a cserép és a zsindely helyett automatikusan EPDM lesz.
 - A mennyiségek **becslések** a megadott ráhagyásokkal. Rendelés előtt érdemes a tüzéppel egyeztetni a kapható méreteket.
 - Jelenleg csak **téglalap alaprajzú**, válaszfal nélküli épületet és **betonlemez** alapozást kezel. Árakat nem számol.

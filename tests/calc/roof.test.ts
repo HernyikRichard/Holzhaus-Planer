@@ -78,8 +78,8 @@ describe('héjazat–hajlás ellenőrzés', () => {
     expect(calcRoofLayers(p).warnings).toEqual([]);
   });
   test('a szöveg a megfelelő héjazatokat ajánlja', () => {
-    expect(pitchWarn('tile', 10)).toEqual(['A cserép legalább 22°-os tetőhajlást igényel (most 10°). Válassz EPDM-et vagy trapézlemezt, vagy növeld a hajlást.']);
-    expect(pitchWarn('shingle', 4.5)[0]).toBe('A bitumenes zsindely legalább 15°-os tetőhajlást igényel (most 4,5°). Válassz EPDM-et, vagy növeld a hajlást.');
+    expect(pitchWarn('tile', 10)).toEqual(['A cserép legalább 22°-os tetőhajlást igényel (most 10°). Válassz EPDM-et, állókorcos lemezt vagy trapézlemezt, vagy növeld a hajlást.']);
+    expect(pitchWarn('shingle', 4.5)[0]).toBe('A bitumenes zsindely legalább 15°-os tetőhajlást igényel (most 4,5°). Válassz EPDM-et vagy állókorcos lemezt, vagy növeld a hajlást.');
   });
   test('a figyelmeztetés a teljes számításban egyszer jelenik meg', () => {
     const p = createDefaultPlan(); p.roof.shape = 'mono'; p.roof.pitch = 10;

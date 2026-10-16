@@ -49,7 +49,13 @@ export const TRAPEZOID_END_OVERLAP = 150;
 export const SHINGLE_PACK_M2 = 3;
 export const EPDM_UPTURN = 200;
 /** Héjazatonként a legkisebb tetőhajlás (°); alatta csak figyelmeztetés. Az EPDM-nek nincs korlátja. */
-export const MIN_PITCH: Record<RoofCovering, number> = { tile: 22, shingle: 15, trapezoid: 5, epdm: 0 };
+export const MIN_PITCH: Record<RoofCovering, number> = { tile: 22, shingle: 15, trapezoid: 5, standingSeam: 3, epdm: 0 };
+/** Ezek alá kötelező a deszkázat, és nincs tetőléc / ellenléc. */
+export const DECKING_REQUIRED: ReadonlySet<RoofCovering> = new Set<RoofCovering>(['shingle', 'epdm', 'standingSeam']);
+/** Állókorcos alumíniumlemez: sáv-fedőszélesség, klipsztávolság a korc mentén, csavar / klipsz. */
+export const STANDING_SEAM_WIDTH = 500;
+export const STANDING_SEAM_CLIP_SPACING = 400;
+export const STANDING_SEAM_SCREWS_PER_CLIP = 2;
 
 // Szarufa
 export const RAFTER_MAX_SPAN: Record<string, Mm> = {

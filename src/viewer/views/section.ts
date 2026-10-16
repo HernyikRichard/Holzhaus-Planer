@@ -1,5 +1,5 @@
 import type { Plan, RoofCovering, RoofLayerKind, WallLayerKind } from '../../model/types';
-import { COUNTER_BATTEN_SECTION, ROOF_BATTEN_SECTION } from '../../catalog';
+import { COUNTER_BATTEN_SECTION, DECKING_REQUIRED, ROOF_BATTEN_SECTION } from '../../catalog';
 import { COVERING_T, DECKING_T, FOIL_T, floorTopZ, layerThickness, wallLayerStrips } from '../../scene/layerStack';
 import { cm, type Kit, type Pt } from '../svgKit';
 import { layerG, type ViewCtx } from './common';
@@ -14,6 +14,7 @@ const ROOF_LABEL: Record<RoofLayerKind, string> = {
 };
 const COVERING_LABEL: Record<RoofCovering, string> = {
   tile: 'Cserép', trapezoid: 'Trapézlemez', shingle: 'Zsindely', epdm: 'EPDM fólia',
+  standingSeam: 'Állókorcos alumíniumlemez',
 };
 interface Label { ax: number; az: number; text: string }
 
@@ -112,8 +113,11 @@ export function drawSection(ctx: ViewCtx): string {
   const rx = S + oe / 2;
   const roofLabels: Label[] = [{ ax: rx, az: zU(rx) + v / 2, text: `Szarufa ${plan.roof.rafterSection.t}×${rafterW}` }];
   const stack: Array<{ kind: string; label: string; t: number; foil: boolean }> = [];
+  // deszkát igénylő héjazatnál a deszkázat mindig, léc és ellenléc soha (mint az anyaglistában és a 3D-ben)
+  const forced = DECKING_REQUIRED.has(plan.roof.covering);
   for (const l of plan.roof.layers) {
-    if (!l.enabled) continue;
+    const on = forced ? l.kind === 'decking' || (l.enabled && l.kind === 'underlay') : l.enabled;
+    if (!on) continue;
     const t = l.kind === 'decking' ? DECKING_T : l.kind === 'underlay' ? FOIL_T
       : l.kind === 'counterBatten' ? COUNTER_BATTEN_SECTION.t : ROOF_BATTEN_SECTION.t;
     stack.push({ kind: l.kind, label: ROOF_LABEL[l.kind], t, foil: l.kind === 'underlay' });

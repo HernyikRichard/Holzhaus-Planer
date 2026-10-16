@@ -1,7 +1,8 @@
 import type { Plan, RoofCovering } from '../model/types';
 import type { MaterialLine, ModuleResult } from './types';
 import {
-  BATTEN_GAUGE, EPDM_UPTURN, MIN_PITCH, OSB_SHEET, RAFTER_MAX_SPAN, SHINGLE_PACK_M2,
+  BATTEN_GAUGE, DECKING_REQUIRED, EPDM_UPTURN, MIN_PITCH, OSB_SHEET, RAFTER_MAX_SPAN, SHINGLE_PACK_M2,
+  STANDING_SEAM_CLIP_SPACING, STANDING_SEAM_SCREWS_PER_CLIP, STANDING_SEAM_WIDTH,
   TILE_CLIP_EAVE_SPACING, TILE_CLIP_RAKE_SPACING, TILE_PER_M2, TRAPEZOID_EFFECTIVE_W, UNDERLAY_ROLL_M2, UNDERLAY_WASTE,
 } from '../catalog';
 import { ceilTo, emptyResult, hu, sectionKey, sectionLabel } from './util';
@@ -13,11 +14,13 @@ import { missingSupplyWarning, type Supply } from '../pricing/supplyTypes';
 const OSB_AREA = (OSB_SHEET.w / 1000) * (OSB_SHEET.l / 1000);
 const COVERING_HU: Record<RoofCovering, string> = {
   tile: 'Cserép', trapezoid: 'Trapézlemez', shingle: 'Bitumenes zsindely', epdm: 'EPDM gumilemez',
+  standingSeam: 'Állókorcos alumíniumlemez',
 };
 
 /** Tárgyesetű név a javaslathoz („Válassz …”). */
 const COVERING_ACC: Record<RoofCovering, string> = {
   tile: 'cserepet', trapezoid: 'trapézlemezt', shingle: 'zsindelyt', epdm: 'EPDM-et',
+  standingSeam: 'állókorcos lemezt',
 };
 /** Névelő: magánhangzó előtt „Az”. */
 const article = (word: string): string => (/^[aáeéiíoóöőuúüű]/i.test(word) ? 'Az' : 'A');
@@ -69,7 +72,7 @@ export function calcRoofLayers(plan: Plan, supply?: Supply): ModuleResult {
     res.lines.push({ category: 'Tető', ...l });
   };
   const layer = (kind: string) => layers.find(l => l.kind === kind);
-  const forced = covering === 'shingle' || covering === 'epdm';
+  const forced = DECKING_REQUIRED.has(covering);
   const noBattens = forced;
   const pw = pitchWarning(plan);
   if (pw) res.warnings.push(pw);
@@ -79,7 +82,8 @@ export function calcRoofLayers(plan: Plan, supply?: Supply): ModuleResult {
   if (decking && (decking.enabled || forced)) {
     const warnings: string[] = [];
     if (!decking.enabled) {
-      warnings.push(`A ${COVERING_HU[covering].toLowerCase()} alá kötelező a deszkázat, ezért automatikusan bekapcsoltuk.`);
+      const name = COVERING_HU[covering].toLowerCase();
+      warnings.push(`${article(name)} ${name} alá kötelező a deszkázat, ezért automatikusan bekapcsoltuk.`);
     }
     const need = A * (1 + sw);
     if (decking.material === 'osb') {
@@ -108,8 +112,10 @@ export function calcRoofLayers(plan: Plan, supply?: Supply): ModuleResult {
     const roll = sRoll ?? UNDERLAY_ROLL_M2[mat];
     const need = A * (1 + UNDERLAY_WASTE);
     const qty = Math.ceil(need / roll - 1e-9);
+    // állókorcos lemez alatt a fólia elválasztó (szellőző) alátétréteg
+    const name = mat === 'bitumen' ? 'Bitumenes lemez' : covering === 'standingSeam' ? 'Elválasztó (szellőző) alátétréteg' : 'Alátétfólia';
     add({
-      id: 'roof.underlay', name: mat === 'bitumen' ? 'Bitumenes lemez' : 'Alátétfólia', quantity: qty, unit: 'tekercs', unitM2: roll, needM2: need,
+      id: 'roof.underlay', name, quantity: qty, unit: 'tekercs', unitM2: roll, needM2: need,
       explanation: `${areaTxt}; × ${hu(1 + UNDERLAY_WASTE)} = ${hu(need, 3)} m² / ${roll} m² = ${hu(need / roll, 3)} → ${qty} tekercs`,
       ...(supply && mat === 'foil' && sRoll === null ? { warnings: [missingSupplyWarning('alátétfólia')] } : {}),
     });
@@ -174,6 +180,38 @@ export function calcRoofLayers(plan: Plan, supply?: Supply): ModuleResult {
       add({
         id: 'roof.epdm', name: 'EPDM gumilemez', quantity: qty, unit: 'm²',
         explanation: `(${hu(A, 3)} m² + ${hu(perimeter)} m kerület × ${hu(EPDM_UPTURN / 1000)} m felhajtás) × ${hu(1 + sw)} = ${hu(need, 3)} m² → ${hu(qty, 1)} m²`,
+      });
+      break;
+    }
+    case 'standingSeam': {
+      // sávok a gerinc mentén egymás mellett, a szarufahosszban (a kinyúlásokkal), egész cm-re felfelé
+      const perPlane = Math.ceil(g.roofLengthAlongRidge / STANDING_SEAM_WIDTH - 1e-9);
+      const qty = perPlane * g.planes;
+      const len = Math.ceil(g.rafterLength / 10 - 1e-9) * 10;
+      const area = (qty * STANDING_SEAM_WIDTH * len) / 1e6;
+      const need = area * (1 + sw);
+      const wM = STANDING_SEAM_WIDTH / 1000;
+      add({
+        id: 'roof.standingSeam', name: `Állókorcos alumíniumlemez, ${STANDING_SEAM_WIDTH} mm sáv, ${hu(len / 1000)} m`,
+        quantity: qty, unit: 'db', needM2: need, secondary: `${hu(area, 2)} m²`,
+        explanation: `Tetősíkonként ⌈${hu(g.roofLengthAlongRidge / 1000)} m / ${hu(wM)} m⌉ = ${perPlane} sáv × ${g.planes} tetősík = ${qty} sáv; `
+          + `sávhossz: szarufahossz ${hu(g.rafterLength / 1000, 3)} m → ${hu(len / 1000)} m; `
+          + `${qty} × ${hu(wM)} m × ${hu(len / 1000)} m = ${hu(area, 2)} m² × ${hu(1 + sw)} = ${hu(need, 2)} m²`,
+      });
+      // korconként (sávok + 1) a sávhosszon klipszek, klipszenként csavarok
+      const seams = perPlane + 1;
+      const perSeam = Math.floor(len / STANDING_SEAM_CLIP_SPACING) + 1;
+      res.stats.seamClips = seams * perSeam * g.planes;
+      res.stats.seamClipScrews = res.stats.seamClips * STANDING_SEAM_SCREWS_PER_CLIP;
+      const eave = g.eaveCount * g.roofLengthAlongRidge / 1000;
+      add({
+        id: 'roof.seamEaveFlashing', name: 'Ereszszegély', quantity: ceilTo(eave, 0.1), unit: 'm',
+        explanation: `${g.eaveCount} eresz × ${hu(g.roofLengthAlongRidge / 1000)} m = ${hu(eave, 3)} m → ${hu(ceilTo(eave, 0.1), 1)} m`,
+      });
+      const rake = g.rakeEdges * g.rafterLength / 1000;
+      add({
+        id: 'roof.seamRakeFlashing', name: 'Oromszegély', quantity: ceilTo(rake, 0.1), unit: 'm',
+        explanation: `${g.rakeEdges} oromél × ${hu(g.rafterLength / 1000, 3)} m szarufahossz = ${hu(rake, 3)} m → ${hu(ceilTo(rake, 0.1), 1)} m`,
       });
       break;
     }

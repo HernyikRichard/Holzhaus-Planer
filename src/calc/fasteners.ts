@@ -1,7 +1,7 @@
 import type { CalcStats, MaterialLine } from './types';
 import {
   CLADDING_NAILS_PER_M2, COUNTER_BATTEN_NAIL_SPACING, FASTENER_BOX, FRAME_SCREWS_PER_END, HURRICANE_TIE_LABEL,
-  SCREWS_PER_OSB_SHEET,
+  SCREWS_PER_OSB_SHEET, STANDING_SEAM_CLIP_SPACING, STANDING_SEAM_SCREWS_PER_CLIP,
 } from '../catalog';
 import { hu } from './util';
 import type { Supply } from '../pricing/supplyTypes';
@@ -36,6 +36,16 @@ export function calcFasteners(stats: CalcStats, supply?: Supply): MaterialLine[]
       id: 'fix.hurricaneTies', category: 'Kötőelemek', name: HURRICANE_TIE_LABEL,
       quantity: stats.hurricaneTieCount, unit: 'db',
       explanation: `${stats.hurricaneTieCount} rögzítési pont (szarufavégenként 1 db: a koszorún és a gerincnél / magas oldalon)`,
+    });
+  }
+  if (stats.seamClips > 0) {
+    lines.push({
+      id: 'fix.seamClips', category: 'Kötőelemek', name: 'Állókorc-rögzítő klipsz', quantity: stats.seamClips, unit: 'db',
+      explanation: `${stats.seamClips} klipsz: tetősíkonként (sávok + 1) korc × (⌊sávhossz / ${hu(STANDING_SEAM_CLIP_SPACING / 1000)} m⌋ + 1)`,
+    });
+    lines.push({
+      id: 'fix.seamClipScrews', category: 'Kötőelemek', name: 'Klipszrögzítő csavar', quantity: stats.seamClipScrews, unit: 'db',
+      explanation: `${stats.seamClips} klipsz × ${STANDING_SEAM_SCREWS_PER_CLIP} db = ${stats.seamClipScrews} db`,
     });
   }
   box('fix.counterBattenNails', 'Ellenlécszeg',
