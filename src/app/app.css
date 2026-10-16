@@ -266,3 +266,37 @@ button.cutstrip-piece:hover:not(:disabled) { background: #4a90d9; }
 .field-check { display: flex; align-items: center; gap: 0.5rem; }
 .price-date { margin: 0.3rem 0; font-size: 0.85rem; }
 .price-stale { margin: 0.3rem 0; font-size: 0.85rem; color: #b45309; }
+
+/* Lebegő 3D ablak (a rajzvászon fölött) */
+.topbar .toggle-3d[aria-pressed='true'] { background: var(--accent); border-color: var(--select); color: #fff; }
+.window3d { position: absolute; z-index: 7; display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  background: var(--panel); border: 1px solid var(--accent); border-radius: 6px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55); overflow: hidden; }
+.window3d.maximized { border-radius: 0; }
+.w3d-head { display: flex; align-items: center; gap: 0.25rem; height: 30px; flex: none; padding: 0 0.3rem 0 0.6rem;
+  border-bottom: 1px solid var(--accent); cursor: move; user-select: none; touch-action: none; }
+.window3d.maximized .w3d-head { cursor: default; }
+.w3d-title { flex: 1; font-size: 0.85rem; font-weight: 600; color: var(--select); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w3d-head button { padding: 0 0.4rem; line-height: 1.4; border-color: transparent; background: transparent; }
+.w3d-head button:hover { background: var(--accent); }
+.w3d-bar { display: flex; align-items: center; gap: 0.2rem; height: 32px; flex: none; padding: 0 0.3rem; overflow-x: auto;
+  border-bottom: 1px solid var(--accent); }
+.w3d-bar button { padding: 0.1rem 0.4rem; font-size: 0.8rem; white-space: nowrap; }
+.w3d-bar button.active { background: var(--accent); border-color: var(--select); color: #fff; }
+.w3d-bar [data-action='3d-layers'] { margin-right: auto; }
+.w3d-body { position: relative; flex: 1; min-height: 0; background: var(--vw-bg); }
+.w3d-body canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
+.w3d-body canvas:focus-visible { outline: 2px solid var(--select); outline-offset: -2px; }
+.w3d-layers { position: absolute; left: 0; top: 0; bottom: 0; z-index: 1; width: 11rem; max-width: 70%; overflow-y: auto;
+  padding: 0.4rem 0.5rem; font-size: 0.8rem; background: rgba(11, 21, 36, 0.92); border-right: 1px solid var(--accent); }
+.w3d-quick { display: flex; gap: 0.25rem; margin-bottom: 0.3rem; }
+.w3d-quick button { flex: 1; padding: 0.1rem 0.3rem; font-size: 0.8rem; }
+.w3d-layers fieldset { margin: 0 0 0.3rem; padding: 0; border: 0; }
+.w3d-layers legend { padding: 0; margin-bottom: 0.1rem; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.w3d-layers label { display: flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
+.w3d-tip { position: absolute; z-index: 2; pointer-events: none; transform: translate(12px, 12px); max-width: 16rem; padding: 0.2rem 0.5rem;
+  font-size: 0.8rem; background: var(--vw-panel); color: var(--vw-text); border: 1px solid var(--vw-highlight); border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w3d-msg { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 1rem; text-align: center; font-size: 0.9rem; color: var(--line); background: var(--vw-bg); }
+.w3d-resize { position: absolute; right: 0; bottom: 0; z-index: 4; width: 14px; height: 14px; cursor: nwse-resize; touch-action: none;
+  background: linear-gradient(135deg, transparent 50%, var(--accent) 50%, var(--accent) 60%, transparent 60%, transparent 72%, var(--accent) 72%, var(--accent) 82%, transparent 82%); }

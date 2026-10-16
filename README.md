@@ -39,6 +39,14 @@ A lépésjelen ✓ mutatja, ha minden mező rendben van, és piros pötty, ha va
 
 ![Tetőnézet szarufákkal, lécekkel és viharkapcsokkal](docs/kepek/tetonezet.png)
 
+### 3D nézet
+- A felső sáv **3D** gombja lebegő ablakot nyit a rajzvászon fölött: a teljes ház térben, rétegenként saját színnel (váz, OSB, fóliák, szigetelés, burkolatok, tető, nyílászárók).
+- Az ablak a fejlécénél fogva **mozgatható**, a sarkánál **átméretezhető**, és ⤢ gombbal a teljes vászonra nagyítható. Helye, mérete és a rétegek állapota megmarad.
+- **Forgatás** bal egérgombbal, **nagyítás** görgővel, **mozgatás** jobb gombbal vagy Shift + bal gombbal. Gyorsnézetek: **Persp.**, **É**, **K**, **D**, **Ny**, **Felül**, ⟲ alaphelyzet.
+- A **Rétegek** panelen minden réteg külön ki-be kapcsolható; a **Csak váz** gomb a burkolatok nélküli vázszerkezetet mutatja.
+- **Ráállva** az elem neve buborékban jelenik meg, **kattintásra** kijelölődik: megnyílik az adatlapja, a 2D rajz pedig átvált arra a nézetre, amelyik ábrázolja. A 2D-ben kijelölt elem a 3D-ben is kiemelődik.
+- A 3D rész csak az ablak első megnyitásakor töltődik be, így az alkalmazás indulását nem lassítja. WebGL-képes böngésző kell hozzá.
+
 ### Anyaglista, ami meg is magyarázza magát
 Minden sor mellett ott a számítás, például:
 
@@ -89,13 +97,14 @@ src/
   calc/      számítómotor: alap, padló, falak, nyílászárók, tető, kiegészítők, kötőelemek, darabolás
   scene/     elemlista: minden oszlop, szarufa, tábla és csavar saját azonosítóval és helyzettel
   viewer/    SVG-tervrajzok, kamera (nagyítás/mozgatás), rétegek, kiemelés
+  three-d/   3D modell az elemlistából és a rétegrendből; Three.js-kirajzoló (külön, lusta betöltésű csomag)
   app/       Preact-felület: lépések, rajzvászon, buborék, adatlap, anyaglista, vágási terv
   export/    PDF, CSV, letöltés
 ```
 
 A számítás és a rajz **ugyanabból az elemlistából** dolgozik, ezért ami a rajzon látszik, az szerepel az anyaglistában is, és fordítva.
 
-**Technológia:** TypeScript · Preact · Vite · Vitest · jsPDF + svg2pdf.js
+**Technológia:** TypeScript · Preact · Vite · Vitest · jsPDF + svg2pdf.js · Three.js
 
 ---
 

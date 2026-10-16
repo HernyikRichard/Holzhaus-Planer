@@ -15,6 +15,7 @@ import { dragOffset, dragSill, liveDims, openingIdOfElement, selectOpening } fro
 import { boundsOf } from '../viewer/svgKit';
 import { groupLength, tempDimensions } from '../scene/neighbours';
 import { Tooltip } from './Tooltip';
+import { Window3d } from './Window3d';
 import { drawSource, kindShown, orderedIds, stepNeighbour, targetLines } from './selection';
 
 const DEFAULT_SIZE = { w: 800, h: 600 };
@@ -361,6 +362,7 @@ export function Viewer({ store, ui }: { store: Store; ui: UiStore }) {
           <button type="button" data-action="zoom-out" aria-label="Kicsinyítés" onClick={() => zoomCenter(1 / 1.15)}>−</button>
           <button type="button" data-action="zoom-fit" aria-label="Teljes nézet" onClick={resetCam}>⤢</button>
         </div>
+        <Window3d store={store} ui={ui} bounds={size} />
       </div>
     </main>
   );

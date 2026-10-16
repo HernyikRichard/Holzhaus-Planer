@@ -84,6 +84,7 @@ function PdfDialog({ store, dialogRef }: { store: Store; dialogRef: { current: H
 export function TopBar({ store, ui }: { store: Store; ui: UiStore }) {
   const errors = useStore(store, s => s.errors);
   const step = useUi(ui, s => s.step);
+  const open3d = useUi(ui, s => s.view3d.open);
   const [message, setMessage] = useState<string | null>(null);
   const dirty = useRef<ReturnType<typeof createDirtyTracker>>();
   if (!dirty.current) dirty.current = createDirtyTracker(store);
@@ -176,6 +177,8 @@ export function TopBar({ store, ui }: { store: Store; ui: UiStore }) {
           );
         })}
       </nav>
+      <button type="button" data-action="3d" class="toggle-3d" aria-pressed={open3d} title="3D nézet ki / be"
+        onClick={() => { const v = ui.get().view3d; ui.set({ view3d: { ...v, open: !v.open } }); }}>3D</button>
       <div class="actions">
         <label class="plan-name">Terv neve{' '}
           <input type="text" ref={nameInput} defaultValue={store.get().plan.name}

@@ -52,3 +52,33 @@ test('changing step clears highlight', () => {
   ui.set({ step: 'roof' });
   expect(ui.get().highlight).toEqual([]);
 });
+
+const VIEW3D_DEFAULT = { open: false, x: -1, y: -1, w: 420, h: 320, maximized: false, layers: {} };
+test('view3d default', () => {
+  expect(createUiStore().get().view3d).toEqual(VIEW3D_DEFAULT);
+});
+test('set view3d persists to favazas.3d.v1', () => {
+  const ui = createUiStore();
+  const v = { open: true, x: 10, y: 20, w: 500, h: 300, maximized: true, layers: { insulation: false } };
+  ui.set({ view3d: v });
+  expect(JSON.parse(localStorage.getItem('favazas.3d.v1')!)).toEqual(v);
+  expect(createUiStore().get().view3d).toEqual(v);
+});
+test('broken view3d JSON falls back to defaults', () => {
+  localStorage.setItem('favazas.3d.v1', '{nem json');
+  expect(createUiStore().get().view3d).toEqual(VIEW3D_DEFAULT);
+  localStorage.setItem('favazas.3d.v1', '[1,2]');
+  expect(createUiStore().get().view3d).toEqual(VIEW3D_DEFAULT);
+});
+test('missing or invalid view3d fields are filled from defaults', () => {
+  localStorage.setItem('favazas.3d.v1', JSON.stringify({ open: true, w: 'széles', h: 250, layers: { roofFrame: false, insulation: 'nem', bogus: false } }));
+  expect(createUiStore().get().view3d).toEqual({ ...VIEW3D_DEFAULT, open: true, h: 250, layers: { roofFrame: false } });
+});
+test('view3d survives broken localStorage', () => {
+  vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('x'); });
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('x'); });
+  const ui = createUiStore();
+  expect(ui.get().view3d).toEqual(VIEW3D_DEFAULT);
+  expect(() => ui.set({ view3d: { ...VIEW3D_DEFAULT, open: true } })).not.toThrow();
+  expect(ui.get().view3d.open).toBe(true);
+});
