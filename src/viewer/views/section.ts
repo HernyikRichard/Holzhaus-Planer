@@ -1,5 +1,6 @@
 import type { Plan, RoofCovering, RoofLayerKind, WallLayerKind } from '../../model/types';
-import { BATTEN_SECTION, COUNTER_BATTEN_SECTION, ROOF_BATTEN_SECTION } from '../../catalog';
+import { COUNTER_BATTEN_SECTION, ROOF_BATTEN_SECTION } from '../../catalog';
+import { COVERING_T, DECKING_T, FOIL_T, floorTopZ, layerThickness, wallLayerStrips } from '../../scene/layerStack';
 import { cm, type Kit, type Pt } from '../svgKit';
 import { layerG, type ViewCtx } from './common';
 
@@ -14,18 +15,6 @@ const ROOF_LABEL: Record<RoofLayerKind, string> = {
 const COVERING_LABEL: Record<RoofCovering, string> = {
   tile: 'Cserép', trapezoid: 'Trapézlemez', shingle: 'Zsindely', epdm: 'EPDM fólia',
 };
-// Sematikus rajzi vastagságok (mm); a tetőrétegeknek nincs vastagsága a modellben.
-const DECKING_T = 22;
-const FOIL_T = 3;
-const COVERING_T: Record<RoofCovering, number> = { tile: 40, trapezoid: 20, shingle: 10, epdm: 5 };
-
-/** Rajzi rétegvastagság: a szigetelés a váz szélessége, a lécezés a katalógus-léc vastagsága. */
-function layerThickness(plan: Plan, l: { kind: WallLayerKind; thickness: number }): number {
-  if (l.kind === 'insulation') return plan.walls.studSection.w;
-  if (l.kind === 'battens') return BATTEN_SECTION.t;
-  return l.thickness;
-}
-
 interface Label { ax: number; az: number; text: string }
 
 /** Címkék egymás alatt (fentről lefelé, a megadott sorrendben), vezetővonallal a rétegekhez. */
@@ -56,7 +45,7 @@ export function drawSection(ctx: ViewCtx): string {
   const cos = Math.cos((pitch * Math.PI) / 180);
   const gable = shape === 'gable';
   const rise = (gable ? S / 2 : S) * tan;
-  const zFloor = plan.floor.enabled ? plan.floor.joistSection.w + plan.floor.osbThickness : 0;
+  const zFloor = floorTopZ(plan);
   const zBase = zFloor + H;
   const Y = (z: number): number => -z;
   const line = kit.stroke('line', 0.8);
@@ -85,27 +74,7 @@ export function drawSection(ctx: ViewCtx): string {
   // falak: a q koordináta a váz külső síkjától befelé nő (a váz: 0…sw), kifelé negatív
   const wallTops = [zBase + (gable ? 0 : rise), zBase];
   const layers = plan.walls.layers;
-  const insIdx = layers.findIndex(l => l.kind === 'insulation');
-  const strips = new Map<WallLayerKind, [number, number]>();
-  let acc = sw;
-  for (let i = insIdx - 1; i >= 0; i--) {
-    const l = layers[i];
-    if (!l.enabled) continue;
-    const lt = layerThickness(plan, l);
-    const t = lt > 0 ? lt : FOIL_T;
-    strips.set(l.kind, [acc, acc + t]);
-    acc += t;
-  }
-  acc = 0;
-  for (let i = insIdx + 1; i < layers.length; i++) {
-    const l = layers[i];
-    if (!l.enabled) continue;
-    const lt = layerThickness(plan, l);
-    const t = lt > 0 ? lt : FOIL_T;
-    strips.set(l.kind, [acc - t, acc]);
-    acc -= t;
-  }
-  if (layers[insIdx]?.enabled) strips.set('insulation', [0, sw]);
+  const strips = wallLayerStrips(plan);
 
   const wx = (side: 0 | 1, q0: number, q1: number): [number, number] => (side === 0 ? [q0, q1] : [S - q0, S - q1]);
   const wallMid = zFloor + H / 2;

@@ -15,6 +15,7 @@ import { dragOffset, dragSill, liveDims, openingIdOfElement, selectOpening } fro
 import { boundsOf } from '../viewer/svgKit';
 import { groupLength, tempDimensions } from '../scene/neighbours';
 import { Tooltip } from './Tooltip';
+import { Window3d } from './Window3d';
 import { drawSource, kindShown, orderedIds, stepNeighbour, targetLines } from './selection';
 
 const DEFAULT_SIZE = { w: 800, h: 600 };
@@ -47,6 +48,9 @@ export function Viewer({ store, ui }: { store: Store; ui: UiStore }) {
   const stored = useUi(ui, s => s.cameras[s.view]);
   const state = useStore(store, s => s);
   const [size, setSize] = useState(DEFAULT_SIZE);
+  /** A vászon aljából a nagyítógombok által elfoglalt sáv (px): a 3D ablak alapból fölötte áll. */
+  const [zoomReserve, setZoomReserve] = useState(0);
+  const zoomBar = useRef<HTMLDivElement>(null);
   const [panning, setPanning] = useState(false);
   const pointer = useRef({ x: 0, y: 0 });
   const tipMove = useRef<((p: { x: number; y: number }) => void) | null>(null);
@@ -116,6 +120,8 @@ export function Viewer({ store, ui }: { store: Store; ui: UiStore }) {
     const measure = () => {
       const r = el.getBoundingClientRect();
       if (r.width > 0 && r.height > 0) setSize({ w: r.width, h: r.height });
+      const z = zoomBar.current?.getBoundingClientRect();
+      if (z && z.height > 0) setZoomReserve(Math.max(0, Math.ceil(r.bottom - z.top)));
     };
     measure();
     if (typeof ResizeObserver === 'undefined') return;
@@ -356,11 +362,12 @@ export function Viewer({ store, ui }: { store: Store; ui: UiStore }) {
           </div>
         )}
         {hovered && tipLines.length > 0 && <Tooltip lines={tipLines} initial={pointer.current} bind={tipMove} vpW={size.w} vpH={size.h} />}
-        <div class="zoom-buttons">
+        <div class="zoom-buttons" ref={zoomBar}>
           <button type="button" data-action="zoom-in" aria-label="Nagyítás" onClick={() => zoomCenter(1.15)}>+</button>
           <button type="button" data-action="zoom-out" aria-label="Kicsinyítés" onClick={() => zoomCenter(1 / 1.15)}>−</button>
           <button type="button" data-action="zoom-fit" aria-label="Teljes nézet" onClick={resetCam}>⤢</button>
         </div>
+        <Window3d store={store} ui={ui} bounds={size} reserveBottom={zoomReserve} />
       </div>
     </main>
   );
