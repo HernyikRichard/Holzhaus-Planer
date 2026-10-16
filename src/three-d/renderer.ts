@@ -13,15 +13,17 @@ export interface Renderer3d {
   setHighlight(ids: string[]): void; setHover(id: string | null): void;
   pick(clientX: number, clientY: number): { elementId?: string; label: string } | null;
   setView(p: ViewPreset): void; resize(w: number, h: number): void; dispose(): void;
+  /** Szinkron kirajzolás, majd a vászon PNG data URL-je (a PDF képeihez). */
+  snapshot(): string;
 }
 
 const FOV = 35;
 
 /** WebGL hiányában (vagy ha a kontextus nem jön létre) `Error('webgl')`. */
-export function createRenderer(canvas: HTMLCanvasElement): Renderer3d {
+export function createRenderer(canvas: HTMLCanvasElement, opts?: { preserveDrawingBuffer?: boolean }): Renderer3d {
   let renderer: THREE.WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: opts?.preserveDrawingBuffer ?? false });
   } catch {
     throw new Error('webgl');
   }
@@ -131,6 +133,11 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer3d {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       render(); // szinkron: a vászon átméretezése törli a tartalmát
+    },
+    snapshot() {
+      if (frame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame);
+      render();
+      return canvas.toDataURL('image/png');
     },
     dispose() {
       if (frame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame);

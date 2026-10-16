@@ -6,8 +6,8 @@ import type { Scene } from '../scene/types';
 import type { CalcOutput } from '../calc';
 import { useStore, useUi } from './hooks';
 import { sceneFor } from './selection';
-import { FASTENER_LINES } from './lineElements';
-import { buildAssembly, type AssemblyFastener, type AssemblyLine, type AssemblyStep } from '../assembly/steps';
+import { buildAssembly, type AssemblyStep } from '../assembly/steps';
+import { stepMaterial, stepSummary, TIMBER_NOTE } from '../assembly/material';
 import { filterModel, stepOfSolid } from '../assembly/solids';
 // a modell-építő nem húzza be a Three.js-t; a kirajzoló csak dinamikusan töltődik (use3dRenderer)
 import { buildModel3d, type Model3d, type Solid } from '../three-d/model';
@@ -18,9 +18,6 @@ import { formatCm, formatQty } from '../ui/format';
 const CLICK_PX = 4;
 /** A 3D terület becsült mérete, ha nincs elrendezés (jsdom). */
 const FALLBACK_SIZE: Size3d = { w: 640, h: 400 };
-const TIMBER_NOTE = 'A faanyagot egyben rendeld meg (lásd Anyaglista).';
-/** Csavarként összegzett rögzítők (a viharkapocs külön). */
-const SCREWS = new Set<AssemblyFastener['kind']>(['anchor', 'frameScrew', 'osbScrew']);
 
 interface Assembly { plan: Plan; scene: Scene; steps: AssemblyStep[] }
 
@@ -43,40 +40,6 @@ function useAssembly(store: Store): Assembly {
 }
 
 const clampIndex = (i: number, n: number): number => Math.max(0, Math.min(i, n - 1));
-
-/** Rövid összesítő a lépéslistába: a legnagyobb darabcsoport és a rögzítők, pl. „7 oszlop, 74 csavar”. */
-export function stepSummary(step: AssemblyStep): string {
-  const parts: string[] = [];
-  const byLabel = new Map<string, number>();
-  for (const p of step.pieces) byLabel.set(p.label, (byLabel.get(p.label) ?? 0) + p.count);
-  let best: [string, number] | null = null;
-  for (const e of byLabel) if (!best || e[1] > best[1]) best = e;
-  if (best) parts.push(`${formatQty(best[1])} ${best[0]}`);
-  const screws = step.fasteners.filter(f => SCREWS.has(f.kind)).reduce((a, f) => a + f.count, 0);
-  const ties = step.fasteners.filter(f => !SCREWS.has(f.kind)).reduce((a, f) => a + f.count, 0);
-  if (screws > 0) parts.push(`${formatQty(screws)} csavar`);
-  if (ties > 0) parts.push(`${formatQty(ties)} viharkapocs`);
-  if (parts.length === 0 && step.id === 'openings') parts.push(`${step.elementIds.length} nyílászáró`);
-  else if (parts.length === 0 && step.lines.length > 0) parts.push(`${step.lines.length} tétel`);
-  else if (parts.length === 0) parts.push(`${step.elementIds.length} elem`);
-  return parts.join(', ');
-}
-
-/**
- * A lépés anyaga a felületen. A rajzolt rögzítők beszerzési sora (pl. `fix.frameScrews`, dobozban) nem külön
- * tétel, ha a lépésben ugyanannak a fajtának a darabszáma is szerepel: a rögzítő sorában halvány
- * „rendelés, az egész házra: …” megjegyzés lesz belőle. Rajzolt pont nélkül rendes anyagsor marad.
- */
-export function stepMaterial(step: AssemblyStep): { lines: AssemblyLine[]; fasteners: (AssemblyFastener & { order?: string })[] } {
-  const orders = new Map<string, string>();
-  const lines = step.lines.filter(l => {
-    const kind = FASTENER_LINES[l.lineId];
-    if (!kind || !step.fasteners.some(f => f.kind === kind)) return true;
-    orders.set(kind, `rendelés, az egész házra: ${formatQty(l.quantity)} ${l.unit}`);
-    return false;
-  });
-  return { lines, fasteners: step.fasteners.map(f => ({ ...f, order: orders.get(f.kind) })) };
-}
 
 /** Az aktuális (létező) lépés indexe; tervváltozáskor a meglévő lépés követi magát, megszűnt lépésnél a legközelebbi. */
 function useCurrentStep(ui: UiStore, steps: AssemblyStep[]): number {
