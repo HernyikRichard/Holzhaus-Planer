@@ -353,13 +353,12 @@ const ccw = (pts: P2[]): P2[] => (area(pts) < 0 ? [...pts].reverse() : pts);
  * A szarufák alsó síkja a metszetnézet zU(p)-je: az eresz fal külső síkján a koszorú teteje, onnan a hajlásszöggel
  * emelkedik (madárszáj nélkül). A rétegek a szarufák felső síkjától a tetősík normálisa mentén, függőleges végvágással
  * az eresznél és a gerincnél, mint a metszetnézetben. Lapos tető (`flat`): egy sík a kis hajlásszöggel (a falak
- * teteje is ezt követi), ellenléc nélkül.
+ * teteje is ezt követi); minden scene-elem (ellenléc, tetőléc) pontosan egy testet kap.
  */
 function roofSolids(plan: Plan, scene: Scene): Solid[] {
   const g = roofGeometry(plan);
   const { eaveOverhang: oe, gableOverhang: og, rafterSection, covering, layers } = plan.roof;
   const gable = g.shape === 'gable';
-  const flat = plan.roof.shape === 'flat';
   const ridgeY = plan.roof.ridgeDirection === 'y';
   const Pv: Vec3 = ridgeY ? [...X] : [...Y];
   const Rv: Vec3 = ridgeY ? [...Y] : [...X];
@@ -422,7 +421,7 @@ function roofSolids(plan: Plan, scene: Scene): Solid[] {
 
   // tetőrétegek a szarufák felső síkjától, a rétegrend sorrendjében
   const forced = covering === 'shingle' || covering === 'epdm';
-  const counters = flat ? [] : els.filter(e => e.kind === 'counterBatten');
+  const counters = els.filter(e => e.kind === 'counterBatten');
   const battens = els.filter(e => e.kind === 'roofBatten');
   let n = rafterSection.w;
   const sheet = (layer: Layer3dId, material: string, tk: number): void => {

@@ -583,7 +583,6 @@ for (const [name, plan] of ROOF_PLANS) {
     const cos = Math.cos(g.pitchRad);
     const zBase = wallBaseZ(plan) + plan.building.wallHeight;
     const th = plan.roof.rafterSection.w / cos;
-    const flat = plan.roof.shape === 'flat';
     const rafters = scene.elements.filter(e => e.kind === 'rafter');
     const planeGroups = g.shape === 'gable' ? ['roof.L', 'roof.R'] : ['roof.M'];
     /** A tetősík közepe (p) és a hozzá tartozó szintetizált lapok (a p-tartomány alapján). */
@@ -631,7 +630,6 @@ for (const [name, plan] of ROOF_PLANS) {
       expect(els.length).toBeGreaterThan(0);
       for (const e of els) {
         const s = byId(m.solids, e.id);
-        if (flat && e.kind === 'counterBatten') { expect(s, e.id).toHaveLength(0); continue; }
         expect(s, e.id).toHaveLength(1);
         expect(s[0].layer, e.id).toBe(ROOF_KIND_LAYER[e.kind]);
         expect(s[0].label).toBe(e.label);
@@ -749,14 +747,40 @@ for (const [name, plan] of ROOF_PLANS) {
   });
 }
 
-test('flat roof has no counterBatten', () => {
+test('flat roof: every counterBatten element has exactly one solid', () => {
   const p = flatPlan();
   const scene = buildScene(p);
-  expect(scene.elements.some(e => e.kind === 'counterBatten')).toBe(true);
+  const cbs = scene.elements.filter(e => e.kind === 'counterBatten');
+  expect(cbs.length).toBeGreaterThan(0);
   const m = buildModel3d(p, scene);
-  expect(m.layers).not.toContain('counterBatten');
-  expect(m.layers).toContain('roofBatten');
+  expect(m.layers).toContain('counterBatten');
+  for (const e of cbs) {
+    const s = byId(m.solids, e.id);
+    expect(s, e.id).toHaveLength(1);
+    expect(s[0].layer).toBe('counterBatten');
+  }
+  expect(m.solids.filter(s => s.layer === 'counterBatten')).toHaveLength(cbs.length);
   expect(m.solids.filter(s => s.layer === 'covering')).toHaveLength(1);
+});
+
+test('batten solids exist exactly for batten scene elements (shingle, epdm)', () => {
+  for (const covering of ['shingle', 'epdm'] as const) {
+    for (const shape of ['gable', 'mono', 'flat'] as const) {
+      const p = createDefaultPlan();
+      p.roof.shape = shape;
+      p.roof.pitch = shape === 'flat' ? 3 : shape === 'mono' ? 10 : 30;
+      p.roof.covering = covering;
+      for (const l of p.roof.layers) l.enabled = true;
+      const scene = buildScene(p);
+      const m = buildModel3d(p, scene);
+      for (const kind of ['counterBatten', 'roofBatten'] as const) {
+        const ids = scene.elements.filter(e => e.kind === kind).map(e => e.id).sort();
+        const solidIds = m.solids.filter(s => s.layer === kind).map(s => s.elementId).sort();
+        expect(solidIds, `${covering} ${shape} ${kind}`).toEqual(ids);
+        expect(m.layers.includes(kind)).toBe(ids.length > 0);
+      }
+    }
+  }
 });
 
 test('roof layers present and absent per plan', () => {
