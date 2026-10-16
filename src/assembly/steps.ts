@@ -7,6 +7,7 @@ import { elementsToPieces } from '../scene/toPieces';
 import type { CutRef, Element, FastenerKind, Scene } from '../scene/types';
 import { HURRICANE_TIE_LABEL } from '../catalog';
 import { formatQty, sectionLabelWithUnit } from '../ui/format';
+import { stepTodo } from './todo';
 
 export type AssemblyStepId = 'foundation' | 'floor' | 'wall.N' | 'wall.E' | 'wall.S' | 'wall.W' | 'wallTop'
   | 'roofFrame' | 'roofLayers' | 'covering' | 'accessories' | 'openings' | 'exterior' | 'interior';
@@ -23,7 +24,7 @@ export interface AssemblyStep {
   /** Azonos darabok összevonva; a fali lécek (`wall.batten.<n>`) darab-id-je is az `elementIds`-ben van (nincs elemük). */
   pieces: AssemblyPiece[];
   fasteners: AssemblyFastener[]; // rajzolt rögzítési pontok fajtánként összegezve
-  todo: string[];               // teendők (Task 2 tölti)
+  todo: string[];               // 3–6 rövid teendő (stepTodo)
 }
 
 export const ASSEMBLY_TITLES: Record<AssemblyStepId, string> = {
@@ -122,7 +123,7 @@ function wallOrder(plan: Plan): AssemblyStepId[] {
 }
 
 /** „3–4. sz. 5 m-es szál”; egy szálnál „3. sz. 5 m-es szál”; több szálhossznál „; ”-vel. */
-function cutText(refs: CutRef[]): string {
+export function cutText(refs: CutRef[]): string {
   const byStock = new Map<Mm, Set<number>>();
   for (const r of refs) byStock.set(r.stockLength, (byStock.get(r.stockLength) ?? new Set()).add(r.stockIndex));
   return [...byStock.keys()].sort((a, b) => b - a).map(stock => {
@@ -217,6 +218,6 @@ export function buildAssembly(plan: Plan, scene: Scene, calc: CalcOutput): Assem
   }
   // ismeretlen sor: ne vesszen el, az utolsó meglévő lépésbe
   if (unknown.length) steps[steps.length - 1].lines.push(...unknown);
-  steps.forEach((s, i) => { s.index = i; });
+  steps.forEach((s, i) => { s.index = i; s.todo = stepTodo(plan, scene, s); });
   return steps;
 }

@@ -8,7 +8,7 @@ import { wallBattenPieces } from '../../src/calc/walls';
 import { wallGeometry } from '../../src/calc/geometry';
 import type { FastenerKind } from '../../src/scene/types';
 import {
-  ASSEMBLY_TITLES, buildAssembly, isTimberStockLine, stepIdOfElement, stepIdOfLine, type AssemblyStepId,
+  ASSEMBLY_TITLES, buildAssembly, cutText, isTimberStockLine, stepIdOfElement, stepIdOfLine, type AssemblyStepId,
 } from '../../src/assembly/steps';
 import { mono4x6Plan } from '../fixtures';
 
@@ -32,6 +32,14 @@ const all: Array<[Variant, number]> = [];
   [true, false].forEach((floor, c) => (['tile', 'trapezoid', 'shingle', 'epdm', 'standingSeam'] as RoofCovering[]).forEach((covering, d) =>
     (['single', 'double'] as const).forEach((plate, e) => all.push([{ shape, ridge, floor, covering, plate }, a + b + c + d + e]))))));
 const matrix = all.filter(([, k]) => k % 2 === 0).map(([v]) => v);
+
+/** A héjazattól függő sorok várt lépése (a mátrixban előforduló id-k). */
+const COVERING_LINES: Record<string, AssemblyStepId> = {
+  'roof.tiles': 'covering', 'roof.trapezoid': 'covering', 'roof.shingles': 'covering', 'roof.epdm': 'covering',
+  'roof.standingSeam': 'covering', 'roof.seamEaveFlashing': 'covering', 'roof.seamRakeFlashing': 'covering',
+  'fix.seamClips': 'covering', 'fix.seamClipScrews': 'covering', 'fix.tileClips': 'covering',
+  'acc.ridgeCap': 'covering', 'acc.ridgeTiles': 'covering', 'acc.ridgeVent': 'covering',
+};
 
 let warn: ReturnType<typeof vi.spyOn>;
 beforeEach(() => { warn = vi.spyOn(console, 'warn').mockImplementation(() => {}); });
@@ -95,6 +103,18 @@ describe.each(matrix.map(v => [name(v), v] as const))('%s', (_n, v) => {
     }
   });
 
+  test('covering-specific lines land in the expected step', () => {
+    const present = calc.lines.filter(l => COVERING_LINES[l.id] !== undefined);
+    expect(present.length).toBeGreaterThan(0);
+    for (const l of present) {
+      const s = steps.find(x => x.lines.some(y => y.lineId === l.id))!;
+      expect(s.id, l.id).toBe(COVERING_LINES[l.id]);
+    }
+    // a héjazat fő sora mindig a héjazat lépésében
+    const main = { tile: 'roof.tiles', trapezoid: 'roof.trapezoid', shingle: 'roof.shingles', epdm: 'roof.epdm', standingSeam: 'roof.standingSeam' }[v.covering];
+    expect(present.map(l => l.id)).toContain(main);
+  });
+
   test('step order', () => {
     const ids = steps.map(s => s.id);
     const rank = (id: AssemblyStepId) => ORDER.indexOf(id);
@@ -107,7 +127,7 @@ describe.each(matrix.map(v => [name(v), v] as const))('%s', (_n, v) => {
     expect(nonWall).toEqual([...nonWall].sort((a, b) => rank(a) - rank(b)));
     expect(ids.indexOf(walls[0])).toBe(ids.indexOf('floor') + 1 || 1);
     if (ids.includes('wallTop')) expect(ids.indexOf('wallTop')).toBe(ids.indexOf(walls[3]) + 1);
-    steps.forEach((s, i) => { expect(s.index).toBe(i); expect(s.title).toBe(ASSEMBLY_TITLES[s.id]); expect(s.todo).toEqual([]); });
+    steps.forEach((s, i) => { expect(s.index).toBe(i); expect(s.title).toBe(ASSEMBLY_TITLES[s.id]); expect(s.todo.length).toBeGreaterThanOrEqual(3); expect(s.todo.length).toBeLessThanOrEqual(6); });
     for (const s of steps) expect(s.elementIds.length + s.lines.length + s.pieces.length).toBeGreaterThan(0);
     expect(ids.includes('floor')).toBe(v.floor);
   });
@@ -204,6 +224,17 @@ describe('mapping helpers', () => {
     const steps = buildAssembly(p, scene, calc);
     expect(steps.at(-1)!.lines.some(l => l.lineId === 'valami.ismeretlen')).toBe(true);
     expect(warn).toHaveBeenCalled();
+  });
+
+  test('cut reference text formats', () => {
+    const r = (stockLength: number, stockIndex: number) => ({ stockLength, stockIndex, offset: 0, siblings: [] });
+    expect(cutText([r(5000, 4), r(5000, 3)])).toBe('3–4. sz. 5 m-es szál');
+    expect(cutText([r(5000, 3)])).toBe('3. sz. 5 m-es szál');
+    expect(cutText([r(5000, 3), r(5000, 3)])).toBe('3. sz. 5 m-es szál');
+    expect(cutText([r(5000, 5), r(5000, 8), r(5000, 6)])).toBe('5–6., 8. sz. 5 m-es szál');
+    expect(cutText([r(3000, 1), r(6000, 10), r(5000, 1), r(5000, 2)])).toBe('10. sz. 6 m-es szál; 1–2. sz. 5 m-es szál; 1. sz. 3 m-es szál');
+    expect(cutText([r(4500, 2)])).toBe('2. sz. 4,5 m-es szál');
+    expect(cutText([])).toBe('');
   });
 
   test('cut reference text', () => {
