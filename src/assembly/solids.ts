@@ -1,5 +1,5 @@
-import type { Layer3dId, Model3d, Solid, Vec3 } from '../three-d/model';
-import { solidBounds } from '../three-d/model';
+import type { Layer3dId, Model3d, Solid } from '../three-d/model';
+import { boundsOf } from '../three-d/model';
 import type { Scene } from '../scene/types';
 import { stepIdOfElement, type AssemblyStep, type AssemblyStepId } from './steps';
 
@@ -56,14 +56,5 @@ export function filterModel(model: Model3d, upTo: number, stepOf: (s: Solid) => 
   const solids = model.solids.filter(s => stepOf(s) <= upTo);
   if (solids.length === model.solids.length) return model;
   const present = new Set(solids.map(s => s.layer));
-  const min: Vec3 = [0, 0, 0];
-  const max: Vec3 = [0, 0, 0];
-  solids.forEach((s, i) => {
-    const b = solidBounds(s);
-    for (let k = 0; k < 3; k++) {
-      min[k] = i === 0 ? b.min[k] : Math.min(min[k], b.min[k]);
-      max[k] = i === 0 ? b.max[k] : Math.max(max[k], b.max[k]);
-    }
-  });
-  return { solids, layers: model.layers.filter(l => present.has(l)), bounds: { min, max } };
+  return { solids, layers: model.layers.filter(l => present.has(l)), bounds: boundsOf(solids) };
 }

@@ -36,6 +36,8 @@ function piecesOfKind(plan: Plan, step: AssemblyStep, kind: ElementKind): number
   const kinds = new Map(scene.elements.map(e => [e.id, e.kind]));
   return step.pieces.filter(p => kinds.get(p.elementIds[0]) === kind).reduce((a, p) => a + p.count, 0);
 }
+/** A szám önálló szóként (nem egy hosszabb szám vége: „5 oszlop” ne illeszkedjen a „15 oszlop”-ra). */
+const num = (n: number, rest: string) => new RegExp(`(?<!\\d)${n} ${rest.replace(/[()]/g, m => `\\${m}`)}(?!\\p{L})`, 'u');
 const fastenerSum = (s: AssemblyStep, kind: string) => s.fasteners.filter(f => f.kind === kind).reduce((a, f) => a + f.count, 0);
 
 describe.each(PLANS)('%s', (_n, plan) => {
@@ -59,21 +61,21 @@ describe.each(PLANS)('%s', (_n, plan) => {
     for (const w of wallGeometry(plan)) {
       const s = steps.find(x => x.id === `wall.${w.side}`)!;
       const text = s.todo.join('\n');
-      expect(text).toContain(`${piecesOfKind(plan, s, 'stud')} oszlop`);
-      expect(text).toContain(`${fastenerSum(s, 'anchor')} db ászokcsavarral`);
+      expect(text).toMatch(num(piecesOfKind(plan, s, 'stud'), 'oszlop'));
+      expect(text).toMatch(num(fastenerSum(s, 'anchor'), 'db ászokcsavarral'));
       const pos = studPositions(plan, w).map(formatCmNum);
       const list = pos.length > 12 ? `${pos.slice(0, 12).join(', ')}, …` : pos.join(', ');
       expect(text).toContain(`oszlophelyeket a fal elejétől: ${list} cm`);
       expect(text).toContain(`Fektesd le a talpgerendát (${formatCmNum(w.length)} cm)`);
       const ops = plan.openings.filter(o => o.wall === w.side);
-      if (ops.length) expect(text).toContain(`${ops.length} nyílás (`);
+      if (ops.length) expect(text).toMatch(num(ops.length, 'nyílás'));
     }
     const rf = steps.find(x => x.id === 'roofFrame')!;
     const rafters = piecesOfKind(plan, rf, 'rafter');
     const ties = fastenerSum(rf, 'hurricaneTie');
     expect(rafters).toBeGreaterThan(0);
     const text = rf.todo.join('\n');
-    expect(text).toContain(`${rafters} szarufát ${formatCmNum(plan.roof.rafterSpacing)} cm-es kiosztással`);
+    expect(text).toMatch(num(rafters, `szarufát ${formatCmNum(plan.roof.rafterSpacing)} cm-es kiosztással`));
     expect(text).toContain(ties % rafters === 0 ? `mindegyiket ${ties / rafters} viharkapoccsal` : `összesen ${ties} viharkapoccsal`);
   });
 
@@ -83,6 +85,44 @@ describe.each(PLANS)('%s', (_n, plan) => {
       if (plan.openings.some(o => o.wall === w.side)) expect(s.todo.join('\n')).toMatch(/nyílás/);
       else expect(s.todo.join('\n')).not.toMatch(/nyílás/);
     }
+  });
+});
+
+describe('guards and wording', () => {
+  test('number matcher is word-bounded', () => {
+    expect('Szereld össze: 15 oszlop, 2 sarokoszlop.').not.toMatch(num(5, 'oszlop'));
+    expect('Szereld össze: 15 oszlop, 2 sarokoszlop.').toMatch(num(15, 'oszlop'));
+    expect('Szereld össze: 15 oszlopot.').not.toMatch(num(15, 'oszlop'));
+  });
+
+  test('roofs without ridge never mention a ridge', () => {
+    for (const [, plan] of PLANS.filter(([, p]) => p.roof.shape !== 'gable')) {
+      const steps = buildAssembly(plan, buildScene(plan), calculate(plan));
+      expect(steps.flatMap(s => s.todo).join('\n')).not.toMatch(/gerinc/);
+    }
+    const flat = PLANS.find(([n]) => n.startsWith('flat'))![1];
+    const cov = buildAssembly(flat, buildScene(flat), calculate(flat)).find(s => s.id === 'covering')!;
+    expect(cov.todo).toContain('Haladj az eresztől felfelé, a csapadékkal ellentétes irányban átfedve.');
+  });
+
+  test('no anchors → no "0 db ászokcsavarral"', () => {
+    const plan = createDefaultPlan();
+    const scene = buildScene(plan);
+    const s = buildAssembly(plan, scene, calculate(plan)).find(x => x.id === 'wall.E')!;
+    const todo = stepTodo(plan, scene, { ...s, fasteners: [] }).join('\n');
+    expect(todo).not.toMatch(/ászokcsavar|(?<!\d)0 db/);
+    expect(todo).toContain('Állítsd fel, függőzd ki, rögzítsd a talpgerendát az alaphoz.');
+    expect(todo).toContain('Szereld össze a vázat a földön: 7 oszlop');
+  });
+
+  test('missing OSB layer → no empty thickness', () => {
+    const plan = createDefaultPlan();
+    const scene = buildScene(plan);
+    const s = buildAssembly(plan, scene, calculate(plan)).find(x => x.id === 'wallTop')!;
+    plan.walls.layers = plan.walls.layers.filter(l => l.kind !== 'osb');
+    const todo = stepTodo(plan, scene, s);
+    expect(todo).toContain('Burkold kívülről a falakat OSB-lappal (12 tábla), a nyílásokat vágd ki.');
+    expect(todo.join('\n')).not.toMatch(/ {2}|\( ?\)| mm-es OSB/);
   });
 });
 

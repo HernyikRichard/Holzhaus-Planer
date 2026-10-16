@@ -12,15 +12,15 @@ const MAX_POSITIONS = 12;
 const MIN_TODO = 3;
 const MAX_TODO = 6;
 
-/** Kiegészítő teendők, ha a lépés adataiból háromnál kevesebb mondat jön ki. */
+/** Kiegészítő teendők, ha a lépés adataiból háromnál kevesebb mondat jön ki; `{fel}` = a haladás iránya (`upward`). */
 const FILLERS: Record<string, string[]> = {
   foundation: ['Ellenőrizd a lemez vízszintjét és az átlókat.', 'Locsold a betont az első napokban, és hagyd szilárdulni.'],
   floor: ['Ellenőrizd a párnafák vízszintjét, szükség esetén alátéttel igazítsd.', 'Ellenőrizd a padló síkját vízmértékkel.'],
   wall: ['Ellenőrizd az átlókat: a váz legyen derékszögű.', 'Merevítsd ideiglenesen ferde léccel, amíg a szomszéd fal fel nem kerül.'],
   wallTop: ['Ellenőrizd az átlókat: a falak legyenek derékszögben és függőlegesek.', 'Csavarozd össze a sarkokat a szomszéd fallal.', 'Merevítsd ideiglenesen ferde léccel a falakat.'],
   roofFrame: ['Ellenőrizd zsinórral, hogy a szarufák egy síkban vannak.', 'Merevítsd ideiglenesen ferde léccel a tetővázat.'],
-  roofLayers: ['Ellenőrizd, hogy a rétegek hézag és szakadás nélkül fedik a tetősíkot.', 'Az alsó rétegeket mindig az eresztől a gerinc felé haladva rakd.'],
-  covering: ['Haladj az eresztől a gerinc felé, a csapadékkal ellentétes irányban átfedve.', 'Ellenőrizd az illesztéseket és az átfedéseket: sehol ne maradjon nyitott varrat.', 'Takarítsd le a tetőt a forgácstól és a hulladéktól.'],
+  roofLayers: ['Ellenőrizd, hogy a rétegek hézag és szakadás nélkül fedik a tetősíkot.', 'Az alsó rétegeket mindig {fel} haladva rakd.'],
+  covering: ['Haladj {fel}, a csapadékkal ellentétes irányban átfedve.', 'Ellenőrizd az illesztéseket és az átfedéseket: sehol ne maradjon nyitott varrat.', 'Takarítsd le a tetőt a forgácstól és a hulladéktól.'],
   accessories: ['Ellenőrizd a csatlakozásokat és a rögzítéseket.', 'Ellenőrizd a víz elvezetését egy vödör vízzel.', 'Kezeld le a látszó fafelületeket.'],
   openings: ['Ékeld ki a tokokat, ellenőrizd vízmértékkel, majd rögzítsd a vázhoz.', 'Habosítsd ki a tok és a váz közti hézagot.', 'Ellenőrizd a nyitást és a zárást.'],
   exterior: ['Hagyd szabadon a szellőzőrést a burkolat alján és tetején.', 'Ellenőrizd a nyílások körüli csatlakozásokat.', 'Kezeld le a külső burkolatot.'],
@@ -39,6 +39,9 @@ export function az(x: string | number): string {
   const vowel = digits ? digits[0] === '5' || (digits[0] === '1' && [1, 4, 7].includes(digits.length)) : /^[aáeéiíoóöőuúüű]/i.test(t);
   return `${vowel ? 'az' : 'a'} ${t}`;
 }
+
+/** Haladási irány a tetőn: nyeregtetőn a gerinc felé, gerinc nélkül (egyhajlású, lapos) felfelé. */
+const upward = (plan: Plan): string => (plan.roof.shape === 'gable' ? 'az eresztől a gerinc felé' : 'az eresztől felfelé');
 
 const qty = (l: AssemblyLine): string => `${formatQty(l.quantity)} ${l.unit}`;
 const meters = (mm: Mm): string => (mm / 1000).toFixed(2).replace('.', ',');
@@ -129,7 +132,7 @@ function wall(c: Ctx, side: WallSide): string[] {
   }
   const anchors = fasteners(c, 'anchor');
   const full = w.full ? '' : ' a futó falak közé, csavarozd a sarkokhoz';
-  out.push(`Állítsd fel${full}, függőzd ki, rögzítsd ${anchors} db ászokcsavarral.`);
+  out.push(`Állítsd fel${full}, függőzd ki, ${anchors ? `rögzítsd ${anchors} db ászokcsavarral` : 'rögzítsd a talpgerendát az alaphoz'}.`);
   return out;
 }
 
@@ -140,7 +143,7 @@ function wallTop(c: Ctx): string[] {
   out.push('Ellenőrizd az átlókat: a falak legyenek derékszögben és függőlegesek.');
   const osb = line(c, 'wall.osb');
   const layer = c.plan.walls.layers.find(l => l.kind === 'osb');
-  if (osb) out.push(`Burkold kívülről a falakat ${layer?.thickness ?? ''} mm-es OSB-lappal (${qty(osb)}), a nyílásokat vágd ki.`);
+  if (osb) out.push(`Burkold kívülről a falakat ${layer?.thickness ? `${layer.thickness} mm-es ` : ''}OSB-lappal (${qty(osb)}), a nyílásokat vágd ki.`);
   const screws = fasteners(c, 'osbScrew');
   if (screws) out.push(`Csavarozd fel ${screws} db OSB-csavarral: a széleken ${formatCm(OSB_SCREW_EDGE_SPACING)}-enként, a mezőben ${formatCm(OSB_SCREW_FIELD_SPACING)}-enként.`);
   return out;
@@ -169,7 +172,7 @@ function roofLayers(c: Ctx): string[] {
   const decking = line(c, 'roof.decking');
   if (decking) out.push(`Rakd fel a deszkázatot a szarufákra (${qty(decking)}).`);
   const underlay = line(c, 'roof.underlay');
-  if (underlay) out.push(`Terítsd le az alátétréteget (${qty(underlay)}) az eresztől a gerinc felé, átfedéssel.`);
+  if (underlay) out.push(`Terítsd le az alátétréteget (${qty(underlay)}) ${upward(c.plan)}, átfedéssel.`);
   const counters = count(c, 'counterBatten');
   if (counters) out.push(`Szegezd fel ${az(counters)} ellenlécet a szarufák vonalában.`);
   const battens = count(c, 'roofBatten');
@@ -182,7 +185,7 @@ function covering(c: Ctx): string[] {
   const out: string[] = [];
   const l = (id: string) => line(c, id);
   const tiles = l('roof.tiles');
-  if (tiles) out.push(`Rakd fel ${az(qty(tiles))} cserepet soronként, az eresztől a gerinc felé.`);
+  if (tiles) out.push(`Rakd fel ${az(qty(tiles))} cserepet soronként, ${upward(c.plan)}.`);
   const clips = l('fix.tileClips');
   if (clips) out.push(`Rögzítsd a cserepeket cserépkapoccsal az eresznél és az oromnál (${qty(clips)}).`);
   const trap = l('roof.trapezoid');
@@ -192,7 +195,7 @@ function covering(c: Ctx): string[] {
   const epdm = l('roof.epdm');
   if (epdm) out.push(`Terítsd ki és ragaszd le az EPDM-lemezt (${qty(epdm)}), a széleken ${formatCm(EPDM_UPTURN)} felhajtással.`);
   const seam = l('roof.standingSeam');
-  if (seam) out.push(`Rakd fel ${az(qty(seam))} állókorcos sávot az eresztől a gerincig.`);
+  if (seam) out.push(`Rakd fel ${az(qty(seam))} állókorcos sávot az eresztől ${c.plan.roof.shape === 'gable' ? 'a gerincig' : 'a felső szélig'}.`);
   const sc = l('fix.seamClips');
   const scs = l('fix.seamClipScrews');
   if (sc) out.push(`Rögzítsd a sávokat ${qty(sc)} klipsszel${scs ? ` (${qty(scs)} csavar)` : ''}, majd zárd a korcokat.`);
@@ -279,7 +282,7 @@ export function stepTodo(plan: Plan, scene: Scene, step: AssemblyStep): string[]
     case 'exterior': out = exterior(c); break;
     case 'interior': out = interior(c); break;
   }
-  for (const f of FILLERS[key]) {
+  for (const f of FILLERS[key].map(x => x.replace('{fel}', upward(plan)))) {
     if (out.length >= MIN_TODO) break;
     if (!out.includes(f)) out.push(f);
   }
