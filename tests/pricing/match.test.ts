@@ -278,3 +278,25 @@ describe('beépített árlista', () => {
     for (const l of timber) expect(matchLine(l, pl, plan), l.id).toHaveProperty('productId');
   });
 });
+
+describe('állókorcos alumíniumlemez', () => {
+  const IDS = ['roof.standingSeam', 'roof.seamEaveFlashing', 'roof.seamRakeFlashing', 'acc.ridgeCap', 'fix.seamClips', 'fix.seamClipScrews'];
+  it('nincs Káplár-termék, nem omlik össze, kézi ár adható', () => {
+    for (const pl of [PL, BUNDLED_PRICE_LIST!]) {
+      const plan = createDefaultPlan(); plan.roof.covering = 'standingSeam';
+      const out = calculate(plan, supplyFromPriceList(pl));
+      for (const id of IDS) {
+        const l = out.lines.find(x => x.id === id);
+        expect(l, id).toBeDefined();
+        expect(matchLine(l!, pl, plan), id).toMatchObject({ missing: true });
+      }
+    }
+    expect(expectedKind({ id: 'roof.standingSeam', unit: 'db' })).toBe('roofing');
+  });
+  it('az elválasztó alátétréteg fóliaként párosul', () => {
+    const { plan, line } = setup(p => { p.roof.covering = 'standingSeam'; });
+    const base = setup();
+    expect(line('roof.underlay').name).toBe('Elválasztó (szellőző) alátétréteg');
+    expect(matchLine(line('roof.underlay'), PL, plan)).toEqual(matchLine(base.line('roof.underlay'), PL, base.plan));
+  });
+});

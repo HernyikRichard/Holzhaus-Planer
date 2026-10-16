@@ -3,7 +3,7 @@ import { calcFasteners } from '../../src/calc/fasteners';
 test('fasteners from fastener points', () => {
   const lines = calcFasteners({ osbSheets: 2, studs: 0, headers: 0, collarPairs: 0, rafters: 0,
     anchorPoints: 22, counterBattenLength: 37412, battenCrossings: 288, claddingArea: 0, tileClips: 0,
-    frameScrewCount: 436, osbScrewCount: 540, hurricaneTieCount: 36 });
+    frameScrewCount: 436, osbScrewCount: 540, hurricaneTieCount: 36, seamClips: 0, seamClipScrews: 0 });
   const q = (id: string) => lines.find(l => l.id === id)?.quantity;
   const l = (id: string) => lines.find(x => x.id === id)!;
   expect(q('fix.anchors')).toBe(22);
@@ -20,6 +20,7 @@ test('fasteners from fastener points', () => {
 });
 test('no hurricane ties line without points', () => {
   const lines = calcFasteners({ osbSheets: 0, studs: 0, headers: 0, collarPairs: 0, rafters: 0, anchorPoints: 0,
-    counterBattenLength: 0, battenCrossings: 0, claddingArea: 0, tileClips: 0, frameScrewCount: 0, osbScrewCount: 0, hurricaneTieCount: 0 });
+    counterBattenLength: 0, battenCrossings: 0, claddingArea: 0, tileClips: 0, frameScrewCount: 0, osbScrewCount: 0, hurricaneTieCount: 0,
+    seamClips: 0, seamClipScrews: 0 });
   expect(lines).toEqual([]);
 });

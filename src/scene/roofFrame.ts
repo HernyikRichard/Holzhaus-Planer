@@ -1,5 +1,5 @@
 import type { Plan } from '../model/types';
-import { BATTEN_GAUGE, COUNTER_BATTEN_SECTION, FRAME_SCREWS_PER_END, FRAME_SCREW_LABEL, HURRICANE_TIE_LABEL, ROOF_BATTEN_SECTION } from '../catalog';
+import { BATTEN_GAUGE, COUNTER_BATTEN_SECTION, DECKING_REQUIRED, FRAME_SCREWS_PER_END, FRAME_SCREW_LABEL, HURRICANE_TIE_LABEL, ROOF_BATTEN_SECTION } from '../catalog';
 import { roofGeometry } from '../calc/geometry';
 import type { Element, ElementKind, FastenerRef, Geom } from './types';
 
@@ -65,7 +65,7 @@ export function roofElements(plan: Plan): { elements: Element[]; fasteners: Fast
     }
   }
 
-  const forced = covering === 'shingle' || covering === 'epdm';
+  const forced = DECKING_REQUIRED.has(covering);
   const layer = (kind: string) => layers.find(l => l.kind === kind);
   if (!forced && layer('counterBatten')?.enabled) {
     for (const group of groups) {

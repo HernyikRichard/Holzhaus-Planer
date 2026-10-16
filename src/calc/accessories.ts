@@ -73,6 +73,15 @@ export function calcAccessories(plan: Plan): ModuleResult {
       explanation: `${hu(rm)} m gerinchossz × ${hu(RIDGE_TILES_PER_M)} db/m = ${hu(need)} → ${qty} db`,
     });
   }
+  if (g.shape === 'gable' && acc.ridgeTiles && plan.roof.covering === 'standingSeam') {
+    // állókorcos lemeznél gerinccserép helyett gerincfedő lemez, folyóméterben
+    const rm = g.ridgeLength / 1000;
+    const qty = ceilTo(rm, 0.1);
+    add({
+      id: 'acc.ridgeCap', name: 'Gerincfedő', quantity: qty, unit: 'm',
+      explanation: `Gerinchossz ${hu(rm, 3)} m → ${hu(qty, 1)} m`,
+    });
+  }
   if (g.shape === 'gable' && acc.ridgeVent) {
     const rm = g.ridgeLength / 1000;
     const qty = ceilTo(rm, 0.1);

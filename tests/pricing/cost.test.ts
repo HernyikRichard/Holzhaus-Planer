@@ -203,3 +203,15 @@ describe('informational foundation lines', () => {
     expect(s.missingCount).toBe(s.lines.filter(l => l.total === undefined).length - 3);
   });
 });
+
+describe('állókorcos alumíniumlemez ára', () => {
+  it('ár nélkül hiányzó, kézi árral custom', () => {
+    const seam = (x: Partial<NonNullable<Plan['pricing']>> = {}): Plan => {
+      const p = withPricing(createDefaultPlan(), x); p.roof = { ...p.roof, covering: 'standingSeam' }; return p;
+    };
+    const miss = cost(seam()).lines.find(l => l.lineId === 'roof.standingSeam')!;
+    expect(miss.source).toBe('missing');
+    const priced = cost(seam({ custom: { 'roof.standingSeam': 12000 } })).lines.find(l => l.lineId === 'roof.standingSeam')!;
+    expect(priced).toMatchObject({ source: 'custom', unitPrice: 12000, total: 20 * 12000 });
+  });
+});
