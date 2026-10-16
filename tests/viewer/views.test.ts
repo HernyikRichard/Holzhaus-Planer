@@ -230,3 +230,31 @@ test('OSB screw dots have no enlarged transparent hit stroke, other screw dots d
   const frame = s.match(/<circle[^>]*fx-frameScrew[^>]*>/)![0];
   expect(frame).toContain('stroke="transparent"');
 });
+
+test('floor plan draws each rotated corner stud as a 100 x 50 rectangle flush with the inner face (L with the end stud)', () => {
+  const doc = new DOMParser().parseFromString(
+    renderStandalone({ plan: p, scene: sc, view: 'floor', layers: all, palette: PRINT_PALETTE }), 'image/svg+xml');
+  const rect = (id: string) => {
+    const el = doc.querySelector(`[data-el="${id}"] rect`)!;
+    return ['x', 'y', 'width', 'height'].map(k => Number(el.getAttribute(k)));
+  };
+  const corners = sc.elements.filter(e => e.kind === 'cornerStud');
+  expect(corners.length).toBe(4);
+  // K fal (x = 3000-től befelé, u lefelé): sarokoszlop u 50…150, mélység 50…100 -> x 2900…2950, y 50…150
+  expect(rect('wall.E.cornerStud.1')).toEqual([2900, 50, 50, 100]);
+  // a vég oszlop (u 0…50) a teljes 100 mm mélységben: együtt L alakot adnak
+  const endStud = sc.elements.find(e => e.group === 'wall.E' && e.kind === 'stud' && e.geom.u === 0)!;
+  expect(rect(endStud.id)).toEqual([2900, 0, 100, 50]);
+  for (const e of corners) {
+    const [, , w, h] = rect(e.id);
+    expect([w, h].sort((a, b) => a - b)).toEqual([50, 100]);
+  }
+});
+
+test('wall elevation draws the rotated corner stud with its 100 mm width', () => {
+  const doc = new DOMParser().parseFromString(
+    renderStandalone({ plan: p, scene: sc, view: 'wall.E', layers: all, palette: PRINT_PALETTE }), 'image/svg+xml');
+  const rects = Array.from(doc.querySelectorAll('[data-el="wall.E.cornerStud.1"] rect'));
+  expect(rects.length).toBeGreaterThan(0);
+  expect(Number(rects[0].getAttribute('width'))).toBe(100);
+});

@@ -35,9 +35,18 @@ test('no fastener inside an opening', () => {
 test('anchors on N wall', () => {
   expect(s.fasteners.filter(f => f.group === 'wall.N' && f.kind === 'anchor').map(f => f.u)).toEqual([150, 950, 1750, 2550, 2650]);
 });
-test('E wall corner studs', () => {
+test('E wall: one rotated corner stud per corner (L with the end stud)', () => {
   const c = s.elements.filter(e => e.group === 'wall.E' && e.kind === 'cornerStud');
-  expect(c.map(e => e.geom.u)).toEqual([50, 100, 3850, 3900]);
+  expect(c.map(e => e.geom.u)).toEqual([50, 3850]);          // t, len − t − w (len 4000, t 50, w 100)
+  for (const e of c) {
+    expect(e.geom).toMatchObject({ w: 100, v: 50 });
+    expect(e.rotated).toBe(true);
+    expect(e.label).toMatch(/^Sarokoszlop \(elforgatva\) #\d$/);
+    expect(e.fasteners.length).toBe(2);                       // alul + felül
+  }
+  const endStuds = s.elements.filter(e => e.group === 'wall.E' && e.kind === 'stud' && (e.geom.u === 0 || e.geom.u === 3950));
+  expect(endStuds.length).toBe(2);
+  expect(s.elements.filter(e => e.kind === 'cornerStud' && e.group !== 'wall.E' && !e.rotated)).toEqual([]);
 });
 test('top plate #1 is the upper plate; mono wall angle is negative', () => {
   const p = createDefaultPlan();

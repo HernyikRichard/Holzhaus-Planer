@@ -5,7 +5,7 @@ import { calcWallFraming } from '../../src/calc/walls';
 test('default plan framing totals', () => {
   const r = calcWallFraming(createDefaultPlan());
   expect(r.lines).toEqual([]);
-  expect(r.pieces.filter(x => x.label === 'sarokoszlop')).toHaveLength(8);
+  expect(r.pieces.filter(x => x.label === 'sarokoszlop')).toHaveLength(4); // egy elforgatott sarokoszlop sarkonként (4 sarok), nem kettő
   expect(r.pieces.filter(x => x.label === 'koszorú').reduce((s, x) => s + x.length, 0)).toBe(2 * (4000 * 2 + 2800 * 2));
   expect(r.pieces.some(x => x.label === 'oromoszlop')).toBe(true);
   expect(r.stats.headers).toBe(2);

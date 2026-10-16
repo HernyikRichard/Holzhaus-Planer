@@ -95,7 +95,9 @@ export function drawFloorPlan(ctx: ViewCtx): string {
         body += elGroup(e.id, e.kind, box(kit, m, 0, g.length, 0, sw, `${kit.fill('line', 0.08)} ${kit.stroke('line')}`));
       }
       for (const e of els.filter(x => PLAN_KINDS.has(x.kind))) {
-        body += elGroup(e.id, e.kind, box(kit, m, e.geom.u, e.geom.u + e.geom.w, 0, sw, elStyle(kit, e.kind)));
+        // az elforgatott sarokoszlop (w × t) a belső síkhoz simul: L alakot ad a végoszloppal
+        const d0 = e.rotated ? sw - plan.walls.studSection.t : 0;
+        body += elGroup(e.id, e.kind, box(kit, m, e.geom.u, e.geom.u + e.geom.w, d0, sw, elStyle(kit, e.kind)));
       }
       for (const e of els.filter(x => x.kind === 'opening')) {
         const o = plan.openings.find(op => op.id === e.openingId);

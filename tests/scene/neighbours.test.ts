@@ -54,9 +54,9 @@ test('coincident neighbours: nearest wins, tie -> smaller id', () => {
   const s2: Scene = { elements: [el('me', 500), el('b', 100), el('a', 100)], fasteners: [], cut: {} };
   expect(neighbours(s2, 1000, 'me').left).toBe('a');
 });
-test('cornerStud cluster has zero clear space', () => {
-  const n = neighbours(sc, 4000, 'wall.E.cornerStud.2');
-  expect(n).toMatchObject({ left: 'wall.E.cornerStud.1', axisLeft: 50, clearLeft: 0 });
+test('rotated cornerStud touches the end stud (zero clear space, uses its 100 mm width)', () => {
+  const n = neighbours(sc, 4000, 'wall.E.cornerStud.1');
+  expect(n).toMatchObject({ axisLeft: 75, clearLeft: 0 });  // vég oszlop közepe 25, a sarokoszlop közepe 100 (u 50…150)
 });
 test('window cripples', () => {
   const low = neighbours(sc, 4000, 'wall.E.cripple.1');
