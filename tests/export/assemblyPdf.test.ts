@@ -8,6 +8,7 @@ import { buildAssembly } from '../../src/assembly/steps';
 import { stepOfSolid } from '../../src/assembly/solids';
 import { buildModel3d } from '../../src/three-d/model';
 import { exportPdf } from '../../src/export/pdf';
+import { PRINT_PALETTE } from '../../src/viewer/theme';
 import { assemblyRendererLoader, renderAssemblyImages } from '../../src/export/assemblyImages';
 
 // 1×1-es PNG: a jsPDF valódi képként be tudja olvasni
@@ -20,6 +21,7 @@ const rec = vi.hoisted(() => ({
   fail: null as Error | null,
   snapshots: 0,
   longStep: false,
+  opts: undefined as unknown,
 }));
 
 vi.mock('jspdf', async importOriginal => {
@@ -43,7 +45,8 @@ vi.mock('jspdf', async importOriginal => {
 });
 
 vi.mock('../../src/three-d/renderer', () => ({
-  createRenderer() {
+  createRenderer(_c: unknown, opts: unknown) {
+    rec.opts = opts;
     if (rec.fail) throw rec.fail;
     return {
       setModel: vi.fn(), setVisible: vi.fn(), setHighlight: vi.fn(), setHover: vi.fn(), pick: vi.fn(),
@@ -115,6 +118,8 @@ test('images added when snapshots available', async () => {
   await exportPdf(plan, output, OPTS);
   expect(rec.snapshots).toBe(steps.length);
   expect(rec.images).toBe(steps.length);
+  // nyomtatási paletta: fehér háttér, sötét vonalak (mint a PDF rajzai)
+  expect(rec.opts).toEqual({ preserveDrawingBuffer: true, palette: PRINT_PALETTE });
 });
 
 test('no webgl: chapter without images, export succeeds', async () => {

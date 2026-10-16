@@ -1,6 +1,7 @@
 import type { Model3d, Solid } from '../three-d/model';
 import type { AssemblyStep } from '../assembly/steps';
 import { filterModel } from '../assembly/solids';
+import { PRINT_PALETTE } from '../viewer/theme';
 // csak típus: a kirajzoló (és vele a Three.js) dinamikusan töltődik, külön chunkba
 import type { Renderer3d } from '../three-d/renderer';
 
@@ -28,7 +29,7 @@ export async function renderAssemblyImages(
   try {
     const mod = await assemblyRendererLoader.load();
     const canvas = document.createElement('canvas');
-    r = mod.createRenderer(canvas, { preserveDrawingBuffer: true });
+    r = mod.createRenderer(canvas, { preserveDrawingBuffer: true, palette: PRINT_PALETTE });
   } catch (err) {
     if (!(err instanceof Error && err.message === 'webgl')) console.warn('Szerelési útmutató: a 3D képek kimaradnak.', err);
     return none;

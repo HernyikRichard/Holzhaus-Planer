@@ -20,7 +20,8 @@ export interface Renderer3d {
 const FOV = 35;
 
 /** WebGL hiányában (vagy ha a kontextus nem jön létre) `Error('webgl')`. */
-export function createRenderer(canvas: HTMLCanvasElement, opts?: { preserveDrawingBuffer?: boolean }): Renderer3d {
+export function createRenderer(canvas: HTMLCanvasElement, opts?: { preserveDrawingBuffer?: boolean; palette?: Record<string, string> }): Renderer3d {
+  const palette = opts?.palette ?? SCREEN_PALETTE;
   let renderer: THREE.WebGLRenderer;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: opts?.preserveDrawingBuffer ?? false });
@@ -30,7 +31,7 @@ export function createRenderer(canvas: HTMLCanvasElement, opts?: { preserveDrawi
   renderer.setPixelRatio(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(SCREEN_PALETTE.bg);
+  scene.background = new THREE.Color(palette.bg);
   const camera = new THREE.PerspectiveCamera(FOV, 1, 10, 1e6);
   scene.add(camera);
   scene.add(new THREE.AmbientLight(0xffffff, 1.1));
@@ -84,7 +85,7 @@ export function createRenderer(canvas: HTMLCanvasElement, opts?: { preserveDrawi
       const first = current === null;
       current?.dispose();
       if (current) scene.remove(current.root);
-      current = buildThreeModel(m);
+      current = buildThreeModel(m, palette);
       current.setVisible(visible);
       current.setHighlight(highlight);
       current.setHover(hover);

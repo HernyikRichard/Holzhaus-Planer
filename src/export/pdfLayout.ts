@@ -84,7 +84,7 @@ export function assemblyTableRows(step: AssemblyStep): string[][] {
   ];
 }
 
-export const CUT_PLAN_HEADER =['Keresztmetszet', 'Szál', 'Darabok', 'Maradék'];
+export const CUT_PLAN_HEADER = ['Keresztmetszet', 'Szál', 'Darabok', 'Maradék'];
 
 /** A vágási terv táblázatsorai: az azonos látható szövegű szálak egy sorban ("5 m × 11"), a darabok hossza cm-ben. */
 export function cutPlanRows(scene: Scene): string[][] {

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { createDefaultPlan } from '../../src/model/defaults';
 import { buildScene } from '../../src/scene/build';
 import { buildModel3d, solidBounds, type Model3d, type Solid, type Vec3 } from '../../src/three-d/model';
+import { PRINT_PALETTE, SCREEN_PALETTE } from '../../src/viewer/theme';
 import { buildThreeModel, modelToThree, presetCamera, solidGeometry, type ViewPreset } from '../../src/three-d/threeScene';
 
 const plan = createDefaultPlan();
@@ -268,5 +269,26 @@ describe('presetCamera', () => {
     const east = modelToThree([bounds.max[0], center[1], center[2]]).project(cam);
     expect(north.y).toBeGreaterThan(0);
     expect(east.x).toBeGreaterThan(0);
+  });
+});
+
+describe('buildThreeModel palette', () => {
+  const colors = (tm: ReturnType<typeof buildThreeModel>) => {
+    tm.setHighlight([model.solids.find(x => x.elementId)!.elementId!]);
+    let hl: THREE.MeshStandardMaterial | null = null; let edge: THREE.LineBasicMaterial | null = null;
+    tm.root.traverse(o => {
+      if (o.userData.overlay === 'highlight') hl = (o as THREE.Mesh).material as THREE.MeshStandardMaterial;
+      if (o instanceof THREE.LineSegments) edge = o.material as THREE.LineBasicMaterial;
+    });
+    return { hl: hl!, edge: edge! };
+  };
+  it('screen palette by default, print palette highlight and darker edges on request', () => {
+    const screen = buildThreeModel(model);
+    const print = buildThreeModel(model, PRINT_PALETTE);
+    const a = colors(screen); const b = colors(print);
+    expect('#' + a.hl.color.getHexString()).toBe('#' + new THREE.Color(SCREEN_PALETTE.highlight).getHexString());
+    expect('#' + b.hl.color.getHexString()).toBe('#' + new THREE.Color(PRINT_PALETTE.highlight).getHexString());
+    expect(b.edge.opacity).toBeGreaterThan(a.edge.opacity);
+    screen.dispose(); print.dispose();
   });
 });
