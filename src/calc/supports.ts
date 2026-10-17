@@ -74,7 +74,19 @@ function pierSide(kind: PierKind): Mm {
   return Math.round(PIER_TUBE_D / Math.SQRT2);
 }
 
-const stirrupLen = (side: Mm): Mm => 4 * (Math.max(side, 100) - 2 * REBAR_COVER) + 100;
+/** A pillér megnevezése a rajzokon és a buborékban: „25×25 cm-es zsalukő pillér” / „Ø20 cm-es zsalucső pillér”. */
+export function pierDesc(kind: PierKind): string {
+  if (kind === 'tube200') return `Ø${PIER_TUBE_D / 10} cm-es zsalucső pillér`;
+  const s = kind === 'block200' ? 20 : 25;
+  return `${s}×${s} cm-es zsalukő pillér`;
+}
+
+/** A pillér befoglaló oldala a rajzon (zsalucsőnél az átmérő). */
+export function pierWidth(kind: PierKind): Mm {
+  return kind === 'tube200' ? PIER_TUBE_D : kind === 'block200' ? 200 : 250;
+}
+
+const stirrupLen =(side: Mm): Mm => 4 * (Math.max(side, 100) - 2 * REBAR_COVER) + 100;
 
 /** Pontalap / betonpillér: a támaszok mennyiségei (a rajz, a 3D és az anyaglista közös forrása). */
 export function supportQuantities(plan: Plan): SupportQuantities {

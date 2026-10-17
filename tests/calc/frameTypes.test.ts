@@ -36,8 +36,12 @@ describe.each(['padFooting', 'concretePier'] as const)('%s keret', type => {
     const p = mk(type);
     const scene = buildScene(p);
     const screw = buildScene(mk('groundScrew'));
-    const ids = (s: typeof scene) => s.elements.filter(e => ['support', 'beam', 'joist'].includes(e.kind)).map(e => `${e.id}:${e.geom.u},${e.geom.v},${e.geom.w},${e.geom.h}`);
+    const ids = (s: typeof scene) => s.elements.filter(e => ['beam', 'joist'].includes(e.kind)).map(e => `${e.id}:${e.geom.u},${e.geom.v},${e.geom.w},${e.geom.h}`);
     expect(ids(scene)).toEqual(ids(screw));
+    // a támasz ugyanazon a tengelyen áll, de a geomja a talp négyzete (Task 3)
+    const centres = (s: typeof scene) => s.elements.filter(e => e.kind === 'support').map(e => `${e.id}:${e.geom.u + e.geom.w / 2},${e.geom.v + e.geom.h / 2}`);
+    expect(centres(scene)).toEqual(centres(screw));
+    for (const e of scene.elements.filter(x => x.kind === 'support')) expect([e.geom.w, e.geom.h]).toEqual([p.foundation.footing.size, p.foundation.footing.size]);
     expect(scene.elements.some(e => e.kind === 'meshSheet')).toBe(false);
     expect(floorTopZ(p)).toBe(frameLayout(p).z.floorTop);
   });

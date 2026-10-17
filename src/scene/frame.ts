@@ -31,6 +31,7 @@ export function beamSegments(L: Mm, supportAxes: Mm[], stockLengths: Mm[]): Arra
 export function frameElements(plan: Plan): { elements: Element[]; fasteners: FastenerRef[] } {
   if (!hasFrame(plan) || !floorOn(plan)) return { elements: [], fasteners: [] };
   const supportLabel = supportSpec(plan).label;
+  const screw = plan.foundation.type === 'groundScrew';
   const f = frameLayout(plan);
   const { length: screwLen, diameter: d } = plan.foundation.groundScrew;
   const { beam } = f;
@@ -45,9 +46,11 @@ export function frameElements(plan: Plan): { elements: Element[]; fasteners: Fas
       sn++;
       const id = `frame.support.${sn}`;
       supportIds[bi].push(id);
+      // talajcsavarnál a csavar átmérője, pontalapnál/betonpillérnél a talp négyzete a tengely körül
+      const r = screw ? d / 2 : plan.foundation.footing.size / 2;
       elements.push({
         id, kind: 'support', label: `${supportLabel} #${sn}`, group: 'frame', category: 'Alap',
-        length: screwLen, geom: rect(f, a - d / 2, a + d / 2, c - d / 2, c + d / 2), fasteners: [],
+        length: screw ? screwLen : plan.foundation.footing.depth, geom: rect(f, a - r, a + r, c - r, c + r), fasteners: [],
       });
     }
   });
