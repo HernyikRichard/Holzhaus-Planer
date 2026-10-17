@@ -45,7 +45,7 @@ describe.each(['padFooting', 'concretePier'] as const)('%s keret', type => {
   test('anyaglista: nincs betonlemez, a padló kötelező, a főgerenda és a gerendasaru megvan', () => {
     const p = mk(type); p.floor.enabled = false;
     const ids = calculate(p).lines.map(l => l.id);
-    expect(ids).not.toContain('foundation.concrete');
+    expect(ids).not.toContain('foundation.bed'); // a beton a talpaké (Task 2), betonlemez-sor nincs
     expect(ids.some(i => i.startsWith('foundation.mesh'))).toBe(false);
     expect(ids).toContain('foundation.joistHangers');
     expect(ids).toContain('floor.osb');

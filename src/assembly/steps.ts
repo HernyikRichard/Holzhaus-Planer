@@ -119,6 +119,7 @@ export function stepIdOfLine(line: Pick<MaterialLine, 'id'>, plan?: Plan): Assem
     return LAST;
   }
   if (s === null || !plan) return s;
+  if (s === 'foundation' && hasFrame(plan)) return 'supports';
   if (s.startsWith('wall.')) return wallOrder(plan)[0];
   if (line.id === 'fix.osbScrews') return osbScrewStep(plan);
   return s;

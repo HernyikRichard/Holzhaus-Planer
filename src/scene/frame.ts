@@ -1,6 +1,7 @@
 import type { Mm, Plan } from '../model/types';
 import { BEAM_BOLTS_PER_SUPPORT } from '../catalog';
 import { floorOn, frameLayout, framePt, hasFrame, type FrameLayout } from '../calc/frame';
+import { supportSpec } from '../calc/supports';
 import type { Element, FastenerRef, Geom } from './types';
 
 /** Keretkoordináta-téglalap (l a gerendák mentén, w rájuk merőlegesen) → világ-geom. */
@@ -29,7 +30,7 @@ export function beamSegments(L: Mm, supportAxes: Mm[], stockLengths: Mm[]): Arra
 /** Gerendakeret: támaszok, főgerendák, párnafák és rögzítési pontok (alaprajzi koordináták). */
 export function frameElements(plan: Plan): { elements: Element[]; fasteners: FastenerRef[] } {
   if (!hasFrame(plan) || !floorOn(plan)) return { elements: [], fasteners: [] };
-  const supportLabel = plan.foundation.type === 'groundScrew' ? 'Talajcsavar' : 'Támasz';
+  const supportLabel = supportSpec(plan).label;
   const f = frameLayout(plan);
   const { length: screwLen, diameter: d } = plan.foundation.groundScrew;
   const { beam } = f;
