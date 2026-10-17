@@ -2,6 +2,7 @@ import type { Plan } from '../model/types';
 import type { MaterialLine, ModuleResult } from './types';
 import { FOIL_ROLL_M2, INSULATION_PACK_M2, OSB_TG_SHEET } from '../catalog';
 import { emptyResult, hu } from './util';
+import { floorOn } from './frame';
 import { missingSupplyWarning, type Supply } from '../pricing/supplyTypes';
 import { floorElements } from '../scene/misc';
 import { elementsToPieces } from '../scene/toPieces';
@@ -9,10 +10,12 @@ import { elementsToPieces } from '../scene/toPieces';
 export function calcFloor(plan: Plan, supply?: Supply): ModuleResult {
   const res = emptyResult();
   const fl = plan.floor;
-  if (!fl.enabled) return res;
+  if (!floorOn(plan)) return res;
   const wall = plan.walls.studSection.w;
-  const innerX = plan.building.width - 2 * wall;
-  const innerY = plan.building.length - 2 * wall;
+  // talajcsavarnál a padló a falak alá is fut: a teljes alapterület
+  const full = plan.foundation.type === 'groundScrew';
+  const innerX = full ? plan.building.width : plan.building.width - 2 * wall;
+  const innerY = full ? plan.building.length : plan.building.length - 2 * wall;
   const area = (innerX / 1000) * (innerY / 1000);
   const dims = `${hu(innerX / 1000)} × ${hu(innerY / 1000)} m = ${hu(area)} m²`;
   const add = (l: Omit<MaterialLine, 'category'>): void => {

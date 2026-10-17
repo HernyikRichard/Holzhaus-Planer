@@ -9,7 +9,7 @@ import { STEPS, type LayerId, type StepId, type ViewId } from './steps';
 function viewOfGroup(group: string): ViewId {
   if (group.startsWith('wall.')) return group as ViewId;
   if (group.startsWith('roof.')) return 'roof';
-  if (group === 'foundation') return 'foundation';
+  if (group === 'foundation' || group === 'frame') return 'foundation';
   return 'floor';
 }
 
@@ -23,7 +23,8 @@ export function stepForView(view: ViewId): StepId {
 }
 
 const TIMBER = /^timber\.([^.]+)\.(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)\.(\d+(?:\.\d+)?)$/;
-const FASTENER_LINES: Record<string, FastenerKind> = {
+/** A rajzolt rögzítési pontok beszerzési sora (anyaglista-sor id → rögzítőfajta). */
+export const FASTENER_LINES: Record<string, FastenerKind> = {
   'fix.anchors': 'anchor', 'fix.frameScrews': 'frameScrew', 'fix.osbScrews': 'osbScrew', 'fix.hurricaneTies': 'hurricaneTie',
 };
 

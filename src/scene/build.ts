@@ -8,17 +8,19 @@ import { wallOsbElements } from './wallSheathing';
 import { roofElements } from './roofFrame';
 import { accessoryElements, floorElements, foundationElements } from './misc';
 import { elementsToPieces } from './toPieces';
+import { frameElements } from './frame';
 import type { Element, FastenerRef, Scene } from './types';
 
 export function buildScene(plan: Plan, supply?: Supply): Scene {
   const wall = wallFrameElements(plan);
   const osb = wallOsbElements(plan, wall.elements, supply);
+  const frame = frameElements(plan);
   const roof = roofElements(plan);
   const elements: Element[] = [
-    ...foundationElements(plan), ...floorElements(plan), ...wall.elements, ...osb.elements,
+    ...foundationElements(plan), ...frame.elements.filter(e => e.kind !== 'joist'), ...floorElements(plan), ...wall.elements, ...osb.elements,
     ...roof.elements, ...accessoryElements(plan),
   ];
-  const fasteners: FastenerRef[] = [...wall.fasteners, ...osb.fasteners, ...roof.fasteners];
+  const fasteners: FastenerRef[] = [...frame.fasteners, ...wall.fasteners, ...osb.fasteners, ...roof.fasteners];
   // a fali lécek pozíció nélküli darabok (nincs Elementjük), de a vágási kiosztásban szerepelniük kell
   const pieces: TimberPiece[] = [...elementsToPieces(elements), ...wallBattenPieces(plan)];
   return { elements, fasteners, cut: assignCuts(pieces, plan.settings.stockLengths, supply) };

@@ -1,5 +1,8 @@
 import type { Plan, RoofCovering, RoofLayerKind, WallLayerKind } from '../../model/types';
-import { COUNTER_BATTEN_SECTION, ROOF_BATTEN_SECTION } from '../../catalog';
+import {
+  BEAM_SECTIONS, COUNTER_BATTEN_SECTION, DECKING_REQUIRED, GROUND_SCREW_LABEL, ROOF_BATTEN_SECTION, SCREW_HEAD_H,
+} from '../../catalog';
+import { frameLayout } from '../../calc/frame';
 import { COVERING_T, DECKING_T, FOIL_T, floorTopZ, layerThickness, wallLayerStrips } from '../../scene/layerStack';
 import { cm, type Kit, type Pt } from '../svgKit';
 import { layerG, type ViewCtx } from './common';
@@ -14,6 +17,7 @@ const ROOF_LABEL: Record<RoofLayerKind, string> = {
 };
 const COVERING_LABEL: Record<RoofCovering, string> = {
   tile: 'Cserép', trapezoid: 'Trapézlemez', shingle: 'Zsindely', epdm: 'EPDM fólia',
+  standingSeam: 'Állókorcos alumíniumlemez',
 };
 interface Label { ax: number; az: number; text: string }
 
@@ -30,6 +34,80 @@ function placeLabels(kit: Kit, items: Label[], labelX: number, anchor: 'start' |
     y -= gap;
   }
   return out;
+}
+
+type Box = (x0: number, x1: number, z0: number, z1: number, fill: string) => string;
+interface FrameSection { svg: string; so: number; bottom: number; beamBottom: number; axes: number[] }
+
+const GROUND_MARGIN = 300; // a talajsáv túlnyúlása a ház két oldalán (mm)
+const HATCH = 150;         // a talaj sraffozásának mélysége és lépésköze (mm)
+const HEAD_PLATE = 8;      // az U-fej talplemeze (mm)
+
+/**
+ * Talajcsavaros alap a metszetben (x: 0…S a metszet mentén, z: a talajtól felfelé). Ha a metszet a főgerendákra merőleges,
+ * a főgerendák keresztmetszetben a `beamAxes`-en; ha velük párhuzamos, egy főgerenda hosszmetszete a `supportAxes` támaszaival.
+ */
+function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): FrameSection {
+  const { plan, kit } = ctx;
+  const fl = frameLayout(plan);
+  const { length: len, diameter: d } = plan.foundation.groundScrew;
+  const { beamBottom: bb, beamTop: bt, joistTop: jt, floorTop: ft } = fl.z;
+  const lengthwise = (plan.roof.ridgeDirection === 'x' ? 'y' : 'x') === fl.along;
+  const axes = lengthwise ? fl.supportAxes : fl.beamAxes;
+  const so = GROUND_MARGIN;
+  const bottom = -len - HATCH;
+  const wood = kit.fill('wood', 0.55);
+  const metal = kit.fill('lineMuted', 0.6);
+
+  // talaj: halvány sáv, a felszín alatt ferde sraffozás
+  let ground = box(-so, S + so, bottom, 0, kit.fill('lineMuted', 0.08));
+  for (let x = -so + HATCH; x <= S + so; x += HATCH) ground += kit.line(x, HATCH, x - HATCH, 0, kit.stroke('lineMuted', 0.6));
+  ground += kit.line(-so, 0, S + so, 0, kit.stroke('line', 1.4));
+  let svg = `<g data-layer="ground">${ground}</g>`;
+
+  // csavarok: a talajban szaggatott körvonal, fölötte a cső, az U-fej (szár, talplemez, keresztmetszetben az oldallemezek)
+  const plate = lengthwise ? d * 2 : fl.beam.width + 12;
+  const flange = Math.min(100, fl.beam.height * 0.6);
+  let screws = '';
+  for (const x of axes) {
+    screws += kit.rect(x - d / 2, 0, d, len, `fill="none" ${kit.stroke('line', 0.8, [6, 4])}`);
+    screws += box(x - d / 2, x + d / 2, 0, bb - SCREW_HEAD_H, metal);
+    screws += box(x - d / 4, x + d / 4, bb - SCREW_HEAD_H, bb - HEAD_PLATE, metal);
+    screws += box(x - plate / 2, x + plate / 2, bb - HEAD_PLATE, bb, metal);
+    if (!lengthwise) {
+      screws += box(x - plate / 2, x - plate / 2 + 6, bb, bb + flange, metal);
+      screws += box(x + plate / 2 - 6, x + plate / 2, bb, bb + flange, metal);
+    }
+  }
+  svg += `<g data-layer="groundScrew">${screws}</g>`;
+
+  // főgerenda(k)
+  let beams = '';
+  if (lengthwise) beams = box(0, S, bb, bt, wood);
+  else {
+    for (const c of fl.beamAxes) {
+      for (let k = 0; k < fl.beam.plies; k++) {
+        const x0 = c - fl.beam.width / 2 + k * fl.beam.ply.t;
+        beams += box(x0, x0 + fl.beam.ply.t, bb, bt, wood);
+      }
+    }
+  }
+  svg += `<g data-layer="beam">${beams}</g>`;
+
+  // padló: párnafák (hosszmetszetben keresztmetszetük) és szigetelés, rajta az OSB
+  let floor = box(0, S, bt, ft, kit.fill('insulation', 0.45));
+  if (lengthwise) {
+    const t = plan.floor.joistSection.t;
+    for (const p of fl.joistPositions) floor += box(p, p + t, bt, jt, wood);
+  }
+  floor += box(0, S, jt, ft, wood);
+  svg += `<g data-layer="floor">${floor}</g>`;
+
+  const sw = plan.walls.studSection.w;
+  labels.push({ ax: sw + 100, az: (bt + ft) / 2, text: `Padló – ${ft - bt} mm` });
+  labels.push({ ax: lengthwise ? sw / 2 : axes[0], az: (bb + bt) / 2, text: `Főgerenda ${BEAM_SECTIONS[plan.foundation.frame.beamSection].label}` });
+  labels.push({ ax: axes[0], az: -len / 2, text: GROUND_SCREW_LABEL(d, len) });
+  return { svg, so, bottom, beamBottom: bb, axes };
 }
 
 /** Metszet a gerincre merőlegesen: alap, padló, falak rétegrendje, tető rétegrendje (a régi metszet logikája). */
@@ -57,19 +135,30 @@ export function drawSection(ctx: ViewCtx): string {
   const foundationLabels: Label[] = [];
   let body = '';
 
-  // sóderágy és lemez
-  const so = f.slabOverhang;
-  const bedBottom = -f.slabThickness - f.gravelBedThickness;
-  body += `<g data-layer="gravelBed">${box(-so, S + so, bedBottom, -f.slabThickness, kit.fill('concrete', 0.35))}</g>`;
-  body += `<g data-layer="slab">${box(-so, S + so, -f.slabThickness, 0, kit.fill('concrete', 0.75))}</g>`;
+  let so: number;
+  let bedBottom: number;
+  let frame: FrameSection | null = null;
+  if (f.type === 'groundScrew') {
+    // talajcsavaros keret: talaj, csavarok, U-fejek, főgerenda, padló
+    frame = frameSection(ctx, S, box, foundationLabels);
+    body += frame.svg;
+    so = frame.so;
+    bedBottom = frame.bottom;
+  } else {
+    // sóderágy és lemez
+    so = f.slabOverhang;
+    bedBottom = -f.slabThickness - f.gravelBedThickness;
+    body += `<g data-layer="gravelBed">${box(-so, S + so, bedBottom, -f.slabThickness, kit.fill('concrete', 0.35))}</g>`;
+    body += `<g data-layer="slab">${box(-so, S + so, -f.slabThickness, 0, kit.fill('concrete', 0.75))}</g>`;
 
-  if (plan.floor.enabled) {
-    const jw = plan.floor.joistSection.w;
-    body += `<g data-layer="floor">${box(0, S, 0, zFloor, kit.fill('insulation', 0.45))}${box(0, S, jw, zFloor, wood)}</g>`;
-    foundationLabels.push({ ax: sw + 100, az: zFloor / 2, text: `Padló – ${zFloor} mm` });
+    if (plan.floor.enabled) {
+      const jw = plan.floor.joistSection.w;
+      body += `<g data-layer="floor">${box(0, S, 0, zFloor, kit.fill('insulation', 0.45))}${box(0, S, jw, zFloor, wood)}</g>`;
+      foundationLabels.push({ ax: sw + 100, az: zFloor / 2, text: `Padló – ${zFloor} mm` });
+    }
+    foundationLabels.push({ ax: -so / 2, az: -f.slabThickness / 2, text: `Betonlemez – ${f.slabThickness} mm` });
+    foundationLabels.push({ ax: -so / 2, az: -f.slabThickness - f.gravelBedThickness / 2, text: `Sóderágy – ${f.gravelBedThickness} mm` });
   }
-  foundationLabels.push({ ax: -so / 2, az: -f.slabThickness / 2, text: `Betonlemez – ${f.slabThickness} mm` });
-  foundationLabels.push({ ax: -so / 2, az: -f.slabThickness - f.gravelBedThickness / 2, text: `Sóderágy – ${f.gravelBedThickness} mm` });
 
   // falak: a q koordináta a váz külső síkjától befelé nő (a váz: 0…sw), kifelé negatív
   const wallTops = [zBase + (gable ? 0 : rise), zBase];
@@ -112,8 +201,11 @@ export function drawSection(ctx: ViewCtx): string {
   const rx = S + oe / 2;
   const roofLabels: Label[] = [{ ax: rx, az: zU(rx) + v / 2, text: `Szarufa ${plan.roof.rafterSection.t}×${rafterW}` }];
   const stack: Array<{ kind: string; label: string; t: number; foil: boolean }> = [];
+  // deszkát igénylő héjazatnál a deszkázat mindig, léc és ellenléc soha (mint az anyaglistában és a 3D-ben)
+  const forced = DECKING_REQUIRED.has(plan.roof.covering);
   for (const l of plan.roof.layers) {
-    if (!l.enabled) continue;
+    const on = forced ? l.kind === 'decking' || (l.enabled && l.kind === 'underlay') : l.enabled;
+    if (!on) continue;
     const t = l.kind === 'decking' ? DECKING_T : l.kind === 'underlay' ? FOIL_T
       : l.kind === 'counterBatten' ? COUNTER_BATTEN_SECTION.t : ROOF_BATTEN_SECTION.t;
     stack.push({ kind: l.kind, label: ROOF_LABEL[l.kind], t, foil: l.kind === 'underlay' });
@@ -135,7 +227,12 @@ export function drawSection(ctx: ViewCtx): string {
   let labels = placeLabels(kit, [...wallLabels, ...foundationLabels], -reach, 'end', gap);
   labels += placeLabels(kit, roofLabels, S + reach, 'start', gap);
   let dims = '';
-  if (ctx.on('dims')) {
+  if (ctx.on('dims') && frame) {
+    // talaj → főgerenda alja a jobb oldalon, alul a csavartengelyek lánca és a teljes méret
+    dims += kit.dim(S, Y(0), S, Y(frame.beamBottom), so + fs * 1.2, cm(frame.beamBottom));
+    dims += kit.chain([0, ...frame.axes, S].map((x): Pt => [x, Y(bedBottom)]), fs * 2.4);
+    dims += kit.dim(0, Y(bedBottom), S, Y(bedBottom), fs * 4.8, cm(S));
+  } else if (ctx.on('dims')) {
     dims += kit.dim(0, Y(bedBottom), S, Y(bedBottom), fs * 2.4, cm(S));
     dims += kit.dim(-so, Y(bedBottom), S + so, Y(bedBottom), fs * 4.8, cm(S + 2 * so));
   }

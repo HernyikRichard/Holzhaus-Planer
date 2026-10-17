@@ -6,6 +6,7 @@ import { createUiStore } from '../../src/app/uiStore';
 import type { StepId } from '../../src/app/steps';
 import { StepPanel } from '../../src/app/StepPanel';
 import { TopBar } from '../../src/app/TopBar';
+import { parsePlan } from '../../src/model/serialize';
 import { SECTIONS } from '../../src/ui/fields';
 import { FIXTURE } from '../fixtures/priceList';
 import { MaterialsSettingsStep } from '../../src/app/steps/MaterialsSettingsStep';
@@ -149,17 +150,98 @@ test('step badge shows error for invalid field on another step', () => {
   expect(store.get().lastValidPlan.foundation.slabThickness).not.toBe(10);
 });
 
+describe('Alaptípus', () => {
+  const pressed = (name: string) => screen.getByRole('button', { name }).getAttribute('aria-pressed');
+  test('starts as slab: slab fields shown, screw fields hidden', () => {
+    const { root, field } = setup('foundation');
+    expect(pressed('Betonlemez')).toBe('true');
+    expect(pressed('Talajcsavar')).toBe('false');
+    expect(field('foundation.slabThickness')).not.toBeNull();
+    expect(root.querySelector('[data-path="foundation.frame.groundClearance"]')).toBeNull();
+  });
+  test('switching to ground screw swaps the fields and locks the floor toggle', () => {
+    const { store, root, field } = setup('foundation');
+    fireEvent.click(screen.getByRole('button', { name: 'Talajcsavar' }));
+    expect(store.get().plan.foundation.type).toBe('groundScrew');
+    expect(root.querySelector('[data-path="foundation.slabThickness"]')).toBeNull();
+    for (const p of ['foundation.groundScrew.length', 'foundation.frame.groundClearance',
+      'foundation.frame.beamSection', 'foundation.frame.supportSpacing']) expect(field(p)).not.toBeNull();
+    const floor = field<HTMLInputElement>('floor.enabled');
+    expect(floor.checked).toBe(true);
+    expect(floor.disabled).toBe(true);
+    expect(root.textContent).toContain('Talajcsavaros alapnál a padló a gerendakereten kötelező.');
+    expect(field<HTMLInputElement>('floor.joistSpacing').disabled).toBe(false);
+  });
+  test('round trip restores slab fields and keeps the user floor.enabled', () => {
+    const { store, root, field } = setup('foundation');
+    fireEvent.click(field('floor.enabled'));
+    const user = store.get().plan.floor.enabled;
+    fireEvent.click(screen.getByRole('button', { name: 'Talajcsavar' }));
+    expect(store.get().plan.floor.enabled).toBe(user);
+    fireEvent.click(screen.getByRole('button', { name: 'Betonlemez' }));
+    expect(store.get().plan.foundation.type).toBe('slab');
+    expect(store.get().plan.floor.enabled).toBe(user);
+    expect(field<HTMLInputElement>('floor.enabled').disabled).toBe(false);
+    expect(field<HTMLInputElement>('floor.enabled').checked).toBe(user);
+    expect(field('foundation.slabThickness')).not.toBeNull();
+    expect(root.textContent).not.toContain('kötelező');
+  });
+  test('support spacing options cover 80..250 cm and show a hand-edited value', () => {
+    const { store, field } = setup('foundation');
+    fireEvent.click(screen.getByRole('button', { name: 'Talajcsavar' }));
+    const vals = () => Array.from(field<HTMLSelectElement>('foundation.frame.supportSpacing').options).map(o => o.value);
+    expect(vals()).toEqual(['auto', ...Array.from({ length: 18 }, (_, i) => String(800 + i * 100))]);
+    act(() => store.update(p => { p.foundation.frame.supportSpacing = 1250; }));
+    const sel = field<HTMLSelectElement>('foundation.frame.supportSpacing');
+    expect(vals()).toContain('1250');
+    expect(sel.value).toBe('1250');
+    expect(sel.selectedOptions[0].textContent).toBe('125 cm');
+  });
+  test('support spacing, length and clearance commit numbers; auto stays text', () => {
+    const { store, field, set } = setup('foundation');
+    fireEvent.click(screen.getByRole('button', { name: 'Talajcsavar' }));
+    fireEvent.change(field('foundation.frame.supportSpacing'), { target: { value: '1200' } });
+    expect(store.get().plan.foundation.frame.supportSpacing).toBe(1200);
+    fireEvent.change(field('foundation.frame.supportSpacing'), { target: { value: 'auto' } });
+    expect(store.get().plan.foundation.frame.supportSpacing).toBe('auto');
+    fireEvent.change(field('foundation.groundScrew.length'), { target: { value: '1200' } });
+    expect(store.get().plan.foundation.groundScrew.length).toBe(1200);
+    fireEvent.change(field('foundation.frame.beamSection'), { target: { value: 'b120x120' } });
+    expect(store.get().plan.foundation.frame.beamSection).toBe('b120x120');
+    set('foundation.frame.groundClearance', '10');
+    expect(store.get().plan.foundation.frame.groundClearance).toBe(100);
+    expect(field('foundation.frame.groundClearance').closest('.field')!.querySelector('.field-error')!.textContent)
+      .toMatch(/150/);
+  });
+  test('an old (v2) plan loaded through the store shows slab selected', () => {
+    const { store } = setup('foundation');
+    const v2: any = createDefaultPlan(); v2.version = 2;
+    delete v2.foundation.type; delete v2.foundation.frame; delete v2.foundation.groundScrew;
+    const r = parsePlan(JSON.stringify(v2));
+    if (!r.ok) throw new Error(r.error);
+    act(() => store.replace(r.plan));
+    expect(pressed('Betonlemez')).toBe('true');
+  });
+});
+
 test('step panels together cover exactly the SECTIONS fields (roof.shape on Building only)', () => {
   const all = SECTIONS.flatMap(s => s.fields);
   const sectionPaths = new Set(all.filter(f => f.kind === 'section').map(f => f.path));
   const seen = new Set<string>();
+  const collect = (root: HTMLElement) => root.querySelectorAll<HTMLElement>('[data-path]').forEach(el => {
+    const m = /^(.*).[tw]$/.exec(el.dataset.path!);
+    seen.add(m && sectionPaths.has(m[1]) ? m[1] : el.dataset.path!);
+  });
   const stepsWithShape: StepId[] = [];
   for (const step of ['building', 'foundation', 'walls', 'roof', 'materials'] as StepId[]) {
     const { root } = setup(step);
-    root.querySelectorAll<HTMLElement>('[data-path]').forEach(el => {
-      const m = /^(.*)\.[tw]$/.exec(el.dataset.path!);
-      seen.add(m && sectionPaths.has(m[1]) ? m[1] : el.dataset.path!);
-    });
+    if (step === 'foundation') {
+      // a talajcsavar-szakasz csak talajcsavaros típusnál látszik
+      fireEvent.click(screen.getByRole('button', { name: 'Talajcsavar' }));
+      collect(root);
+      fireEvent.click(screen.getByRole('button', { name: 'Betonlemez' }));
+    }
+    collect(root);
     if (root.querySelector('[data-section="roof-shape"]')) { seen.add('roof.shape'); stepsWithShape.push(step); }
     cleanup();
   }
@@ -213,4 +295,48 @@ test('toStored rounds length fields to whole mm', async () => {
   expect(toStored({ unit: 'mm' }, '12,4')).toBe(12);
   expect(toStored({ unit: '°' }, '12,5')).toBe(12.5);
   expect(toStored({ unit: '%' }, '12,5')).toBe(0.125);
+});
+
+describe('lapostetőre váltás és a héjazat', () => {
+  test.each(['tile', 'shingle'] as const)('%s → EPDM, rövid tájékoztatással', covering => {
+    const { store, root } = setup('building');
+    act(() => store.update(p => { p.roof.covering = covering; }));
+    expect(root.querySelector('[data-notice="flat-covering"]')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Lapos' }));
+    expect(store.get().plan.roof.covering).toBe('epdm');
+    expect(root.querySelector('[data-notice="flat-covering"]')?.textContent).toMatch(/EPDM/);
+  });
+  test.each(['trapezoid', 'epdm'] as const)('%s változatlan, tájékoztatás nélkül', covering => {
+    const { store, root } = setup('building');
+    act(() => store.update(p => { p.roof.covering = covering; }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lapos' }));
+    expect(store.get().plan.roof.covering).toBe(covering);
+    expect(root.querySelector('[data-notice="flat-covering"]')).toBeNull();
+  });
+  test('betöltött lapos + cserép terv nem alakul át, csak figyelmeztet', () => {
+    const { store } = setup('roof');
+    const p = createDefaultPlan(); p.roof.shape = 'flat'; p.roof.pitch = 3;
+    act(() => store.replace(p));
+    expect(store.get().plan.roof.covering).toBe('tile');
+    expect(store.get().output.warnings.some(w => w.includes('tetőhajlást igényel'))).toBe(true);
+  });
+  test('a Tető lépés mutatja a hajlás-figyelmeztetést', () => {
+    const { store, root } = setup('roof');
+    expect(root.querySelector('[data-notice="pitch"]')).toBeNull();
+    act(() => store.update(p => { p.roof.pitch = 12; }));
+    expect(root.querySelector('[data-notice="pitch"]')?.textContent).toContain('legalább 22°-os');
+  });
+});
+
+test('héjazat-választó: állókorcos lemez, és a gerinccserép kapcsoló gerincfedőként jelenik meg', () => {
+  const { store, root, field } = setup('roof');
+  const sel = field<HTMLSelectElement>('roof.covering');
+  expect(Array.from(sel.options).map(o => o.value)).toContain('standingSeam');
+  expect(Array.from(sel.options).find(o => o.value === 'standingSeam')!.textContent).toBe('Állókorcos alumíniumlemez');
+  const caption = () => field('accessories.ridgeTiles').closest('label')!.querySelector('.caption')!.textContent;
+  expect(caption()).toBe('Gerinccserép');
+  sel.value = 'standingSeam'; fireEvent.change(sel);
+  expect(store.get().plan.roof.covering).toBe('standingSeam');
+  expect(caption()).toBe('Gerincfedő');
+  expect(root.querySelector('[data-notice="pitch"]')).toBeNull();
 });

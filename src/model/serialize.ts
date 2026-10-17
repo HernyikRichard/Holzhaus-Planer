@@ -1,11 +1,17 @@
 import type { Plan } from './types';
 import { createDefaultPlan, DEFAULT_PRICING } from './defaults';
 
-export const CURRENT_VERSION = 2;
+export const CURRENT_VERSION = 3;
 
 /** MIGRATIONS[v] a v verziójú nyers adatot v+1 verzióra alakítja. */
 export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {
   1: raw => ({ ...raw, version: 2, pricing: structuredClone(DEFAULT_PRICING) }),
+  // v2 -> v3: betonlemez marad, a gerendakeret és a talajcsavar alapértéket kap
+  2: raw => {
+    const def = createDefaultPlan().foundation;
+    const old = isPlainObject(raw.foundation) ? raw.foundation : {};
+    return { ...raw, version: 3, foundation: { ...old, type: 'slab', frame: structuredClone(def.frame), groundScrew: structuredClone(def.groundScrew) } };
+  },
 };
 
 export type ParseResult = { ok: true; plan: Plan } | { ok: false; error: string };
@@ -22,6 +28,9 @@ class FieldError extends Error {}
 // A nullable mezők (az alapértelmezett érték objektum, de a fájlban null is lehet).
 const NULLABLE_PATHS = new Set(['floor.insulation']);
 
+// 'auto' vagy véges szám lehet (az alapérték 'auto' szöveg).
+const AUTO_OR_NUMBER_PATHS = new Set(['foundation.frame.supportSpacing']);
+
 // Nyílt térképek: a kulcsokat a fájlból vesszük át, az értékeket a checkShape ellenőrzi.
 const OPEN_MAP_PATHS = new Set(['pricing.overrides', 'pricing.custom', 'pricing.productChoice']);
 
@@ -31,6 +40,10 @@ function merge(def: unknown, src: unknown, path: string): unknown {
     return structuredClone(src);
   }
   if (NULLABLE_PATHS.has(path) && src === null) return null;
+  if (AUTO_OR_NUMBER_PATHS.has(path)) {
+    if (src === 'auto' || (typeof src === 'number' && Number.isFinite(src))) return src;
+    throw new FieldError(`A(z) „${path}” mező értéke érvénytelen típusú.`);
+  }
   if (Array.isArray(def)) {
     if (!Array.isArray(src)) throw new FieldError(`A(z) „${path}” mező értéke nem lista.`);
     return structuredClone(src);
@@ -89,10 +102,14 @@ function checkShape(plan: Plan): string | null {
   const checks: [string, boolean][] = [
     ['foundation.concreteGrade', oneOf(plan.foundation.concreteGrade, ['C16', 'C20'])],
     ['foundation.meshType', oneOf(plan.foundation.meshType, ['d4_150', 'd5_150', 'd6_150'])],
+    ['foundation.type', oneOf(plan.foundation.type, ['slab', 'groundScrew'])],
+    ['foundation.frame.beamSection', oneOf(plan.foundation.frame.beamSection, ['b100x150', 'b120x120', 'b2x50x150'])],
+    ['foundation.groundScrew.length', oneOf(plan.foundation.groundScrew.length, [800, 1000, 1200])],
+    ['foundation.groundScrew.diameter', oneOf(plan.foundation.groundScrew.diameter, [76])],
     ['floor.osbThickness', oneOf(plan.floor.osbThickness, [18, 22])],
     ['walls.topPlate', oneOf(plan.walls.topPlate, ['single', 'double'])],
     ['roof.shape', oneOf(plan.roof.shape, ['flat', 'mono', 'gable'])],
-    ['roof.covering', oneOf(plan.roof.covering, ['tile', 'trapezoid', 'shingle', 'epdm'])],
+    ['roof.covering', oneOf(plan.roof.covering, ['tile', 'trapezoid', 'shingle', 'epdm', 'standingSeam'])],
     ['roof.ridgeDirection', oneOf(plan.roof.ridgeDirection, ['x', 'y'])],
   ];
   const ins = plan.floor.insulation;

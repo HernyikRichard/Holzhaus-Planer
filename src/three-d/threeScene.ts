@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Layer3dId, Model3d, Solid, Vec3 } from './model';
-import { SCREEN_PALETTE } from '../viewer/theme';
+import { PRINT_PALETTE, SCREEN_PALETTE } from '../viewer/theme';
 
 /**
  * A `Model3d` → Three.js jelenetfa, WebGL nélkül (Node/jsdom alatt is tesztelhető).
@@ -47,16 +47,23 @@ const MATERIALS: Record<string, MatSpec> = {
   foil: { color: '#cfe4ff', opacity: 0.4 },
   insulation: { color: '#ecd679', opacity: 0.45 },
   metal: { color: '#a3abb4', metalness: 0.6, roughness: 0.4 },
+  metalBuried: { color: '#a3abb4', metalness: 0.6, roughness: 0.4, opacity: 0.35 }, // talaj alatti csavarrész
+  ground: { color: '#8a9a6b', opacity: 0.35 },
   tile: { color: '#b4553c' },
   trapezoid: { color: '#5e6a76', metalness: 0.4, roughness: 0.5 },
   shingle: { color: '#4b5058' },
   epdm: { color: '#33373c' },
+  standingSeam: { color: '#8f979f', metalness: 0.6, roughness: 0.35 }, // alumínium, fémes szürke
 };
 const FALLBACK: MatSpec = { color: '#c6cad0' };
 /** Élvonalak ezeken a fa/OSB anyagokon (küszöbszög 30°). */
 const EDGED = new Set(['timber', 'osb', 'boards']);
 const EDGE_ANGLE = 30;
 const HOVER_COLOR = '#8fd0ff';
+/** A fa- és OSB-élek színe; fehér háttéren (PDF) erősebben, hogy a darabok elváljanak. */
+const EDGE_COLOR = '#4a3a26';
+const EDGE_OPACITY = 0.45;
+const PRINT_EDGE_OPACITY = 0.8;
 
 function makeMaterial(key: string, edged: boolean): THREE.MeshStandardMaterial {
   const s = MATERIALS[key] ?? FALLBACK;
@@ -146,7 +153,8 @@ function mergeSolids(solids: Solid[]): { geometry: THREE.BufferGeometry; starts:
 
 interface Entry { solids: Solid[]; starts: number[] }
 
-export function buildThreeModel(model: Model3d): ThreeModel {
+/** A kiemelés színe a palettából; nyomtatási palettán (fehér háttér) erősebb élvonalak. */
+export function buildThreeModel(model: Model3d, palette: Record<string, string> = SCREEN_PALETTE): ThreeModel {
   const root = new THREE.Group();
   root.name = 'model3d';
   root.scale.set(1, -1, 1);
@@ -161,8 +169,9 @@ export function buildThreeModel(model: Model3d): ThreeModel {
     }
     return m;
   };
-  const edgeMaterial = new THREE.LineBasicMaterial({ color: '#4a3a26', transparent: true, opacity: 0.45, depthWrite: false });
-  const highlightMaterial = overlayMaterial(SCREEN_PALETTE.highlight, 1);
+  const edgeOpacity = palette === PRINT_PALETTE ? PRINT_EDGE_OPACITY : EDGE_OPACITY;
+  const edgeMaterial = new THREE.LineBasicMaterial({ color: EDGE_COLOR, transparent: true, opacity: edgeOpacity, depthWrite: false });
+  const highlightMaterial = overlayMaterial(palette.highlight, 1);
   const hoverMaterial = overlayMaterial(HOVER_COLOR, 2);
 
   const entries = new Map<THREE.Object3D, Entry>();

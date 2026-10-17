@@ -1,8 +1,11 @@
 import { useState } from 'preact/hooks';
 import type { Store } from '../ui/store';
 import { SECTIONS, getPath, type FieldDef } from '../ui/fields';
+import { formatCm } from '../ui/format';
 import { useStore } from './hooks';
 import { applyFieldChange, toDisplay, toStored } from './fieldLogic';
+
+const SUPPORT_SPACING = 'foundation.frame.supportSpacing';
 
 interface Local { text: string; bad: boolean }
 
@@ -22,6 +25,7 @@ export function FieldControl({ def, store }: { def: FieldDef; store: Store }) {
 
   const commit = (path: string, value: unknown) => store.update(draft => applyFieldChange(draft, path, value));
   const unit = def.unit ?? 'mm';
+  const label = def.labelFor?.(plan) ?? def.label;
   const paths = def.kind === 'section' ? [`${def.path}.t`, `${def.path}.w`] : [def.path];
   const storeError = errors.find(e => e.path === def.path || e.path.startsWith(`${def.path}.`));
   const anyBad = paths.some(p => local[p]?.bad);
@@ -48,12 +52,12 @@ export function FieldControl({ def, store }: { def: FieldDef; store: Store }) {
 
   let control;
   if (def.kind === 'number') {
-    control = <>{numberInput(def.path, def.label)}<span class="unit">{unit}</span></>;
+    control = <>{numberInput(def.path, label)}<span class="unit">{unit}</span></>;
   } else if (def.kind === 'section') {
     control = <>
-      {numberInput(paths[0], `${def.label}: vastagság`)}
+      {numberInput(paths[0], `${label}: vastagság`)}
       <span class="unit">×</span>
-      {numberInput(paths[1], `${def.label}: szélesség`)}
+      {numberInput(paths[1], `${label}: szélesség`)}
       <span class="unit">mm</span>
     </>;
   } else if (def.kind === 'select') {
@@ -61,21 +65,29 @@ export function FieldControl({ def, store }: { def: FieldDef; store: Store }) {
     const isThickness = def.path === 'floor.insulation.thickness';
     const shown = def.path === 'floor.insulation.type' ? String(value ?? 'none')
       : isThickness ? String(value ?? plan.floor.insulation?.thickness ?? 100) : String(value);
+    // kézzel szerkesztett, a listában nem szereplő támaszköz: külön opcióként jelenik meg, hogy kijelölt legyen
+    const options = def.options ?? [];
+    const extra = def.path === SUPPORT_SPACING && typeof value === 'number' && !options.some(o => o.value === shown)
+      ? [{ value: shown, label: formatCm(value) }] : [];
     control = (
-      <select data-path={def.path} value={shown} aria-label={def.label}
+      <select data-path={def.path} value={shown} aria-label={label}
         class={invalid ? 'error' : undefined} aria-invalid={invalid ? 'true' : undefined}
         disabled={isThickness && plan.floor.insulation === null}
         onChange={e => {
           const v = e.currentTarget.value;
-          commit(def.path, typeof value === 'number' || isThickness ? Number(v) : v);
+          // a támaszköz 'auto' vagy mm szám; a többi szám-értékű választó számként mentődik
+          const numeric = def.path === SUPPORT_SPACING ? v !== 'auto' : typeof value === 'number' || isThickness;
+          commit(def.path, numeric ? Number(v) : v);
         }}>
-        {(def.options ?? []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        {[...options, ...extra].map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     );
   } else {
+    // talajcsavarnál a padló a gerendakereten kötelező: bekapcsoltnak látszik, a tárolt érték nem változik
+    const locked = def.path === 'floor.enabled' && plan.foundation.type === 'groundScrew';
     control = (
-      <input type="checkbox" data-path={def.path} checked={getPath(plan, def.path) === true}
-        aria-label={def.label} class={invalid ? 'error' : undefined} aria-invalid={invalid ? 'true' : undefined}
+      <input type="checkbox" data-path={def.path} checked={locked || getPath(plan, def.path) === true}
+        disabled={locked} aria-label={label} class={invalid ? 'error' : undefined} aria-invalid={invalid ? 'true' : undefined}
         onChange={e => commit(def.path, e.currentTarget.checked)} />
     );
   }
@@ -85,10 +97,12 @@ export function FieldControl({ def, store }: { def: FieldDef; store: Store }) {
   return (
     <div class={`field field-${def.kind}${wide ? ' field-wide' : ''}`}>
       <label>
-        <span class="caption">{def.label}</span>
+        <span class="caption">{label}</span>
         <span class="control">{control}</span>
       </label>
       <div class="field-error" role="alert">{message}</div>
+      {def.path === 'floor.enabled' && plan.foundation.type === 'groundScrew' &&
+        <p class="hint">Talajcsavaros alapnál a padló a gerendakereten kötelező.</p>}
     </div>
   );
 }

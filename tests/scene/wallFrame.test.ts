@@ -32,6 +32,9 @@ test('no fastener inside an opening', () => {
     expect(inside).toEqual([]);
   }
 });
+test('slab anchor label unchanged', () => {
+  expect(new Set(s.fasteners.filter(f => f.kind === 'anchor').map(f => f.label))).toEqual(new Set(['Betondübel / ászokcsavar M10×120']));
+});
 test('anchors on N wall', () => {
   expect(s.fasteners.filter(f => f.group === 'wall.N' && f.kind === 'anchor').map(f => f.u)).toEqual([150, 950, 1750, 2550, 2650]);
 });

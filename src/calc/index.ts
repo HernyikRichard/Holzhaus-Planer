@@ -16,7 +16,8 @@ export const CATEGORY_ORDER: Category[] = ['Alap', 'Padló', 'Fal', 'Tető', 'Ki
 const STAT_KEYS: (keyof CalcStats)[] = [
   'osbSheets', 'studs', 'headers', 'collarPairs', 'rafters',
   'anchorPoints', 'counterBattenLength', 'battenCrossings', 'claddingArea', 'tileClips',
-  'frameScrewCount', 'osbScrewCount', 'hurricaneTieCount',
+  'frameScrewCount', 'osbScrewCount', 'hurricaneTieCount', 'seamClips', 'seamClipScrews',
+  'connectorScrewCount',
 ];
 
 export function calculate(plan: Plan, supply?: Supply): CalcOutput {
@@ -31,7 +32,7 @@ export function calculate(plan: Plan, supply?: Supply): CalcOutput {
   const pieces: TimberPiece[] = results.flatMap(r => r.pieces);
   const moduleLines = results.flatMap(r => r.lines);
   const timberLines = cutTimber(pieces, plan.settings.stockLengths, plan.settings.waste.timber, supply);
-  const all = [...moduleLines, ...timberLines, ...calcFasteners(stats, supply)];
+  const all = [...moduleLines, ...timberLines, ...calcFasteners(stats, supply, plan.foundation.type)];
 
   const rank = (l: MaterialLine) => CATEGORY_ORDER.indexOf(l.category);
   const lines = all

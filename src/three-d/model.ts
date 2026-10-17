@@ -1,12 +1,15 @@
 import type { Mm, Plan, WallLayerKind, WallSide } from '../model/types';
-import { BATTEN_SECTION, BATTEN_SPACING_WALL, COUNTER_BATTEN_SECTION, FASCIA_SECTION, ROOF_BATTEN_SECTION } from '../catalog';
+import {
+  SCREW_HEAD_H, BATTEN_SECTION, BATTEN_SPACING_WALL, COUNTER_BATTEN_SECTION, DECKING_REQUIRED, FASCIA_SECTION, ROOF_BATTEN_SECTION, STANDING_SEAM_WIDTH,
+} from '../catalog';
 import { roofGeometry, studLengthAt, wallGeometry, type WallGeom } from '../calc/geometry';
 import type { Element, ElementKind, Scene } from '../scene/types';
 import { COVERING_T, DECKING_T, FOIL_T, floorTopZ, wallLayerStrips } from '../scene/layerStack';
+import { floorOn, frameLayout } from '../calc/frame';
 import { corners } from '../viewer/views/common';
 import { floorWallMap } from '../viewer/views/floorPlan';
 
-export type Layer3dId = 'foundation' | 'floor' | 'wallFrame' | 'interiorCladding' | 'vaporBarrier' | 'insulation'
+export type Layer3dId = 'ground' | 'foundation' | 'supports' | 'beamFrame' | 'floor' | 'wallFrame' | 'interiorCladding' | 'vaporBarrier' | 'insulation'
   | 'wallOsb' | 'breatherMembrane' | 'wallBattens' | 'exteriorCladding' | 'roofFrame' | 'decking' | 'underlay'
   | 'counterBatten' | 'roofBatten' | 'covering' | 'openings' | 'accessories';
 export type Vec3 = [number, number, number];
@@ -23,20 +26,20 @@ export interface Solid {
 export interface Model3d { solids: Solid[]; layers: Layer3dId[]; bounds: { min: Vec3; max: Vec3 } }
 
 export const LAYER3D_NAMES: Record<Layer3dId, string> = {
-  foundation: 'Betonlemez', floor: 'Padló', wallFrame: 'Falváz', interiorCladding: 'Belső burkolat',
+  ground: 'Talaj', foundation: 'Betonlemez', supports: 'Támaszok', beamFrame: 'Gerendakeret', floor: 'Padló', wallFrame: 'Falváz', interiorCladding: 'Belső burkolat',
   vaporBarrier: 'Párazáró fólia', insulation: 'Szigetelés', wallOsb: 'OSB', breatherMembrane: 'Szélzáró fólia',
   wallBattens: 'Léc', exteriorCladding: 'Külső burkolat', roofFrame: 'Tetőváz', decking: 'Deszkázat / OSB',
   underlay: 'Alátétfólia', counterBatten: 'Ellenléc', roofBatten: 'Tetőléc', covering: 'Héjazat',
   openings: 'Nyílászárók', accessories: 'Kiegészítők',
 };
 export const LAYER3D_GROUPS: { name: string; layers: Layer3dId[] }[] = [
-  { name: 'Alap', layers: ['foundation', 'floor'] },
+  { name: 'Alap', layers: ['ground', 'foundation', 'supports', 'beamFrame', 'floor'] },
   { name: 'Fal', layers: ['wallFrame', 'interiorCladding', 'vaporBarrier', 'insulation', 'wallOsb', 'breatherMembrane', 'wallBattens', 'exteriorCladding'] },
   { name: 'Tető', layers: ['roofFrame', 'decking', 'underlay', 'counterBatten', 'roofBatten', 'covering'] },
   { name: 'Egyéb', layers: ['openings', 'accessories'] },
 ];
 /** A „Csak váz” gyorsgomb rétegei. */
-export const FRAME_ONLY: Layer3dId[] = ['foundation', 'floor', 'wallFrame', 'roofFrame', 'openings'];
+export const FRAME_ONLY: Layer3dId[] = ['foundation', 'supports', 'beamFrame', 'floor', 'wallFrame', 'roofFrame', 'openings'];
 
 const LAYER_ORDER: Layer3dId[] = LAYER3D_GROUPS.flatMap(g => g.layers);
 const FRAME_KINDS = new Set<ElementKind>(['stud', 'cornerStud', 'gableStud', 'kingStud', 'jackStud', 'cripple', 'sill', 'header', 'bottomPlate', 'topPlate']);
@@ -93,6 +96,20 @@ export function solidBounds(s: Solid): { min: Vec3; max: Vec3 } {
       }
     }
   }
+  return { min, max };
+}
+
+/** A testek közös világ-befoglalója; üres listánál nullák. */
+export function boundsOf(solids: Solid[]): { min: Vec3; max: Vec3 } {
+  const min: Vec3 = [0, 0, 0];
+  const max: Vec3 = [0, 0, 0];
+  solids.forEach((s, i) => {
+    const b = solidBounds(s);
+    for (let k = 0; k < 3; k++) {
+      min[k] = i === 0 ? b.min[k] : Math.min(min[k], b.min[k]);
+      max[k] = i === 0 ? b.max[k] : Math.max(max[k], b.max[k]);
+    }
+  });
   return { min, max };
 }
 
@@ -338,6 +355,9 @@ function wallLayerSolids(plan: Plan, scene: Scene): Solid[] {
 const GUTTER_R = 62.5;    // félköríves ereszcsatorna sugara (125 mm-es csatorna), csak megjelenítés
 const GUTTER_WALL = 3;
 const GUTTER_SEGMENTS = 12;
+/** Állókorcos lemez a 3D-ben: a lemez vastagsága és a korcborda szélessége (mm); a borda a COVERING_T magasságig ér. */
+const SEAM_PAN_T = 2;
+const SEAM_RIB_W = 20;
 
 /** Egy tetősík az eresz helyével és a gerinc / a túlsó vég felé mutató iránnyal a gerincre merőleges p tengelyen. */
 interface RoofPlane { group: string; pEave: number; dir: 1 | -1; pEnd: number }
@@ -420,7 +440,7 @@ function roofSolids(plan: Plan, scene: Scene): Solid[] {
   }
 
   // tetőrétegek a szarufák felső síkjától, a rétegrend sorrendjében
-  const forced = covering === 'shingle' || covering === 'epdm';
+  const forced = DECKING_REQUIRED.has(covering);
   const counters = els.filter(e => e.kind === 'counterBatten');
   const battens = els.filter(e => e.kind === 'roofBatten');
   let n = rafterSection.w;
@@ -450,7 +470,19 @@ function roofSolids(plan: Plan, scene: Scene): Solid[] {
       n += tk;
     }
   }
-  sheet('covering', covering, COVERING_T[covering]);
+  if (covering === 'standingSeam') {
+    // vékony lemez + korcbordák sávszélességenként (csak látvány, elementId nélkül); együtt a metszet szerinti vastagság
+    const tk = COVERING_T.standingSeam;
+    for (const pl of planes) {
+      push('covering', LAYER3D_NAMES.covering, covering, strip(pl.pEave, pl.pEnd, n, n + SEAM_PAN_T), -og, Lr);
+      const strips = Math.ceil(Lr / STANDING_SEAM_WIDTH - 1e-9);
+      for (let k = 0; k <= strips; k++) {
+        const r = Math.min(Math.max(k * STANDING_SEAM_WIDTH - SEAM_RIB_W / 2, 0), Lr - SEAM_RIB_W);
+        push('covering', 'Állókorc', covering, strip(pl.pEave, pl.pEnd, n + SEAM_PAN_T, n + tk), -og + r, SEAM_RIB_W);
+      }
+    }
+    n += tk;
+  } else sheet('covering', covering, COVERING_T[covering]);
   const nTop = n;
 
   // kiegészítők: homlokdeszka a szarufavégek előtt, oromdeszka a tetősík szélén kívül, ereszcsatorna
@@ -485,7 +517,8 @@ function roofSolids(plan: Plan, scene: Scene): Solid[] {
   return out;
 }
 
-function foundationSolids(plan: Plan): Solid[] {
+function foundationSolids(plan: Plan, scene: Scene): Solid[] {
+  if (plan.foundation.type === 'groundScrew') return screwSolids(plan, scene);
   const { width: W, length: L } = plan.building;
   const { slabOverhang: ov, slabThickness: st } = plan.foundation;
   return [{
@@ -495,37 +528,78 @@ function foundationSolids(plan: Plan): Solid[] {
   }];
 }
 
+const GROUND_MARGIN = 1000;
+const GROUND_T = 20;
+const UHEAD_LEN = 100;
+const UHEAD_SIDE = 10;   // a fej a gerendánál ennyivel szélesebb
+const CYL_SEGMENTS = 16;
+
+/** Talajcsavaros alap: talajlap, támaszonként cső + orsó + U-fej, főgerenda-szegmensek. */
+function screwSolids(plan: Plan, scene: Scene): Solid[] {
+  const { width: W, length: L } = plan.building;
+  const f = frameLayout(plan);
+  const { diameter: d, length: screwLen } = plan.foundation.groundScrew;
+  const head = f.z.beamBottom;
+  const out: Solid[] = [{
+    layer: 'ground', label: LAYER3D_NAMES.ground, material: 'ground',
+    origin: [0, 0, -GROUND_T], uAxis: [...X], vAxis: [...Y], nAxis: [...Z],
+    outline: rect(-GROUND_MARGIN, -GROUND_MARGIN, W + GROUND_MARGIN, L + GROUND_MARGIN), holes: [], depth: GROUND_T,
+  }];
+  const circle = (cx: number, cy: number): [number, number][] =>
+    Array.from({ length: CYL_SEGMENTS }, (_, i): [number, number] => {
+      const a = (2 * Math.PI * i) / CYL_SEGMENTS;
+      return [Math.round((cx + (d / 2) * Math.cos(a)) * 1000) / 1000, Math.round((cy + (d / 2) * Math.sin(a)) * 1000) / 1000];
+    });
+  const part = (id: string, label: string, material: string, outline: [number, number][], z0: number, depth: number): void => {
+    out.push({
+      layer: 'supports', elementId: id, label, material,
+      origin: [0, 0, z0], uAxis: [...X], vAxis: [...Y], nAxis: [...Z], outline, holes: [], depth,
+    });
+  };
+  for (const e of scene.elements.filter(x => x.kind === 'support')) {
+    const cx = e.geom.u + e.geom.w / 2;
+    const cy = e.geom.v + e.geom.h / 2;
+    const alongX = f.along === 'x';
+    const hx = (alongX ? UHEAD_LEN : f.beam.width + UHEAD_SIDE) / 2;
+    const hy = (alongX ? f.beam.width + UHEAD_SIDE : UHEAD_LEN) / 2;
+    part(e.id, `${e.label} – talaj alatt`, 'metalBuried', circle(cx, cy), -screwLen, screwLen);
+    part(e.id, `${e.label} – orsó`, 'metal', circle(cx, cy), 0, head - SCREW_HEAD_H);
+    part(e.id, `${e.label} – U-fej`, 'metal', rect(cx - hx, cy - hy, cx + hx, cy + hy), head - SCREW_HEAD_H, SCREW_HEAD_H);
+  }
+  for (const e of scene.elements.filter(x => x.kind === 'beam')) {
+    out.push({
+      layer: 'beamFrame', elementId: e.id, label: e.label, material: 'timber',
+      origin: [0, 0, f.z.beamBottom], uAxis: [...X], vAxis: [...Y], nAxis: [...Z],
+      outline: corners(e), holes: [], depth: f.z.beamTop - f.z.beamBottom,
+    });
+  }
+  return out;
+}
+
 function floorSolids(plan: Plan, scene: Scene): Solid[] {
-  if (!plan.floor.enabled) return [];
+  if (!floorOn(plan)) return [];
+  const screw = plan.foundation.type === 'groundScrew';
   const jw = plan.floor.joistSection.w;
+  const z0 = screw ? frameLayout(plan).z.beamTop : 0;
   const out: Solid[] = scene.elements.filter(e => e.group === 'floor' && e.kind === 'joist').map((e): Solid => ({
     layer: 'floor', elementId: e.id, label: e.label, material: 'timber',
-    origin: [0, 0, 0], uAxis: [...X], vAxis: [...Y], nAxis: [...Z],
+    origin: [0, 0, z0], uAxis: [...X], vAxis: [...Y], nAxis: [...Z],
     outline: corners(e), holes: [], depth: e.section?.w ?? jw,
   }));
   // padló-OSB: egy lap a párnafák tetején, a metszetnézet szerint az épület teljes alapterületén (a falak is ezen állnak)
   out.push({
     layer: 'floor', label: 'Padló OSB', material: 'osb',
-    origin: [0, 0, jw], uAxis: [...X], vAxis: [...Y], nAxis: [...Z],
+    origin: [0, 0, z0 + jw], uAxis: [...X], vAxis: [...Y], nAxis: [...Z],
     outline: rect(0, 0, plan.building.width, plan.building.length), holes: [], depth: plan.floor.osbThickness,
   });
   return out;
 }
 
-/** A terv és a scene → 3D testek világkoordinátában (mm, Z = 0 a betonlemez teteje). Tiszta függvény. */
+/** A terv és a scene → 3D testek világkoordinátában (mm). Z = 0 a betonlemez teteje, talajcsavarnál a talaj szintje. Tiszta függvény. */
 export function buildModel3d(plan: Plan, scene: Scene): Model3d {
-  const solids = [...foundationSolids(plan), ...floorSolids(plan, scene), ...wallSolids(plan, scene), ...wallLayerSolids(plan, scene),
+  const solids = [...foundationSolids(plan, scene), ...floorSolids(plan, scene), ...wallSolids(plan, scene), ...wallLayerSolids(plan, scene),
     ...roofSolids(plan, scene)];
   const present = new Set(solids.map(s => s.layer));
   const layers = LAYER_ORDER.filter(l => present.has(l));
-  const min: Vec3 = [0, 0, 0];
-  const max: Vec3 = [0, 0, 0];
-  solids.forEach((s, i) => {
-    const b = solidBounds(s);
-    for (let k = 0; k < 3; k++) {
-      min[k] = i === 0 ? b.min[k] : Math.min(min[k], b.min[k]);
-      max[k] = i === 0 ? b.max[k] : Math.max(max[k], b.max[k]);
-    }
-  });
-  return { solids, layers, bounds: { min, max } };
+  return { solids, layers, bounds: boundsOf(solids) };
 }

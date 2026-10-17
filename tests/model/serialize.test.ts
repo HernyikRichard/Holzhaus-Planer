@@ -7,7 +7,7 @@ test('roundtrip', () => {
   expect(r).toEqual({ ok: true, plan: p });
 });
 test('serializePlan uses 2-space indentation', () => {
-  expect(serializePlan(createDefaultPlan())).toContain('\n  "version": 2');
+  expect(serializePlan(createDefaultPlan())).toContain('\n  "version": 3');
 });
 test('garbage and future versions are rejected with Hungarian messages', () => {
   expect(parsePlan('nem json')).toEqual({ ok: false, error: 'A fájl nem érvényes JSON.' });
@@ -15,7 +15,7 @@ test('garbage and future versions are rejected with Hungarian messages', () => {
     ok: false,
     error: 'A fájl egy újabb programverzióval készült (v99), ezt a verziót nem tudom betölteni.',
   });
-  expect(CURRENT_VERSION).toBe(2);
+  expect(CURRENT_VERSION).toBe(3);
 });
 test('missing or invalid version is rejected', () => {
   const p: any = createDefaultPlan(); delete p.version;
@@ -47,15 +47,16 @@ test('wrong types are rejected naming the field path', () => {
   expect(r.ok).toBe(false);
   expect(!r.ok && r.error).toContain('building.width');
 });
-test('MIGRATIONS has exactly the v1 -> v2 step', () => {
-  expect(Object.keys(MIGRATIONS)).toEqual(['1']);
+test('MIGRATIONS has the v1 -> v2 and v2 -> v3 steps', () => {
+  expect(Object.keys(MIGRATIONS)).toEqual(['1', '2']);
 });
 test('v1 file migrates to v2 with default pricing', () => {
   const v1: any = createDefaultPlan(); delete v1.pricing; v1.version = 1; v1.name = 'Régi';
   const r = parsePlan(JSON.stringify(v1));
   expect(r.ok).toBe(true);
   if (r.ok) {
-    expect(r.plan.version).toBe(2);
+    expect(r.plan.version).toBe(3);
+    expect(r.plan.foundation.type).toBe('slab');
     expect(r.plan.pricing).toEqual(DEFAULT_PRICING);
     expect(r.plan.pricing).not.toBe(DEFAULT_PRICING);
     expect(r.plan.name).toBe('Régi');
@@ -103,4 +104,52 @@ describe('shape validation', () => {
     const p: any = createDefaultPlan(); p.walls.layers.reverse();
     expect(parsePlan(JSON.stringify(p))).toEqual({ ok: true, plan: createDefaultPlan() });
   });
+});
+test('standingSeam covering round-trips; old covering values still load', () => {
+  const p = createDefaultPlan(); p.roof.covering = 'standingSeam';
+  expect(parsePlan(serializePlan(p))).toEqual({ ok: true, plan: p });
+  for (const c of ['tile', 'trapezoid', 'shingle', 'epdm'] as const) {
+    const q = createDefaultPlan(); q.roof.covering = c;
+    expect(parsePlan(serializePlan(q))).toEqual({ ok: true, plan: q });
+  }
+  const v1: any = createDefaultPlan(); delete v1.pricing; v1.version = 1; v1.roof.covering = 'standingSeam';
+  const r = parsePlan(JSON.stringify(v1));
+  expect(r.ok && r.plan.roof.covering).toBe('standingSeam');
+  const bad: any = createDefaultPlan(); bad.roof.covering = 'slate';
+  expect(parsePlan(JSON.stringify(bad))).toEqual({ ok: false, error: 'Hibás érték: roof.covering' });
+});
+
+test('v2 file migrates to v3 as slab with default frame', () => {
+  const v2: any = createDefaultPlan(); v2.version = 2;
+  delete v2.foundation.type; delete v2.foundation.frame; delete v2.foundation.groundScrew;
+  const r = parsePlan(JSON.stringify(v2));
+  expect(r.ok).toBe(true);
+  if (r.ok) {
+    expect(r.plan.version).toBe(3);
+    expect(r.plan).toEqual(createDefaultPlan());
+  }
+});
+test('v1 -> v3 chain works', () => {
+  const v1: any = createDefaultPlan(); delete v1.pricing; v1.version = 1;
+  delete v1.foundation.type; delete v1.foundation.frame; delete v1.foundation.groundScrew;
+  const r = parsePlan(JSON.stringify(v1));
+  expect(r.ok).toBe(true);
+  if (r.ok) expect(r.plan.foundation.frame).toEqual({ beamSection: 'b100x150', supportSpacing: 'auto', groundClearance: 300 });
+});
+test.each([1200, 'auto'] as const)('groundScrew round-trip with supportSpacing %s', sp => {
+  const p = createDefaultPlan();
+  p.foundation.type = 'groundScrew'; p.foundation.frame.supportSpacing = sp;
+  p.foundation.frame.beamSection = 'b2x50x150'; p.foundation.groundScrew.length = 1200;
+  expect(parsePlan(serializePlan(p))).toEqual({ ok: true, plan: p });
+});
+test.each([
+  ['foundation.type', (p: any) => { p.foundation.type = 'pile'; }],
+  ['foundation.frame.beamSection', (p: any) => { p.foundation.frame.beamSection = 'b80'; }],
+  ['foundation.groundScrew.length', (p: any) => { p.foundation.groundScrew.length = 900; }],
+  ['foundation.frame.supportSpacing', (p: any) => { p.foundation.frame.supportSpacing = 'kicsi'; }],
+])('invalid %s is rejected with its path', (path, mutate) => {
+  const p: any = createDefaultPlan(); mutate(p);
+  const r = parsePlan(JSON.stringify(p));
+  expect(r.ok).toBe(false);
+  if (!r.ok) expect(r.error).toContain(path);
 });

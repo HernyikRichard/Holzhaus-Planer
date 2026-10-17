@@ -71,3 +71,18 @@ test('on a full wall an opening keeps the corner stud, king and jack clear (3t +
   const q = createDefaultPlan(); q.openings.find(o => o.id === 'door-1')!.offset = 150; // D fal: rövid, marad 150
   expect(validatePlan(q)).toEqual([]);
 });
+
+test('groundClearance bounds 150-800', () => {
+  const p = createDefaultPlan();
+  for (const [v, bad] of [[149, true], [150, false], [800, false], [801, true]] as const) {
+    p.foundation.frame.groundClearance = v;
+    expect(paths(p).includes('foundation.frame.groundClearance')).toBe(bad);
+  }
+});
+test('supportSpacing bounds 800-2500, auto is fine', () => {
+  const p = createDefaultPlan();
+  for (const [v, bad] of [[799, true], [800, false], [2500, false], [2501, true], ['auto', false]] as const) {
+    p.foundation.frame.supportSpacing = v;
+    expect(paths(p).includes('foundation.frame.supportSpacing')).toBe(bad);
+  }
+});

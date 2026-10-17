@@ -72,3 +72,42 @@ test('roof batten dimension orientation', () => {
   expect(t.map(d => d.offset)).toEqual([-150, -300, -450]);
   expect(t[0].text).toBe('33 cm');
 });
+
+describe('gerendakeret (talajcsavar)', () => {
+  const q = createDefaultPlan(); q.foundation.type = 'groundScrew';
+  const qs = buildScene(q);
+  test('groupLength frame', () => {
+    expect(groupLength(q, 'frame')).toBe(q.building.width);
+  });
+  test('támasz szomszédai a gerenda mentén', () => {
+    // 3000×4000: a gerendák y irányúak, a támaszok 150, 1383, 2617, 3850-nél
+    const n = neighbours(qs, groupLength(q, 'frame'), 'frame.support.2');
+    expect(n).toMatchObject({ left: 'frame.support.1', right: 'frame.support.3', axisLeft: 1233, axisRight: 1234 });
+    const t = tempDimensions(qs, groupLength(q, 'frame'), 'frame.support.2');
+    expect(t[0].x1).toBe(t[0].x2);
+  });
+  test('párnafa szomszédai és méretvonala mindkét irányban', () => {
+    // 3000×4000: a gerendák y irányúak, a párnafák x irányúak és y szerint követik egymást
+    const nv = neighbours(qs, groupLength(q, 'floor'), 'floor.joist.2');
+    expect(nv).toMatchObject({ left: 'floor.joist.1', right: 'floor.joist.3' });
+    expect(nv.fromStart).toBeGreaterThan(0);
+    const tv = tempDimensions(qs, groupLength(q, 'floor'), 'floor.joist.2');
+    expect(tv[0].x1).toBe(tv[0].x2);
+    expect(tv[0].text).not.toBe('0 cm');
+    // 4000×3000: a párnafák y irányúak, x szerint követik egymást
+    const q2 = createDefaultPlan(); q2.foundation.type = 'groundScrew'; q2.building = { ...q2.building, width: 4000, length: 3000 };
+    const s2 = buildScene(q2);
+    const nu = neighbours(s2, groupLength(q2, 'floor'), 'floor.joist.2');
+    expect(nu).toMatchObject({ left: 'floor.joist.1', right: 'floor.joist.3' });
+    const tu = tempDimensions(s2, groupLength(q2, 'floor'), 'floor.joist.2');
+    expect(tu[0].y1).toBe(tu[0].y2);
+    // a két orientációban azonos a számadat
+    expect(nu.axisLeft).toBe(nv.axisLeft);
+    expect(nu.fromStart).toBe(nv.fromStart);
+    expect(nu.toEnd).toBe(nv.toEnd);
+  });
+  test('főgerenda szomszédai a W irányban', () => {
+    const n = neighbours(qs, groupLength(q, 'frame'), 'frame.beam.2');
+    expect(n).toMatchObject({ left: 'frame.beam.1', right: 'frame.beam.3', axisLeft: 1450, axisRight: 1450 });
+  });
+});

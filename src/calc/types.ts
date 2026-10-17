@@ -20,6 +20,8 @@ export interface CalcStats { // kötőelem-számításhoz, minden modul a saját
   anchorPoints: number; counterBattenLength: Mm; battenCrossings: number;
   claddingArea: number; tileClips: number;
   frameScrewCount: number; osbScrewCount: number; hurricaneTieCount: number;
+  seamClips: number; seamClipScrews: number; // állókorcos lemez
+  connectorScrewCount: number; // gerendasaruhoz (talajcsavaros alap)
 }
 export interface ModuleResult {
   lines: MaterialLine[]; pieces: TimberPiece[];

@@ -177,7 +177,8 @@ export function TopBar({ store, ui }: { store: Store; ui: UiStore }) {
           );
         })}
       </nav>
-      <button type="button" data-action="3d" class="toggle-3d" aria-pressed={open3d} title="3D nézet ki / be"
+      <button type="button" data-action="3d" class="toggle-3d" aria-pressed={open3d}
+        disabled={step === 'assembly'} title={step === 'assembly' ? 'A Szerelés lépésben a 3D a vásznon látszik' : '3D nézet ki / be'}
         onClick={() => { const v = ui.get().view3d; ui.set({ view3d: { ...v, open: !v.open } }); }}>3D</button>
       <div class="actions">
         <label class="plan-name">Terv neve{' '}

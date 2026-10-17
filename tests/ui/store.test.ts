@@ -1,5 +1,6 @@
 import { createStore } from '../../src/ui/store';
 import { createDefaultPlan } from '../../src/model/defaults';
+import { parsePlan } from '../../src/model/serialize';
 
 test('invalid update keeps last valid output', () => {
   const s = createStore(createDefaultPlan());
@@ -55,4 +56,16 @@ test('invalid to valid recovery updates lastValidPlan', () => {
   s.update(p => { p.building.width = 3000; });
   expect(s.get().errors).toHaveLength(0);
   expect(s.get().lastValidPlan.building.width).toBe(3000);
+});
+
+test('a v2 plan loaded through replace() is a slab foundation', () => {
+  const v2: any = createDefaultPlan(); v2.version = 2;
+  delete v2.foundation.type; delete v2.foundation.frame; delete v2.foundation.groundScrew;
+  const r = parsePlan(JSON.stringify(v2));
+  if (!r.ok) throw new Error(r.error);
+  const s = createStore(createDefaultPlan());
+  s.update(p => { p.foundation.type = 'groundScrew'; });
+  s.replace(r.plan);
+  expect(s.get().plan.foundation.type).toBe('slab');
+  expect(s.get().plan.foundation.frame.supportSpacing).toBe('auto');
 });

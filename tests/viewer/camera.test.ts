@@ -31,7 +31,7 @@ test('view layers follow the spec table', () => {
   expect(VIEW_LAYERS.section).toEqual(['dims', 'grid']);
   expect(VIEW_LAYERS.roof).toEqual(['frame', 'battens', 'fasteners', 'dims', 'grid']);
   expect(VIEW_LAYERS.gable).toEqual(['frame', 'sheathing', 'fasteners', 'dims']);
-  expect(VIEW_LAYERS.foundation).toEqual(['mesh', 'dims', 'grid']);
+  expect(VIEW_LAYERS.foundation).toEqual(['frame', 'mesh', 'fasteners', 'dims', 'grid']);
 });
 test('palettes share keys', () => {
   expect(Object.keys(PRINT_PALETTE).sort()).toEqual(Object.keys(SCREEN_PALETTE).sort());

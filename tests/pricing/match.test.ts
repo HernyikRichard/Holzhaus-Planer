@@ -4,6 +4,7 @@ import { createDefaultPlan, DEFAULT_PRICING } from '../../src/model/defaults';
 import type { Plan } from '../../src/model/types';
 import { BUNDLED_PRICE_LIST } from '../../src/prices';
 import { expectedKind, gutterSystemKey, matchLine } from '../../src/pricing/match';
+import { costOf } from '../../src/pricing/cost';
 import { supplyFromPriceList } from '../../src/pricing/supply';
 import { MATCH_FIXTURE as PL } from '../fixtures/priceList';
 
@@ -276,5 +277,50 @@ describe('beépített árlista', () => {
     const timber = out.lines.filter(l => /^timber\.[^.]+\.(50x100|50x150|30x50)\./.test(l.id));
     expect(timber.length).toBeGreaterThan(0);
     for (const l of timber) expect(matchLine(l, pl, plan), l.id).toHaveProperty('productId');
+  });
+});
+
+describe('állókorcos alumíniumlemez', () => {
+  const IDS = ['roof.standingSeam', 'roof.seamEaveFlashing', 'roof.seamRakeFlashing', 'acc.ridgeCap', 'fix.seamClips', 'fix.seamClipScrews'];
+  it('nincs Káplár-termék, nem omlik össze, kézi ár adható', () => {
+    for (const pl of [PL, BUNDLED_PRICE_LIST!]) {
+      const plan = createDefaultPlan(); plan.roof.covering = 'standingSeam';
+      const out = calculate(plan, supplyFromPriceList(pl));
+      for (const id of IDS) {
+        const l = out.lines.find(x => x.id === id);
+        expect(l, id).toBeDefined();
+        expect(matchLine(l!, pl, plan), id).toMatchObject({ missing: true });
+      }
+    }
+    expect(expectedKind({ id: 'roof.standingSeam', unit: 'db' })).toBe('roofing');
+  });
+  it('az elválasztó alátétréteg fóliaként párosul', () => {
+    const { plan, line } = setup(p => { p.roof.covering = 'standingSeam'; });
+    const base = setup();
+    expect(line('roof.underlay').name).toBe('Elválasztó (szellőző) alátétréteg');
+    expect(matchLine(line('roof.underlay'), PL, plan)).toEqual(matchLine(base.line('roof.underlay'), PL, base.plan));
+  });
+});
+
+describe('talajcsavar: nincs Káplár-párosítás', () => {
+  const plan = createDefaultPlan();
+  plan.foundation.type = 'groundScrew';
+  const lines = calculate(plan, supply).lines;
+  const ids = ['foundation.groundScrew', 'foundation.screwHead', 'foundation.beamBolts', 'foundation.joistHangers'];
+  it('az új sorok ár nélküliek (nincs termék), más forrásból beszerzendők', () => {
+    for (const id of ids) {
+      const l = lines.find(x => x.id === id)!;
+      expect(l).toBeDefined();
+      expect(matchLine(l, PL, plan)).toMatchObject({ missing: true, otherSource: true });
+    }
+  });
+  it('kézi árral a költség azt használja', () => {
+    const p: Plan = { ...plan, pricing: { ...plan.pricing, custom: { 'foundation.groundScrew': 25000 } } };
+    const c = costOf(p, calculate(p, supply), PL).lines.find(l => l.lineId === 'foundation.groundScrew')!;
+    expect(c.source).toBe('custom');
+    expect(c.unitPrice).toBe(25000);
+    expect(c.total).toBe(12 * 25000);
+    const plain = costOf(plan, calculate(plan, supply), PL).lines.find(l => l.lineId === 'foundation.groundScrew')!;
+    expect(plain.source).toBe('missing');
   });
 });

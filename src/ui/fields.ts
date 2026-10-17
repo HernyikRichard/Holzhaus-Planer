@@ -1,5 +1,9 @@
+import type { Plan } from '../model/types';
+
 export interface FieldDef {
   path: string; label: string;
+  /** A tervtől függő felirat (pl. héjazat szerint); ha nincs, a `label`. */
+  labelFor?: (plan: Plan) => string;
   kind: 'number' | 'select' | 'checkbox' | 'section';
   unit?: 'm' | 'cm' | 'mm' | '°' | '%';
   options?: { value: string; label: string }[];
@@ -81,6 +85,16 @@ export const SECTIONS: SectionDef[] = [
     num('foundation.gravelBedThickness', 'Sóderágy vastagsága', 'cm'),
     check('foundation.peFoil', 'PE fólia'),
   ] },
+  { id: 'groundScrew', title: 'Talajcsavar és gerendakeret', fields: [
+    select('foundation.groundScrew.length', 'Talajcsavar hossza',
+      opts(['800', '80 cm'], ['1000', '100 cm'], ['1200', '120 cm'])),
+    num('foundation.frame.groundClearance', 'Talaj feletti magasság', 'cm'),
+    select('foundation.frame.beamSection', 'Főgerenda keresztmetszete',
+      opts(['b100x150', '100×150'], ['b120x120', '120×120'], ['b2x50x150', '2×50×150'])),
+    select('foundation.frame.supportSpacing', 'Támaszköz',
+      opts(['auto', 'Automatikus'], ...Array.from({ length: 18 }, (_, i): [string, string] =>
+        [String(800 + i * 100), `${80 + i * 10} cm`]))),
+  ] },
   { id: 'floor', title: 'Padló', fields: [
     check('floor.enabled', 'Padlószerkezet'),
     section('floor.joistSection', 'Gerendák keresztmetszete (vastagság × szélesség)'),
@@ -110,14 +124,16 @@ export const SECTIONS: SectionDef[] = [
     num('roof.gableOverhang', 'Oromkinyúlás', 'cm'),
     ...roofLayerFields,
     select('roof.covering', 'Tetőfedés',
-      opts(['tile', 'Cserép'], ['trapezoid', 'Trapézlemez'], ['shingle', 'Zsindely'], ['epdm', 'EPDM'])),
+      opts(['tile', 'Cserép'], ['trapezoid', 'Trapézlemez'], ['shingle', 'Zsindely'], ['epdm', 'EPDM'],
+        ['standingSeam', 'Állókorcos alumíniumlemez'])),
   ] },
   { id: 'accessories', title: 'Kiegészítők', fields: [
     check('accessories.gutter', 'Ereszcsatorna'),
     check('accessories.downpipe', 'Lefolyócső'),
     check('accessories.fascia', 'Homlokdeszka'),
     check('accessories.bargeBoard', 'Oromdeszka'),
-    check('accessories.ridgeTiles', 'Gerinccserép'),
+    { ...check('accessories.ridgeTiles', 'Gerinccserép'),
+      labelFor: p => (p.roof.covering === 'standingSeam' ? 'Gerincfedő' : 'Gerinccserép') },
     check('accessories.ridgeVent', 'Gerincszellőző'),
   ] },
   { id: 'settings', title: 'Beállítások', fields: [

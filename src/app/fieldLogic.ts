@@ -1,4 +1,4 @@
-import type { Plan } from '../model/types';
+import type { Plan, RoofCovering } from '../model/types';
 import { setPath, type FieldDef } from '../ui/fields';
 import { parseNumberInput } from '../ui/format';
 import { BATTEN_SECTION } from '../catalog';
@@ -9,6 +9,10 @@ const FACTOR: Record<Unit, number> = { m: 1000, cm: 10, mm: 1, '°': 1, '%': 0.0
 export type RoofShape = 'flat' | 'mono' | 'gable';
 export const PITCH_DEFAULT: Record<RoofShape, number> = { flat: 3, mono: 10, gable: 30 };
 export const PITCH_RANGE: Record<RoofShape, readonly [number, number]> = { flat: [1, 10], mono: [5, 45], gable: [10, 60] };
+
+/** Lapostetőre váltáskor EPDM-re cserélt héjazatok. */
+export const FLAT_UNFIT: ReadonlySet<RoofCovering> = new Set<RoofCovering>(['tile', 'shingle']);
+export const FLAT_COVERING_NOTICE = 'Lapostetőhöz a cserép és a zsindely nem alkalmas, ezért a héjazat EPDM gumilemez lett.';
 
 // A réteganyag változásakor a vastagság az anyaghoz igazodik (0: burkolat, 3: OSB; lásd fields.ts).
 const LAYER_THICKNESS: Record<string, number> = { osb12: 12, osb15: 15, osb: 12, gypsum: 12.5, paneling: 12 };
@@ -58,5 +62,7 @@ export function applyFieldChange(draft: Plan, path: string, value: unknown): voi
     const shape = value as RoofShape;
     const [min, max] = PITCH_RANGE[shape];
     if (!(draft.roof.pitch >= min && draft.roof.pitch <= max)) draft.roof.pitch = PITCH_DEFAULT[shape];
+    // lapostetőn a cserép és a zsindely nem használható: EPDM lesz (csak a felületi váltáskor, betöltéskor nem)
+    if (shape === 'flat' && FLAT_UNFIT.has(draft.roof.covering)) draft.roof.covering = 'epdm';
   }
 }
