@@ -4,6 +4,8 @@ import { SECTIONS, getPath, type FieldDef } from '../ui/fields';
 import { useStore } from './hooks';
 import { applyFieldChange, toDisplay, toStored } from './fieldLogic';
 
+const SUPPORT_SPACING = 'foundation.frame.supportSpacing';
+
 interface Local { text: string; bad: boolean }
 
 /** Egy mező: számmező, választó, kapcsoló vagy keresztmetszet-pár; a hibaüzenet a mező alatt. */
@@ -68,15 +70,19 @@ export function FieldControl({ def, store }: { def: FieldDef; store: Store }) {
         disabled={isThickness && plan.floor.insulation === null}
         onChange={e => {
           const v = e.currentTarget.value;
-          commit(def.path, typeof value === 'number' || isThickness ? Number(v) : v);
+          // a támaszköz 'auto' vagy mm szám; a többi szám-értékű választó számként mentődik
+          const numeric = def.path === SUPPORT_SPACING ? v !== 'auto' : typeof value === 'number' || isThickness;
+          commit(def.path, numeric ? Number(v) : v);
         }}>
         {(def.options ?? []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     );
   } else {
+    // talajcsavarnál a padló a gerendakereten kötelező: bekapcsoltnak látszik, a tárolt érték nem változik
+    const locked = def.path === 'floor.enabled' && plan.foundation.type === 'groundScrew';
     control = (
-      <input type="checkbox" data-path={def.path} checked={getPath(plan, def.path) === true}
-        aria-label={label} class={invalid ? 'error' : undefined} aria-invalid={invalid ? 'true' : undefined}
+      <input type="checkbox" data-path={def.path} checked={locked || getPath(plan, def.path) === true}
+        disabled={locked} aria-label={label} class={invalid ? 'error' : undefined} aria-invalid={invalid ? 'true' : undefined}
         onChange={e => commit(def.path, e.currentTarget.checked)} />
     );
   }
@@ -90,6 +96,8 @@ export function FieldControl({ def, store }: { def: FieldDef; store: Store }) {
         <span class="control">{control}</span>
       </label>
       <div class="field-error" role="alert">{message}</div>
+      {def.path === 'floor.enabled' && plan.foundation.type === 'groundScrew' &&
+        <p class="hint">Talajcsavaros alapnál a padló a gerendakereten kötelező.</p>}
     </div>
   );
 }

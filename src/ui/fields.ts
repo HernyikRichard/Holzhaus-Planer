@@ -85,6 +85,16 @@ export const SECTIONS: SectionDef[] = [
     num('foundation.gravelBedThickness', 'Sóderágy vastagsága', 'cm'),
     check('foundation.peFoil', 'PE fólia'),
   ] },
+  { id: 'groundScrew', title: 'Talajcsavar és gerendakeret', fields: [
+    select('foundation.groundScrew.length', 'Talajcsavar hossza',
+      opts(['800', '80 cm'], ['1000', '100 cm'], ['1200', '120 cm'])),
+    num('foundation.frame.groundClearance', 'Talaj feletti magasság', 'cm'),
+    select('foundation.frame.beamSection', 'Főgerenda keresztmetszete',
+      opts(['b100x150', '100×150'], ['b120x120', '120×120'], ['b2x50x150', '2×50×150'])),
+    select('foundation.frame.supportSpacing', 'Támaszköz',
+      opts(['auto', 'Automatikus'], ...Array.from({ length: 16 }, (_, i): [string, string] =>
+        [String(1000 + i * 100), `${100 + i * 10} cm`]))),
+  ] },
   { id: 'floor', title: 'Padló', fields: [
     check('floor.enabled', 'Padlószerkezet'),
     section('floor.joistSection', 'Gerendák keresztmetszete (vastagság × szélesség)'),
