@@ -168,3 +168,47 @@ describe('article before numbers', () => {
     expect(az(2)).toBe('a 2');
   });
 });
+
+describe('groundScrew to-dos', () => {
+  const plan = createDefaultPlan();
+  plan.foundation.type = 'groundScrew';
+  plan.building = { ...plan.building, width: 3000, length: 4000 };
+  const scene = buildScene(plan);
+  const steps = buildAssembly(plan, scene, calculate(plan));
+  const text = (id: string) => steps.find(s => s.id === id)!.todo.join('\n');
+
+  test('supports', () => {
+    const t = text('supports');
+    expect(t).toMatch(/Tűzd ki a \d+ csavar helyét: \d+ sor/);
+    expect(t).toContain('3 sor');
+    expect(t).toContain('12 csavar');
+    expect(t).toContain('soronként 4 csavar a sarokponttól 15, 138,3, 261,7, 385 cm-re');
+    expect(t).toContain('100 cm mélyre');
+    expect(t).toContain('30 cm-re');
+    expect(t).toContain('Szintezd ki az U-fejeket');
+  });
+
+  test('beamFrame', () => {
+    const t = text('beamFrame');
+    expect(t).toContain('3 főgerendát');
+    expect(t).toContain('fejenként 2 db M12 menetes szárral');
+    expect(t).toContain('Ellenőrizd az átlókat');
+  });
+
+  test('floor', () => {
+    const t = text('floor');
+    expect(t).toMatch(/gerendasaruval \(\d+ db\)/);
+    expect(t).toContain('peremgerenda');
+    const hangers = steps.find(s => s.id === 'floor')!.fasteners.filter(f => f.kind === 'joistHanger').reduce((a, f) => a + f.count, 0);
+    expect(t).toContain(`gerendasaruval (${hangers} db)`);
+  });
+
+  test('splice to-do only with spliced beams', () => {
+    expect(text('beamFrame')).not.toContain('toldás');
+    const big = createDefaultPlan();
+    big.foundation.type = 'groundScrew';
+    big.building = { ...big.building, width: 8000, length: 6000 };
+    const bs = buildAssembly(big, buildScene(big), calculate(big));
+    expect(bs.find(s => s.id === 'beamFrame')!.todo.join('\n')).toContain('A toldás mindig támasz fölé essen.');
+  });
+});

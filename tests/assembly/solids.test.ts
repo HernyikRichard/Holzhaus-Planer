@@ -101,3 +101,29 @@ describe('stepOfSolid fallbacks', () => {
     expect(f.bounds).toEqual({ min: [0, 0, 0], max: [0, 0, 0] });
   });
 });
+
+describe('groundScrew stepOfSolid', () => {
+  const plan = mono4x6Plan();
+  plan.foundation.type = 'groundScrew';
+  const scene = buildScene(plan);
+  const steps = buildAssembly(plan, scene, calculate(plan));
+  const model = buildModel3d(plan, scene);
+  const idx = (id: AssemblyStepId) => steps.findIndex(s => s.id === id);
+
+  test('ground → supports, support → supports, beam → beamFrame', () => {
+    const ground = model.solids.find(s => s.layer === 'ground')!;
+    expect(stepOfSolid(ground, scene, steps)).toBe(idx('supports'));
+    const beam = model.solids.find(s => s.elementId?.startsWith('frame.beam.'))!;
+    expect(stepOfSolid(beam, scene, steps)).toBe(idx('beamFrame'));
+    for (const s of model.solids) {
+      if (s.layer === 'supports') expect(stepOfSolid(s, scene, steps)).toBe(idx('supports'));
+      if (s.layer === 'beamFrame') expect(stepOfSolid(s, scene, steps)).toBe(idx('beamFrame'));
+    }
+  });
+
+  test('synthesised bodies without supports step fall to the next existing step', () => {
+    const without = steps.filter(s => s.id !== 'supports' && s.id !== 'beamFrame');
+    const ground = model.solids.find(s => s.layer === 'ground')!;
+    expect(without[stepOfSolid(ground, scene, without)].id).toBe('floor');
+  });
+});
