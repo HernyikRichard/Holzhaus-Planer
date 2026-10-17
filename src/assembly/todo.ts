@@ -1,9 +1,10 @@
 import type { Mm, Opening, Plan, WallSide } from '../model/types';
 import { frameLayout, hasFrame } from '../calc/frame';
+import { supportQuantities } from '../calc/supports';
 import { beamSegments } from '../scene/frame';
 import { studPositions, wallGeometry } from '../calc/geometry';
 import {
-  BATTEN_GAUGE, BEAM_BOLTS_PER_SUPPORT, BEAM_SECTIONS, BATTEN_SPACING_WALL, EPDM_UPTURN, MESH_SHEET, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
+  BATTEN_GAUGE, BEAM_BOLTS_PER_SUPPORT, BEAM_SECTIONS, BATTEN_SPACING_WALL, CURE_DAYS, EPDM_UPTURN, LONG_BARS_PER_SUPPORT, MESH_SHEET, PIER_TUBE_D, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
 } from '../catalog';
 import type { Element, ElementKind, FastenerKind, Scene } from '../scene/types';
 import { formatCm, formatCmNum, formatQty } from '../ui/format';
@@ -97,15 +98,36 @@ function foundation(c: Ctx): string[] {
 }
 
 function supports(c: Ctx): string[] {
-  if (c.plan.foundation.type !== 'groundScrew') return []; // a pontalap és a betonpillér teendői külön jönnek
   const f = frameLayout(c.plan);
-  const { groundScrew, frame } = c.plan.foundation;
-  const n = count(c, 'support');
-  return [
-    `Tűzd ki a ${n} csavar helyét: ${f.beamAxes.length} sor ${formatCm(f.joistSpan)}-es sorközzel, soronként ${f.supportAxes.length} csavar a sarokponttól ${positions(f.supportAxes)}-re.`,
-    `Hajtsd be a csavarokat ${formatCm(groundScrew.length)} mélyre, függőlegesen; a fejük ${formatCm(frame.groundClearance)}-re legyen a talaj fölött.`,
-    'Szintezd ki az U-fejeket egy magasságra (lézer vagy vízmérték).',
+  const { groundScrew, frame, footing, pier, type } = c.plan.foundation;
+  if (type === 'groundScrew') {
+    const n = count(c, 'support');
+    return [
+      `Tűzd ki a ${n} csavar helyét: ${f.beamAxes.length} sor ${formatCm(f.joistSpan)}-es sorközzel, soronként ${f.supportAxes.length} csavar a sarokponttól ${positions(f.supportAxes)}-re.`,
+      `Hajtsd be a csavarokat ${formatCm(groundScrew.length)} mélyre, függőlegesen; a fejük ${formatCm(frame.groundClearance)}-re legyen a talaj fölött.`,
+      'Szintezd ki az U-fejeket egy magasságra (lézer vagy vízmérték).',
+    ];
+  }
+  const q = supportQuantities(c.plan);
+  const noun = type === 'padFooting' ? 'pontalap' : 'betonpillér';
+  const gc = formatCm(frame.groundClearance);
+  const footSize = `${formatCmNum(footing.size)}×${formatCm(footing.size)}`;
+  const concrete = line(c, 'foundation.concrete');
+  const each = type === 'padFooting' ? 'talponként' : 'támaszonként';
+  const out = [
+    `Tűzd ki a ${q.count} ${noun} helyét: ${f.beamAxes.length} sor ${formatCm(f.joistSpan)}-es sorközzel, soronként ${f.supportAxes.length} ${noun} a sarokponttól ${positions(f.supportAxes)}-re.`,
+    `Ásd ki a ${q.count} gödröt ${footSize}-re, ${formatCm(footing.depth)} mélyre.`,
+    `Helyezd be a vasalást (${each} ${LONG_BARS_PER_SUPPORT} db Ø10 hosszvas, ${q.stirrupsPerSupport} db Ø6 kengyel), és öntsd ki betonnal${concrete ? ` (${qty(concrete)})` : ''}.`,
   ];
+  if (type === 'padFooting') {
+    out.push(`Ágyazd be az oszloptalpakat egy szintre, a fejük ${gc}-re legyen a talaj fölött (zsinór vagy lézer).`);
+  } else if (pier.kind === 'tube200') {
+    out.push(`Állítsd be a Ø${PIER_TUBE_D / 10} cm-es zsalucső pilléreket ${gc} magasra, vasald és töltsd ki betonnal; a tetejükre csavarozd fel a gerendapapucsokat.`);
+  } else {
+    out.push(`Falazd fel a pilléreket ${q.pierRows} sor ${pier.kind === 'block200' ? 20 : 25} cm-es zsalukőből ${gc} magasra, vasald és töltsd ki betonnal; a tetejükre csavarozd fel a gerendapapucsokat.`);
+  }
+  out.push(`Hagyd szilárdulni legalább ${CURE_DAYS} napig, mielőtt terheled.`);
+  return out;
 }
 
 function beamFrame(c: Ctx): string[] {

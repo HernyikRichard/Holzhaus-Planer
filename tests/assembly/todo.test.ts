@@ -223,3 +223,56 @@ describe('groundScrew to-dos', () => {
     expect(bs.find(s => s.id === 'beamFrame')!.todo.join('\n')).toContain('A toldás mindig támasz fölé essen.');
   });
 });
+
+describe('pad footing and concrete pier to-dos', () => {
+  function build(f: (p: Plan) => void) {
+    const plan = createDefaultPlan();
+    plan.building = { ...plan.building, width: 3000, length: 4000 };
+    f(plan);
+    const steps = buildAssembly(plan, buildScene(plan), calculate(plan));
+    return steps.find(s => s.id === 'supports')!;
+  }
+  const pad = (p: Plan) => { p.foundation.type = 'padFooting'; p.foundation.frame.groundClearance = 300; };
+  const pier = (kind: 'block200' | 'block250' | 'tube200') => (p: Plan) => {
+    p.foundation.type = 'concretePier'; p.foundation.pier = { kind }; p.foundation.frame.groundClearance = 300;
+  };
+
+  test('pad footing', () => {
+    const s = build(pad);
+    const t = s.todo.join('\n');
+    expect(s.title).toBe('Pontalapok');
+    expect(s.todo.length).toBeGreaterThanOrEqual(3);
+    expect(s.todo.length).toBeLessThanOrEqual(6);
+    expect(t).toContain('Tűzd ki a 12 pontalap helyét: 3 sor');
+    expect(t).toContain('40×40 cm-re, 80 cm mélyre');
+    expect(t).toContain('4 db Ø10 hosszvas, 4 db Ø6 kengyel');
+    expect(t).toContain('1,54 m³');
+    expect(t).toContain('oszloptalpakat');
+    expect(t).toContain('30 cm-re');
+    expect(t).toContain('7 napig');
+  });
+
+  test('concrete pier, block', () => {
+    const s = build(pier('block250'));
+    const t = s.todo.join('\n');
+    expect(s.title).toBe('Betonpillérek');
+    expect(s.todo.length).toBeLessThanOrEqual(6);
+    expect(t).toContain('12 betonpillér helyét');
+    expect(t).toContain('támaszonként 4 db Ø10 hosszvas');
+    expect(t).toContain('2 sor 25 cm-es zsalukőből 30 cm magasra');
+    expect(t).toContain('gerendapapucs');
+    expect(t).toContain('7 napig');
+    expect(build(pier('block200')).todo.join('\n')).toContain('2 sor 20 cm-es zsalukőből');
+  });
+
+  test('concrete pier, tube', () => {
+    const t = build(pier('tube200')).todo.join('\n');
+    expect(t).toContain('Ø20 cm-es zsalucső');
+    expect(t).toContain('30 cm magasra');
+    expect(t).toContain('gerendapapucs');
+  });
+
+  test('ground screw title unchanged', () => {
+    expect(build(p => { p.foundation.type = 'groundScrew'; }).title).toBe('Támaszok');
+  });
+});

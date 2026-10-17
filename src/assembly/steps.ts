@@ -8,6 +8,7 @@ import type { CutRef, Element, FastenerKind, Scene } from '../scene/types';
 import { floorOn, hasFrame } from '../calc/frame';
 import { DECKING_REQUIRED, FRAME_ANCHOR_LABEL, HURRICANE_TIE_LABEL } from '../catalog';
 import { formatQty, sectionLabelWithUnit } from '../ui/format';
+import { supportSpec } from '../calc/supports';
 import { stepTodo } from './todo';
 
 export type AssemblyStepId = 'foundation' | 'supports' | 'beamFrame' | 'floor' | 'wall.N' | 'wall.E' | 'wall.S' | 'wall.W' | 'wallTop'
@@ -230,7 +231,7 @@ export function buildAssembly(plan: Plan, scene: Scene, calc: CalcOutput): Assem
   for (const id of order) {
     const pieces = [...elementsToPieces(els.get(id)!), ...(id === 'exterior' ? battens : [])];
     const step: AssemblyStep = {
-      id, index: 0, title: ASSEMBLY_TITLES[id],
+      id, index: 0, title: id === 'supports' && hasFrame(plan) ? supportSpec(plan).stepTitle : ASSEMBLY_TITLES[id],
       elementIds: els.get(id)!.map(e => e.id),
       lines: lines.get(id)!,
       pieces: mergePieces(pieces, scene),
