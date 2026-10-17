@@ -142,3 +142,18 @@ describe('slab plan has no ground solid', () => {
     for (const s of found) expect(stepOfSolid(s, scene, steps)).toBe(f);
   });
 });
+
+describe('padFooting stepOfSolid', () => {
+  const plan = mono4x6Plan();
+  plan.foundation.type = 'padFooting';
+  const scene = buildScene(plan);
+  const steps = buildAssembly(plan, scene, calculate(plan));
+  const model = buildModel3d(plan, scene);
+
+  test('support solids → supports step', () => {
+    const idx = steps.findIndex(s => s.id === 'supports');
+    const sup = model.solids.filter(s => s.layer === 'supports');
+    expect(sup.length).toBeGreaterThan(0);
+    for (const s of sup) expect(stepOfSolid(s, scene, steps)).toBe(idx);
+  });
+});

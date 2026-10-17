@@ -6,6 +6,7 @@ import { roofGeometry, studLengthAt, wallGeometry, type WallGeom } from '../calc
 import type { Element, ElementKind, Scene } from '../scene/types';
 import { COVERING_T, DECKING_T, FOIL_T, floorTopZ, wallLayerStrips } from '../scene/layerStack';
 import { floorOn, frameLayout, hasFrame } from '../calc/frame';
+import { pierWidth } from '../calc/supports';
 import { corners } from '../viewer/views/common';
 import { floorWallMap } from '../viewer/views/floorPlan';
 
@@ -533,6 +534,9 @@ const GROUND_T = 20;
 const UHEAD_LEN = 100;
 const UHEAD_SIDE = 10;   // a fej a gerendánál ennyivel szélesebb
 const CYL_SEGMENTS = 16;
+const POST_BASE = 60;     // pontalap: oszloptalp oldala
+const BRACKET_T = 10;     // betonpillér: gerendapapucs lemezvastagsága
+const BRACKET_LEN = 100;  // a papucs hossza a gerenda mentén
 
 /** Gerendakeretes alap: talajlap, talajcsavarnál támaszonként cső + orsó + U-fej, főgerenda-szegmensek. */
 function frameSolids(plan: Plan, scene: Scene): Solid[] {
@@ -545,11 +549,12 @@ function frameSolids(plan: Plan, scene: Scene): Solid[] {
     origin: [0, 0, -GROUND_T], uAxis: [...X], vAxis: [...Y], nAxis: [...Z],
     outline: rect(-GROUND_MARGIN, -GROUND_MARGIN, W + GROUND_MARGIN, L + GROUND_MARGIN), holes: [], depth: GROUND_T,
   }];
-  const circle = (cx: number, cy: number): [number, number][] =>
+  const circleD = (cx: number, cy: number, dia: number): [number, number][] =>
     Array.from({ length: CYL_SEGMENTS }, (_, i): [number, number] => {
       const a = (2 * Math.PI * i) / CYL_SEGMENTS;
-      return [Math.round((cx + (d / 2) * Math.cos(a)) * 1000) / 1000, Math.round((cy + (d / 2) * Math.sin(a)) * 1000) / 1000];
+      return [Math.round((cx + (dia / 2) * Math.cos(a)) * 1000) / 1000, Math.round((cy + (dia / 2) * Math.sin(a)) * 1000) / 1000];
     });
+  const circle = (cx: number, cy: number): [number, number][] => circleD(cx, cy, d);
   const part = (id: string, label: string, material: string, outline: [number, number][], z0: number, depth: number): void => {
     out.push({
       layer: 'supports', elementId: id, label, material,
@@ -566,6 +571,27 @@ function frameSolids(plan: Plan, scene: Scene): Solid[] {
     part(e.id, `${e.label} – talaj alatt`, 'metalBuried', circle(cx, cy), -screwLen, screwLen);
     part(e.id, `${e.label} – orsó`, 'metal', circle(cx, cy), 0, head - SCREW_HEAD_H);
     part(e.id, `${e.label} – U-fej`, 'metal', rect(cx - hx, cy - hy, cx + hx, cy + hy), head - SCREW_HEAD_H, SCREW_HEAD_H);
+  }
+  const type = plan.foundation.type;
+  if (type === 'padFooting' || type === 'concretePier') {
+    const { size, depth } = plan.foundation.footing;
+    const clearance = f.z.beamBottom;
+    const kind = plan.foundation.pier.kind;
+    const alongX = f.along === 'x';
+    for (const e of scene.elements.filter(x => x.kind === 'support')) {
+      const cx = e.geom.u + e.geom.w / 2;
+      const cy = e.geom.v + e.geom.h / 2;
+      const sq = (w: number, h: number): [number, number][] => rect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2);
+      part(e.id, `${e.label} – talp`, 'concreteBuried', sq(size, size), -depth, depth);
+      if (type === 'padFooting') {
+        part(e.id, `${e.label} – oszloptalp`, 'metal', sq(POST_BASE, POST_BASE), 0, clearance);
+      } else {
+        const pw = pierWidth(kind);
+        part(e.id, `${e.label} – pillér`, 'concrete', kind === 'tube200' ? circleD(cx, cy, pw) : sq(pw, pw), 0, clearance - BRACKET_T);
+        part(e.id, `${e.label} – papucs`, 'metal', alongX ? sq(BRACKET_LEN, f.beam.width + UHEAD_SIDE) : sq(f.beam.width + UHEAD_SIDE, BRACKET_LEN),
+          clearance - BRACKET_T, BRACKET_T);
+      }
+    }
   }
   for (const e of scene.elements.filter(x => x.kind === 'beam')) {
     out.push({

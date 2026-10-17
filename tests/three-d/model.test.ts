@@ -933,3 +933,92 @@ describe('talajcsavaros alap', () => {
     expect(s.layers).toContain('foundation');
   });
 });
+
+describe('pontalap és betonpillér 3D', () => {
+  const zr = (s: Solid): [number, number] => { const b = solidBounds(s); return [b.min[2], b.max[2]]; };
+  const mk = (type: 'padFooting' | 'concretePier', kind: 'block200' | 'block250' | 'tube200' = 'block250'): Plan => {
+    const p = createDefaultPlan();
+    p.foundation.type = type;
+    p.foundation.pier = { kind };
+    p.foundation.frame.groundClearance = 300;
+    return p;
+  };
+
+  for (const type of ['padFooting', 'concretePier'] as const) {
+    describe(type, () => {
+      const plan = mk(type);
+      const scene = buildScene(plan);
+      const m = buildModel3d(plan, scene);
+      const f = frameLayout(plan);
+      const { size, depth } = plan.foundation.footing;
+      const clr = plan.foundation.frame.groundClearance;
+      const sups = scene.elements.filter(e => e.kind === 'support');
+
+      it('rétegek: talaj, támaszok, gerendakeret, padló; nincs betonlemez', () => {
+        for (const l of ['ground', 'supports', 'beamFrame', 'floor'] as const) expect(m.layers).toContain(l);
+        expect(m.layers).not.toContain('foundation');
+      });
+
+      it('minden support elemnek van teste, supports rétegben, és a talp −depth…0', () => {
+        expect(sups.length).toBeGreaterThan(0);
+        for (const e of sups) {
+          const parts = byId(m.solids, e.id);
+          expect(parts.length).toBe(type === 'padFooting' ? 2 : 3);
+          expect(parts.every(s => s.layer === 'supports')).toBe(true);
+          const foot = parts.find(s => s.material === 'concreteBuried')!;
+          expect(zr(foot)).toEqual([-depth, 0]);
+          const b = solidBounds(foot);
+          expect([b.max[0] - b.min[0], b.max[1] - b.min[1]]).toEqual([size, size]);
+        }
+        expect(m.bounds.min[2]).toBe(-depth);
+      });
+
+      if (type === 'padFooting') {
+        it('az oszloptalp fém 60×60, Z 0…clearance', () => {
+          const e = sups[0];
+          const post = byId(m.solids, e.id).find(s => s.material === 'metal')!;
+          expect(zr(post)).toEqual([0, clr]);
+          const b = solidBounds(post);
+          expect([b.max[0] - b.min[0], b.max[1] - b.min[1]]).toEqual([60, 60]);
+          expect((b.min[0] + b.max[0]) / 2).toBeCloseTo(e.geom.u + e.geom.w / 2, 6);
+        });
+      } else {
+        it('pillér Z 0…clearance−10, papucs lap a gerenda alján', () => {
+          const e = sups[0];
+          const parts = byId(m.solids, e.id);
+          const pier = parts.find(s => s.material === 'concrete')!;
+          expect(zr(pier)).toEqual([0, clr - 10]);
+          const b = solidBounds(pier);
+          expect([b.max[0] - b.min[0], b.max[1] - b.min[1]]).toEqual([250, 250]);
+          const br = parts.find(s => s.material === 'metal')!;
+          expect(zr(br)[0]).toBe(clr - 10);
+          expect(zr(br)[1]).toBe(f.z.beamBottom);
+          const bb = solidBounds(br);
+          const wi = f.along === 'x' ? 1 : 0;
+          expect(bb.max[wi] - bb.min[wi]).toBe(f.beam.width + 10);
+          expect(bb.max[1 - wi] - bb.min[1 - wi]).toBe(100);
+        });
+      }
+    });
+  }
+
+  it('zsalucső pillér: 16 pontú körvonal, Ø200', () => {
+    const plan = mk('concretePier', 'tube200');
+    const scene = buildScene(plan);
+    const m = buildModel3d(plan, scene);
+    const e = scene.elements.find(x => x.kind === 'support')!;
+    const pier = byId(m.solids, e.id).find(s => s.material === 'concrete')!;
+    expect(pier.outline).toHaveLength(16);
+    const b = solidBounds(pier);
+    expect(b.max[0] - b.min[0]).toBeCloseTo(200, 0);
+  });
+
+  it('block200 pillér 200×200', () => {
+    const plan = mk('concretePier', 'block200');
+    const scene = buildScene(plan);
+    const e = scene.elements.find(x => x.kind === 'support')!;
+    const pier = byId(buildModel3d(plan, scene).solids, e.id).find(s => s.material === 'concrete')!;
+    const b = solidBounds(pier);
+    expect([b.max[0] - b.min[0], b.max[1] - b.min[1]]).toEqual([200, 200]);
+  });
+});

@@ -35,7 +35,8 @@ interface MatSpec { color: string; opacity?: number; metalness?: number; roughne
 /** Anyagkulcs → megjelenés. A `transparent` kulcsok áttetszők, `depthWrite: false`-szal. */
 const MATERIALS: Record<string, MatSpec> = {
   concrete: { color: '#9ea4ab', roughness: 0.95 },
-  timber: { color: '#e6c690' },          // világos fenyő
+  concreteBuried: { color: '#9ea4ab', roughness: 0.95, opacity: 0.35 }, // talaj alatti beton (talp)
+  timber: { color: '#e6c690' },         // világos fenyő
   osb: { color: '#b98a52' },             // barnásabb
   boards: { color: '#d4ab70' },
   paneling: { color: '#d8b27c' },
