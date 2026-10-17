@@ -27,6 +27,8 @@ export function elStyle(kit: Kit, kind: string): string {
     case 'meshSheet': return `${kit.fill('sheet', 0.1)} ${kit.stroke('sheet', 0.8)}`;
     case 'counterBatten': case 'roofBatten': return `${kit.fill('lineMuted', 0.3)} ${kit.stroke('lineMuted', 0.8)}`;
     case 'fascia': case 'barge': return `${kit.fill('lineMuted', 0.2)} ${kit.stroke('line')}`;
+    case 'beam': return `${kit.fill('wood', 0.55)} ${kit.stroke('line')}`;
+    case 'support': return `${kit.fill('lineMuted', 0.7)} ${kit.stroke('line', 1.2)}`;
     default: return `${kit.fill('line', 0.12)} ${kit.stroke('line')}`;
   }
 }

@@ -6,7 +6,7 @@ import { groupLength, neighbours } from '../scene/neighbours';
 const GROUP_NAMES: Record<string, string> = {
   'wall.N': 'É fal', 'wall.E': 'K fal', 'wall.S': 'D fal', 'wall.W': 'Ny fal',
   'roof.L': 'bal tetősík', 'roof.R': 'jobb tetősík', 'roof.M': 'tetősík', 'roof.ridge': 'gerinc', 'roof.collar': 'fogópárok',
-  floor: 'padló', foundation: 'alap',
+  floor: 'padló', foundation: 'alap', frame: 'gerendakeret',
 };
 const VERTICAL = new Set(['stud', 'cornerStud', 'gableStud', 'kingStud', 'jackStud', 'cripple']);
 
@@ -68,7 +68,8 @@ export function tooltipLines(scene: Scene, plan: Plan, target: { el?: string; fx
 
   const nb = neighbours(scene, groupLength(plan, el.group), el.id);
   const g = el.geom;
-  const size = el.section ? `${c(el.section.t)}×${c(el.section.w)} cm · hossza ${c(el.length)} cm` : `${c(g.w)} × ${c(g.h)} cm`;
+  const size = el.kind === 'support' ? `Ø${c(el.geom.w)} cm · hossza ${c(el.length)} cm`
+    : el.section ? `${c(el.section.t)}×${c(el.section.w)} cm · hossza ${c(el.length)} cm` : `${c(g.w)} × ${c(g.h)} cm`;
   const pos = positionLine(el.group, nb.fromStart, g.v, g.u);
   const side = (axis?: number, clear?: number): string => (axis === undefined || clear === undefined ? '—' : `${c(axis)} cm (${c(clear)} szabad)`);
   return [

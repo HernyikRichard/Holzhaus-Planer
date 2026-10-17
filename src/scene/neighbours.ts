@@ -28,6 +28,7 @@ export function groupLength(plan: Plan, group: string): Mm {
   if (group.startsWith('roof.')) return roofGeometry(plan).roofLengthAlongRidge;
   if (group === 'floor') return plan.building.width - 2 * plan.walls.studSection.w;
   if (group === 'foundation') return plan.building.width + 2 * plan.foundation.slabOverhang;
+  if (group === 'frame') return plan.building.width; // a keret elemei alaprajzi (x, y) koordinátában
   throw new Error(`Ismeretlen csoport: ${group}`);
 }
 
@@ -35,7 +36,15 @@ interface Cand { e: Element; pos: number; size: number }
 
 // Szomszédjelöltek az elemhez: a pozíció (középvonal) és a méret a szomszédsági tengely mentén.
 // Fal: függőleges fajták, u szerint, ≥1 mm v-átfedéssel. Tetősík: rafter/counterBatten u szerint
-// (azonos fajtával), roofBatten v szerint. Padló: joist u szerint. Egyéb: nincs.
+// (azonos fajtával), roofBatten v szerint. Padló: joist u szerint. Gerendakeret: a támasz a saját gerendája mentén,
+// a főgerenda a gerendákra merőlegesen (az irány a főgerendák alakjából). Egyéb: nincs.
+/** A gerendakeret elemének szomszédsági tengelye: támasznál a főgerendák iránya, főgerendánál az arra merőleges. */
+function frameAxis(scene: Scene, el: Element): 'u' | 'v' {
+  const beam = scene.elements.find(o => o.group === 'frame' && o.kind === 'beam');
+  const alongU = beam ? beam.geom.w >= beam.geom.h : true;
+  return (el.kind === 'support') === alongU ? 'u' : 'v';
+}
+
 function candidates(scene: Scene, el: Element): { list: Cand[]; mine: Cand } | null {
   const g = el.geom;
   const same = (pred: (o: Element) => boolean, axis: 'u' | 'v'): { list: Cand[]; mine: Cand } => {
@@ -52,6 +61,13 @@ function candidates(scene: Scene, el: Element): { list: Cand[]; mine: Cand } | n
     if (el.kind === 'roofBatten') return same(o => o.kind === 'roofBatten', 'v');
   }
   if (el.group === 'floor' && el.kind === 'joist') return same(o => o.kind === 'joist', 'u');
+  if (el.group === 'frame' && (el.kind === 'support' || el.kind === 'beam')) {
+    const axis = frameAxis(scene, el);
+    const across = (o: Element): boolean => (axis === 'u'
+      ? Math.min(o.geom.v + o.geom.h, g.v + g.h) - Math.max(o.geom.v, g.v) >= 1
+      : Math.min(o.geom.u + o.geom.w, g.u + g.w) - Math.max(o.geom.u, g.u) >= 1);
+    return same(o => o.kind === el.kind && across(o), axis);
+  }
   return null;
 }
 
@@ -107,7 +123,8 @@ export function tempDimensions(scene: Scene, groupLen: Mm, elementId: string): T
   const n = neighbours(scene, groupLen, elementId);
   const g = el.geom;
   const out: TempDim[] = [];
-  const batten = el.kind === 'roofBatten';
+  // v irányú méretvonalak: tetőléc, és a gerendakeret v tengelyű szomszédai
+  const batten = el.kind === 'roofBatten' || (el.group === 'frame' && frameAxis(scene, el) === 'v');
   const ax = (id: string | undefined, dist: Mm | undefined): void => {
     if (!id || dist === undefined) return;
     const o = scene.elements.find(e => e.id === id)!;

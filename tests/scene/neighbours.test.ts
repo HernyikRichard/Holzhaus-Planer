@@ -72,3 +72,22 @@ test('roof batten dimension orientation', () => {
   expect(t.map(d => d.offset)).toEqual([-150, -300, -450]);
   expect(t[0].text).toBe('33 cm');
 });
+
+describe('gerendakeret (talajcsavar)', () => {
+  const q = createDefaultPlan(); q.foundation.type = 'groundScrew';
+  const qs = buildScene(q);
+  test('groupLength frame', () => {
+    expect(groupLength(q, 'frame')).toBe(q.building.width);
+  });
+  test('támasz szomszédai a gerenda mentén', () => {
+    // 3000×4000: a gerendák y irányúak, a támaszok 150, 1383, 2617, 3850-nél
+    const n = neighbours(qs, groupLength(q, 'frame'), 'frame.support.2');
+    expect(n).toMatchObject({ left: 'frame.support.1', right: 'frame.support.3', axisLeft: 1233, axisRight: 1234 });
+    const t = tempDimensions(qs, groupLength(q, 'frame'), 'frame.support.2');
+    expect(t[0].x1).toBe(t[0].x2);
+  });
+  test('főgerenda szomszédai a W irányban', () => {
+    const n = neighbours(qs, groupLength(q, 'frame'), 'frame.beam.2');
+    expect(n).toMatchObject({ left: 'frame.beam.1', right: 'frame.beam.3', axisLeft: 1450, axisRight: 1450 });
+  });
+});

@@ -110,5 +110,8 @@ export function frameElements(plan: Plan): { elements: Element[]; fasteners: Fas
       });
     });
   });
+  // az elemek rögzítései (buborék, adatlap)
+  const byId = new Map(elements.map(e => [e.id, e]));
+  for (const fx of fasteners) for (const id of fx.elementIds) byId.get(id)?.fasteners.push(fx.id);
   return { elements, fasteners };
 }

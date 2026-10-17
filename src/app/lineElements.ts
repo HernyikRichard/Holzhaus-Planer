@@ -9,7 +9,7 @@ import { STEPS, type LayerId, type StepId, type ViewId } from './steps';
 function viewOfGroup(group: string): ViewId {
   if (group.startsWith('wall.')) return group as ViewId;
   if (group.startsWith('roof.')) return 'roof';
-  if (group === 'foundation') return 'foundation';
+  if (group === 'foundation' || group === 'frame') return 'foundation';
   return 'floor';
 }
 

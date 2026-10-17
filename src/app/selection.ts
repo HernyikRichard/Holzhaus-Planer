@@ -71,7 +71,7 @@ export function kindShown(kind: Element['kind'], view: ViewId, layers: Record<La
 export function viewForElement(el: Element, _plan: Plan): ViewId {
   if (el.group.startsWith('wall.')) return el.group as ViewId;
   if (el.group.startsWith('roof.')) return 'roof';
-  if (el.group === 'foundation') return 'foundation';
+  if (el.group === 'foundation' || el.group === 'frame') return 'foundation';
   return 'floor';
 }
 
