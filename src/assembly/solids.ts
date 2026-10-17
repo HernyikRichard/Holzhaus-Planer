@@ -5,7 +5,7 @@ import { stepIdOfElement, type AssemblyStep, type AssemblyStepId } from './steps
 
 /** Elem nélküli (szintetizált) 3D test lépése a rétege szerint. */
 const LAYER_STEP: Record<Layer3dId, AssemblyStepId> = {
-  foundation: 'foundation', floor: 'floor', wallFrame: 'wallTop', wallOsb: 'wallTop',
+  ground: 'foundation', foundation: 'foundation', supports: 'foundation', beamFrame: 'foundation', floor: 'floor', wallFrame: 'wallTop', wallOsb: 'wallTop',
   interiorCladding: 'interior', vaporBarrier: 'interior', insulation: 'interior',
   breatherMembrane: 'exterior', wallBattens: 'exterior', exteriorCladding: 'exterior',
   roofFrame: 'roofFrame', decking: 'roofLayers', underlay: 'roofLayers', counterBatten: 'roofLayers', roofBatten: 'roofLayers',
