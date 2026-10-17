@@ -3,7 +3,7 @@ import { frameLayout } from '../calc/frame';
 import { beamSegments } from '../scene/frame';
 import { studPositions, wallGeometry } from '../calc/geometry';
 import {
-  BATTEN_GAUGE, BEAM_BOLTS_PER_SUPPORT, BATTEN_SPACING_WALL, EPDM_UPTURN, MESH_SHEET, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
+  BATTEN_GAUGE, BEAM_BOLTS_PER_SUPPORT, BEAM_SECTIONS, BATTEN_SPACING_WALL, EPDM_UPTURN, MESH_SHEET, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
 } from '../catalog';
 import type { Element, ElementKind, FastenerKind, Scene } from '../scene/types';
 import { formatCm, formatCmNum, formatQty } from '../ui/format';
@@ -110,6 +110,7 @@ function supports(c: Ctx): string[] {
 function beamFrame(c: Ctx): string[] {
   const f = frameLayout(c.plan);
   const out = [`Fektesd ${az(f.beamAxes.length)} főgerendát az U-fejekbe, rögzítsd fejenként ${BEAM_BOLTS_PER_SUPPORT} db M12 menetes szárral.`];
+  if (BEAM_SECTIONS[c.plan.foundation.frame.beamSection].plies === 2) out.push('A 2×50×150-es főgerenda két összeszegezett pallóból áll.');
   // toldott gerenda: egy főgerendához több szegmens tartozik
   if (beamSegments(f.L, f.supportAxes, c.plan.settings.stockLengths).length > 1) out.push('A toldás mindig támasz fölé essen.');
   out.push('Ellenőrizd, hogy a főgerendák felső síkja egy szintben van; szükség esetén állíts az U-fejeken.');
@@ -122,7 +123,7 @@ function floor(c: Ctx): string[] {
   const out: string[] = [];
   const joists = c.els.filter(e => e.kind === 'joist').sort((a, b) => a.geom.u - b.geom.u);
   if (c.plan.foundation.type === 'groundScrew' && joists.length) {
-    out.push(`Fektesd ${az(joists.length)} párnafát ${formatCm(fl.joistSpacing)}-es kiosztással a főgerendákra, a két szélső a peremgerenda a rövid falak alatt.`);
+    out.push(`Fektesd ${az(joists.length)} párnafát ${formatCm(fl.joistSpacing)}-es kiosztással a főgerendákra, a két szélső párnafa a peremgerenda, a rövid falak alatt fut.`);
     out.push(`Rögzítsd minden kereszteződést gerendasaruval (${fasteners(c, 'joistHanger')} db).`);
   } else if (joists.length) {
     const u0 = joists[0].geom.u;

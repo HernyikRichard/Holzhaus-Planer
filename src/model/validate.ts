@@ -20,7 +20,7 @@ export function validatePlan(plan: Plan): ValidationError[] {
   range('building.wallHeight', 'Falmagasság', plan.building.wallHeight, 1800, 4000);
   range('foundation.slabThickness', 'Lemezvastagság', plan.foundation.slabThickness, 50, 300);
   range('foundation.gravelBedThickness', 'Sóderágy vastagsága', plan.foundation.gravelBedThickness, 0, 500);
-  range('foundation.frame.groundClearance', 'Talajtávolság', plan.foundation.frame.groundClearance, 150, 800);
+  range('foundation.frame.groundClearance', 'Talaj feletti magasság', plan.foundation.frame.groundClearance, 150, 800);
   if (plan.foundation.frame.supportSpacing !== 'auto') {
     range('foundation.frame.supportSpacing', 'Támaszköz', plan.foundation.frame.supportSpacing, 800, 2500);
   }

@@ -92,6 +92,7 @@ export const ANCHOR_SPACING = 800;
 export const ANCHOR_EDGE = 150;
 export const FRAME_SCREWS_PER_END = 2;
 export const ANCHOR_LABEL = 'Betondübel / ászokcsavar M10×120';
+export const FRAME_ANCHOR_LABEL = 'Talpgerenda-rögzítő csavar (a padlón át a gerendakeretbe)';
 export const FRAME_SCREW_LABEL = '5×90 csavar';
 export const SCREWS_PER_OSB_SHEET = 30;
 export const OSB_SCREW_EDGE_SPACING = 150;

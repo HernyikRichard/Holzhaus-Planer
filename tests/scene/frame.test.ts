@@ -32,7 +32,10 @@ test('groundScrew 3000x4000: counts, joists, fasteners', () => {
   expect(k('joist')[0].label).toBe('Peremgerenda #1');
   expect(k('joist')[7].label).toBe('Peremgerenda #2');
   expect(k('joist')[7].pieceLabel).toBe('peremgerenda');
-  expect(k('joist')[3].label).toBe('Párnafa #4');
+  expect(k('joist')[1].label).toBe('Párnafa #1');
+  expect(k('joist')[3].label).toBe('Párnafa #3');
+  expect(k('joist')[6].label).toBe('Párnafa #6');
+  expect(k('joist')[3].id).toBe('floor.joist.4');
   expect(k('support')[0].section).toBeUndefined();
   expect(sumCount(sc, 'beamBolt')).toBe(BEAM_BOLTS_PER_SUPPORT * 12);
   expect(sumCount(sc, 'joistHanger')).toBe(8 * 3);

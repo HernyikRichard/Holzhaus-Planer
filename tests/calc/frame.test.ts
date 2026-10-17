@@ -73,9 +73,17 @@ test('framePt', () => {
   expect(framePt(frameLayout(mk(4000, 3000)), 10, 20)).toEqual([10, 20]);
 });
 
+test('támaszköz-figyelmeztetés minden keresztmetszetnél nyelvtanilag helyes', () => {
+  for (const [b, l] of [['b100x150', '100×150'], ['b120x120', '120×120'], ['b2x50x150', '2×50×150']] as const) {
+    const w = frameLayout(mk(4000, 4000, b, 2500)).warnings.join(' ');
+    expect(w).toContain(`a ${l} mm-es főgerendához`);
+    expect(w).not.toContain('-as');
+  }
+});
+
 test('figyelmeztetések', () => {
   expect(frameLayout(mk(4000, 4000, 'b120x120', 2400)).warnings)
-    .toContain('A megadott támaszköz (240 cm) nagyobb a 120×120-as főgerendához ajánlott 150 cm-nél.');
+    .toContain('A megadott támaszköz (240 cm) nagyobb a 120×120 mm-es főgerendához ajánlott 150 cm-nél.');
   const p = mk(3000, 4000); p.floor.joistSection = { t: 60, w: 120 };
   expect(frameLayout(p).warnings)
     .toContain('A(z) 60×120 padlógerendához nincs fesztávadat, 160 cm-rel számoltunk.');

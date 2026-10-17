@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import type { Store } from '../ui/store';
 import { SECTIONS, getPath, type FieldDef } from '../ui/fields';
+import { formatCm } from '../ui/format';
 import { useStore } from './hooks';
 import { applyFieldChange, toDisplay, toStored } from './fieldLogic';
 
@@ -64,6 +65,10 @@ export function FieldControl({ def, store }: { def: FieldDef; store: Store }) {
     const isThickness = def.path === 'floor.insulation.thickness';
     const shown = def.path === 'floor.insulation.type' ? String(value ?? 'none')
       : isThickness ? String(value ?? plan.floor.insulation?.thickness ?? 100) : String(value);
+    // kézzel szerkesztett, a listában nem szereplő támaszköz: külön opcióként jelenik meg, hogy kijelölt legyen
+    const options = def.options ?? [];
+    const extra = def.path === SUPPORT_SPACING && typeof value === 'number' && !options.some(o => o.value === shown)
+      ? [{ value: shown, label: formatCm(value) }] : [];
     control = (
       <select data-path={def.path} value={shown} aria-label={label}
         class={invalid ? 'error' : undefined} aria-invalid={invalid ? 'true' : undefined}
@@ -74,7 +79,7 @@ export function FieldControl({ def, store }: { def: FieldDef; store: Store }) {
           const numeric = def.path === SUPPORT_SPACING ? v !== 'auto' : typeof value === 'number' || isThickness;
           commit(def.path, numeric ? Number(v) : v);
         }}>
-        {(def.options ?? []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        {[...options, ...extra].map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     );
   } else {

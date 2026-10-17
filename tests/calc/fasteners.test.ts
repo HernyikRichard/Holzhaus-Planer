@@ -38,5 +38,5 @@ test('anchor line name follows the foundation type', () => {
   const s = { ...ZERO, anchorPoints: 10 };
   expect(calcFasteners(s)[0].name).toBe('Talpgerenda-rögzítő (dübel / ászokcsavar)');
   expect(calcFasteners(s, undefined, 'slab')[0].name).toBe('Talpgerenda-rögzítő (dübel / ászokcsavar)');
-  expect(calcFasteners(s, undefined, 'groundScrew')[0].name).toBe('Talpgerenda-rögzítő csavar (a padlón át a peremgerendába)');
+  expect(calcFasteners(s, undefined, 'groundScrew')[0].name).toBe('Talpgerenda-rögzítő csavar (a padlón át a gerendakeretbe)');
 });

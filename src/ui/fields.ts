@@ -92,8 +92,8 @@ export const SECTIONS: SectionDef[] = [
     select('foundation.frame.beamSection', 'Főgerenda keresztmetszete',
       opts(['b100x150', '100×150'], ['b120x120', '120×120'], ['b2x50x150', '2×50×150'])),
     select('foundation.frame.supportSpacing', 'Támaszköz',
-      opts(['auto', 'Automatikus'], ...Array.from({ length: 16 }, (_, i): [string, string] =>
-        [String(1000 + i * 100), `${100 + i * 10} cm`]))),
+      opts(['auto', 'Automatikus'], ...Array.from({ length: 18 }, (_, i): [string, string] =>
+        [String(800 + i * 100), `${80 + i * 10} cm`]))),
   ] },
   { id: 'floor', title: 'Padló', fields: [
     check('floor.enabled', 'Padlószerkezet'),

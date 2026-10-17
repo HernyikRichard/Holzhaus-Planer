@@ -1,7 +1,7 @@
 import type { FoundationType } from '../model/types';
 import type { CalcStats, MaterialLine } from './types';
 import {
-  CLADDING_NAILS_PER_M2, COUNTER_BATTEN_NAIL_SPACING, FASTENER_BOX, FRAME_SCREWS_PER_END, HURRICANE_TIE_LABEL,
+  CLADDING_NAILS_PER_M2, COUNTER_BATTEN_NAIL_SPACING, FASTENER_BOX, FRAME_ANCHOR_LABEL, FRAME_SCREWS_PER_END, HURRICANE_TIE_LABEL,
   JOIST_HANGER_SCREWS, SCREWS_PER_OSB_SHEET, STANDING_SEAM_CLIP_SPACING, STANDING_SEAM_SCREWS_PER_CLIP,
 } from '../catalog';
 import { hu } from './util';
@@ -23,7 +23,7 @@ export function calcFasteners(stats: CalcStats, supply?: Supply, foundationType:
   if (stats.anchorPoints > 0) {
     lines.push({
       id: 'fix.anchors', category: 'Kötőelemek', name: foundationType === 'groundScrew'
-        ? 'Talpgerenda-rögzítő csavar (a padlón át a peremgerendába)' : 'Talpgerenda-rögzítő (dübel / ászokcsavar)',
+        ? FRAME_ANCHOR_LABEL : 'Talpgerenda-rögzítő (dübel / ászokcsavar)',
       quantity: stats.anchorPoints, unit: 'db',
       explanation: `${stats.anchorPoints} rögzítési pont a talpgerenda mentén (800 mm-enként, sarkoknál és nyílászáróknál pótlással)`,
     });

@@ -5,7 +5,8 @@ import { wallGeometry } from '../calc/geometry';
 import { wallBattenPieces } from '../calc/walls';
 import { elementsToPieces } from '../scene/toPieces';
 import type { CutRef, Element, FastenerKind, Scene } from '../scene/types';
-import { DECKING_REQUIRED, HURRICANE_TIE_LABEL } from '../catalog';
+import { floorOn } from '../calc/frame';
+import { DECKING_REQUIRED, FRAME_ANCHOR_LABEL, HURRICANE_TIE_LABEL } from '../catalog';
 import { formatQty, sectionLabelWithUnit } from '../ui/format';
 import { stepTodo } from './todo';
 
@@ -131,7 +132,7 @@ function osbScrewStep(plan: Plan): AssemblyStepId {
   const wall = (kind: string) => plan.walls.layers.find(l => l.kind === kind && l.enabled);
   if (wall('osb')) return 'wallTop';
   if (wall('interiorCladding')?.material === 'osb') return 'interior';
-  if (plan.floor.enabled) return 'floor';
+  if (floorOn(plan)) return 'floor';
   const decking = plan.roof.layers.find(l => l.kind === 'decking');
   if (decking?.material === 'osb' && (decking.enabled || DECKING_REQUIRED.has(plan.roof.covering))) return 'roofLayers';
   return 'wallTop';
@@ -209,7 +210,7 @@ export function buildAssembly(plan: Plan, scene: Scene, calc: CalcOutput): Assem
       : f.kind === 'hurricaneTie' ? 'roofFrame'
         : stepOf.get(f.elementIds[0]) ?? wallStep(f.group);
     const m = fx.get(s) ?? fx.set(s, new Map()).get(s)!;
-    const cur = m.get(f.kind) ?? { kind: f.kind, label: FASTENER_LABELS[f.kind], count: 0, elementIds: [] };
+    const cur = m.get(f.kind) ?? { kind: f.kind, label: f.kind === 'anchor' && plan.foundation.type === 'groundScrew' ? FRAME_ANCHOR_LABEL : FASTENER_LABELS[f.kind], count: 0, elementIds: [] };
     cur.count += f.count;
     for (const id of f.elementIds) if (!cur.elementIds.includes(id)) cur.elementIds.push(id);
     m.set(f.kind, cur);

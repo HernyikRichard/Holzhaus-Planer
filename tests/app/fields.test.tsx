@@ -186,6 +186,17 @@ describe('Alaptípus', () => {
     expect(field('foundation.slabThickness')).not.toBeNull();
     expect(root.textContent).not.toContain('kötelező');
   });
+  test('support spacing options cover 80..250 cm and show a hand-edited value', () => {
+    const { store, field } = setup('foundation');
+    fireEvent.click(screen.getByRole('button', { name: 'Talajcsavar' }));
+    const vals = () => Array.from(field<HTMLSelectElement>('foundation.frame.supportSpacing').options).map(o => o.value);
+    expect(vals()).toEqual(['auto', ...Array.from({ length: 18 }, (_, i) => String(800 + i * 100))]);
+    act(() => store.update(p => { p.foundation.frame.supportSpacing = 1250; }));
+    const sel = field<HTMLSelectElement>('foundation.frame.supportSpacing');
+    expect(vals()).toContain('1250');
+    expect(sel.value).toBe('1250');
+    expect(sel.selectedOptions[0].textContent).toBe('125 cm');
+  });
   test('support spacing, length and clearance commit numbers; auto stays text', () => {
     const { store, field, set } = setup('foundation');
     fireEvent.click(screen.getByRole('button', { name: 'Talajcsavar' }));

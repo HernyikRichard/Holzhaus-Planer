@@ -193,12 +193,17 @@ describe('groundScrew to-dos', () => {
     expect(t).toContain('3 főgerendát');
     expect(t).toContain('fejenként 2 db M12 menetes szárral');
     expect(t).toContain('Ellenőrizd az átlókat');
+    expect(t).not.toContain('pallóból');
+    const two = createDefaultPlan();
+    two.foundation.type = 'groundScrew'; two.foundation.frame.beamSection = 'b2x50x150';
+    expect(buildAssembly(two, buildScene(two), calculate(two)).find(s => s.id === 'beamFrame')!.todo.join(' '))
+      .toContain('két összeszegezett pallóból áll');
   });
 
   test('floor', () => {
     const t = text('floor');
     expect(t).toMatch(/gerendasaruval \(\d+ db\)/);
-    expect(t).toContain('peremgerenda');
+    expect(t).toContain('a két szélső párnafa a peremgerenda, a rövid falak alatt fut.');
     const hangers = steps.find(s => s.id === 'floor')!.fasteners.filter(f => f.kind === 'joistHanger').reduce((a, f) => a + f.count, 0);
     expect(t).toContain(`gerendasaruval (${hangers} db)`);
   });

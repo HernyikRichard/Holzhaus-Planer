@@ -51,7 +51,7 @@ export function frameLayout(plan: Plan): FrameLayout {
   const table = BEAM_MAX_SPAN[frame.beamSection];
   const limit = frame.supportSpacing === 'auto' ? table : frame.supportSpacing;
   if (frame.supportSpacing !== 'auto' && frame.supportSpacing > table) {
-    warnings.push(`A megadott támaszköz (${cm(frame.supportSpacing)} cm) nagyobb a ${BEAM_SECTIONS[frame.beamSection].label}-as főgerendához ajánlott ${cm(table)} cm-nél.`);
+    warnings.push(`A megadott támaszköz (${cm(frame.supportSpacing)} cm) nagyobb a ${BEAM_SECTIONS[frame.beamSection].label} mm-es főgerendához ajánlott ${cm(table)} cm-nél.`);
   }
   const span1 = L - 2 * SUPPORT_END_OFFSET;
   const ns = Math.max(1, Math.ceil(span1 / limit - 1e-9));

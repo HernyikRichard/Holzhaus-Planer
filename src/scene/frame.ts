@@ -77,7 +77,7 @@ export function frameElements(plan: Plan): { elements: Element[]; fasteners: Fas
     const edge = i === 0 || i === last;
     elements.push({
       id: `floor.joist.${i + 1}`, kind: 'joist', group: 'floor', category: 'Padló',
-      label: edge ? `Peremgerenda #${i === 0 ? 1 : 2}` : `Párnafa #${i + 1}`,
+      label: edge ? `Peremgerenda #${i === 0 ? 1 : 2}` : `Párnafa #${i}`,
       pieceLabel: edge ? 'peremgerenda' : 'párnafa', section: plan.floor.joistSection,
       length: f.W, geom: rect(f, p, p + jt, 0, f.W), fasteners: [],
     });

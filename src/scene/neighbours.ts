@@ -26,6 +26,8 @@ export function groupLength(plan: Plan, group: string): Mm {
     return w.length;
   }
   if (group.startsWith('roof.')) return roofGeometry(plan).roofLengthAlongRidge;
+  // talajcsavarnál a párnafák a gerendák mentén, a hosszabb oldal teljes hosszán állnak
+  if (group === 'floor' && plan.foundation.type === 'groundScrew') return Math.max(plan.building.width, plan.building.length);
   if (group === 'floor') return plan.building.width - 2 * plan.walls.studSection.w;
   if (group === 'foundation') return plan.building.width + 2 * plan.foundation.slabOverhang;
   if (group === 'frame') return plan.building.width; // a keret elemei alaprajzi (x, y) koordinátában
@@ -45,6 +47,11 @@ function frameAxis(scene: Scene, el: Element): 'u' | 'v' {
   return (el.kind === 'support') === alongU ? 'u' : 'v';
 }
 
+/** A padló párnafájának szomszédsági tengelye: a hosszabb oldala a hossza, a szomszédok a rövidebb oldalra merőlegesen. */
+function joistAxis(el: Element): 'u' | 'v' {
+  return el.geom.w <= el.geom.h ? 'u' : 'v';
+}
+
 function candidates(scene: Scene, el: Element): { list: Cand[]; mine: Cand } | null {
   const g = el.geom;
   const same = (pred: (o: Element) => boolean, axis: 'u' | 'v'): { list: Cand[]; mine: Cand } => {
@@ -60,7 +67,7 @@ function candidates(scene: Scene, el: Element): { list: Cand[]; mine: Cand } | n
     if (el.kind === 'rafter' || el.kind === 'counterBatten') return same(o => o.kind === el.kind, 'u');
     if (el.kind === 'roofBatten') return same(o => o.kind === 'roofBatten', 'v');
   }
-  if (el.group === 'floor' && el.kind === 'joist') return same(o => o.kind === 'joist', 'u');
+  if (el.group === 'floor' && el.kind === 'joist') return same(o => o.kind === 'joist', joistAxis(el));
   if (el.group === 'frame' && (el.kind === 'support' || el.kind === 'beam')) {
     const axis = frameAxis(scene, el);
     const across = (o: Element): boolean => (axis === 'u'
@@ -86,12 +93,16 @@ export function neighbours(scene: Scene, groupLen: Mm, elementId: string): Neigh
   if (!el) throw new Error(`Ismeretlen elem: ${elementId}`);
   const g = el.geom;
   let fromStart = g.u;
+  let size = g.w;
   // a padló párnafái a belső szélességben (a falvastagságnál kezdődően) állnak: a kezdőpont az első párnafa
   if (el.group === 'floor' && el.kind === 'joist') {
-    const first = Math.min(...scene.elements.filter(o => o.kind === 'joist' && o.group === el.group).map(o => o.geom.u));
-    fromStart = g.u - first;
+    const alongV = joistAxis(el) === 'v';
+    const pos = (o: Element): number => (alongV ? o.geom.v : o.geom.u);
+    const first = Math.min(...scene.elements.filter(o => o.kind === 'joist' && o.group === el.group).map(pos));
+    fromStart = pos(el) - first;
+    size = alongV ? g.h : g.w;
   }
-  const info: NeighbourInfo = { fromStart, toEnd: groupLen - fromStart - g.w };
+  const info: NeighbourInfo = { fromStart, toEnd: groupLen - fromStart - size };
   const cs = candidates(scene, el);
   if (cs) {
     const l = pick(cs.list, cs.mine, -1); const r = pick(cs.list, cs.mine, 1);
@@ -124,7 +135,8 @@ export function tempDimensions(scene: Scene, groupLen: Mm, elementId: string): T
   const g = el.geom;
   const out: TempDim[] = [];
   // v irányú méretvonalak: tetőléc, és a gerendakeret v tengelyű szomszédai
-  const batten = el.kind === 'roofBatten' || (el.group === 'frame' && frameAxis(scene, el) === 'v');
+  const batten = el.kind === 'roofBatten' || (el.group === 'frame' && frameAxis(scene, el) === 'v')
+    || (el.group === 'floor' && el.kind === 'joist' && joistAxis(el) === 'v');
   const ax = (id: string | undefined, dist: Mm | undefined): void => {
     if (!id || dist === undefined) return;
     const o = scene.elements.find(e => e.id === id)!;
@@ -137,7 +149,8 @@ export function tempDimensions(scene: Scene, groupLen: Mm, elementId: string): T
     }
   };
   ax(n.left, n.axisLeft); ax(n.right, n.axisRight);
-  out.push({ x1: g.u - n.fromStart, y1: g.v, x2: g.u, y2: g.v, offset: 0, text: cm(n.fromStart) });
+  if (batten) out.push({ x1: g.u, y1: g.v - n.fromStart, x2: g.u, y2: g.v, offset: 0, text: cm(n.fromStart) });
+  else out.push({ x1: g.u - n.fromStart, y1: g.v, x2: g.u, y2: g.v, offset: 0, text: cm(n.fromStart) });
   if (n.nearestOpening) {
     const o = scene.elements.find(e => e.id === n.nearestOpening!.id)!;
     const right = n.nearestOpening.side === 'right';

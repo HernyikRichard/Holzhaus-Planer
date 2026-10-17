@@ -207,6 +207,14 @@ describe('missing parts drop steps', () => {
     expect(steps.find(s => s.lines.some(l => l.lineId === 'fix.osbScrews'))!.id).toBe('floor');
   });
 
+  test('groundScrew, stored floor flag off, wall OSB and interior off → OSB screws in the floor step', () => {
+    const p = createDefaultPlan();
+    p.foundation.type = 'groundScrew'; p.floor.enabled = false;
+    for (const l of p.walls.layers) if (['osb', 'insulation', 'vaporBarrier', 'interiorCladding'].includes(l.kind)) l.enabled = false;
+    const steps = buildAssembly(p, buildScene(p), calculate(p));
+    expect(steps.find(s => s.lines.some(l => l.lineId === 'fix.osbScrews'))!.id).toBe('floor');
+  });
+
   test('wall OSB off, gypsum interior, OSB roof decking → OSB screws in roof layers', () => {
     const p = createDefaultPlan();
     for (const l of p.walls.layers) {
@@ -328,6 +336,14 @@ describe.each(GS_PLANS)('groundScrew %s', (_n, plan) => {
   const scene = buildScene(plan);
   const calc = calculate(plan);
   const steps = buildAssembly(plan, scene, calc);
+
+  test('anchor label matches the material line', () => {
+    const l = calc.lines.find(x => x.id === 'fix.anchors')!.name;
+    const a = steps.flatMap(s => s.fasteners).filter(f => f.kind === 'anchor');
+    expect(a.length).toBeGreaterThan(0);
+    for (const f of a) expect(f.label).toBe(l);
+    expect(scene.fasteners.filter(f => f.kind === 'anchor').every(f => f.label === l)).toBe(true);
+  });
 
   test('step order starts with supports, beamFrame, floor; no foundation', () => {
     const ids = steps.map(s => s.id);
