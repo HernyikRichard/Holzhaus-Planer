@@ -27,3 +27,15 @@ test('vapour barrier line follows the setting', () => {
   p.floor.vaporBarrier = false;
   expect(q(calcFloor(p), 'floor.vaporBarrier')).toBeUndefined();
 });
+
+describe('talajcsavaros padló', () => {
+  test('a padló kötelező (enabled: false mellett is), a terület a teljes alapterület', () => {
+    const p = createDefaultPlan(); p.foundation.type = 'groundScrew';
+    expect(p.floor.enabled).toBe(false);
+    const r = calcFloor(p);
+    expect(r.lines.find(l => l.id === 'floor.osb')!.explanation).toContain('12 m² × 1,1 = 13,2 m²');
+    expect(r.pieces.filter(x => x.label === 'peremgerenda')).toHaveLength(2);
+    const q = createDefaultPlan(); q.foundation.type = 'groundScrew'; q.floor.enabled = true;
+    expect(calcFloor(q).lines).toEqual(r.lines);
+  });
+});

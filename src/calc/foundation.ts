@@ -2,9 +2,12 @@ import type { Plan } from '../model/types';
 import type { MaterialLine, ModuleResult } from './types';
 import {
   BED_COMPACTION, CEMENT_BAG_KG, CEMENT_KG_PER_M3, FORMWORK_EXTRA, GRAVEL_LOOSE_T_PER_M3,
-  GRAVEL_T_PER_M3, MESH_SHEET, MESH_TYPES, PE_ROLL_M2, STAKE_SPACING, WATER_L_PER_M3,
+  GRAVEL_T_PER_M3, GROUND_SCREW_LABEL, JOIST_HANGER_SCREWS, MESH_SHEET, MESH_TYPES, PE_ROLL_M2, STAKE_SPACING, WATER_L_PER_M3,
 } from '../catalog';
 import { ceilTo, emptyResult, hu } from './util';
+import { frameLayout } from './frame';
+import { frameElements } from '../scene/frame';
+import { elementsToPieces } from '../scene/toPieces';
 
 export interface MeshLayout { cols: number; rows: number; sheetW: number; sheetL: number }
 
@@ -20,7 +23,43 @@ export function meshLayout(plan: Plan): MeshLayout {
   return upright.cols * upright.rows <= rotated.cols * rotated.rows ? upright : rotated;
 }
 
+/** Talajcsavaros alap: talajcsavarok, U-fejek, menetes szárak, gerendasarúk és a főgerendák darabjai. */
+function calcGroundScrew(plan: Plan): ModuleResult {
+  const res = emptyResult();
+  const f = frameLayout(plan);
+  const { elements, fasteners } = frameElements(plan);
+  const supports = elements.filter(e => e.kind === 'support').length;
+  const sum = (kind: string): number => fasteners.filter(x => x.kind === kind).reduce((s, x) => s + x.count, 0);
+  const bolts = sum('beamBolt');
+  const hangers = sum('joistHanger');
+  const gs = plan.foundation.groundScrew;
+  const add = (l: Omit<MaterialLine, 'category' | 'unit'>): void => {
+    res.lines.push({ category: 'Alap', unit: 'db', ...l });
+  };
+  add({
+    id: 'foundation.groundScrew', name: GROUND_SCREW_LABEL(gs.diameter, gs.length), quantity: supports,
+    explanation: `${f.beamAxes.length} főgerenda × ${f.supportAxes.length} támasz = ${supports} db`,
+  });
+  add({
+    id: 'foundation.screwHead', name: `Állítható U-fej ${f.beam.width} mm-es gerendához`, quantity: supports,
+    explanation: `támaszonként 1 db = ${supports} db`,
+  });
+  add({
+    id: 'foundation.beamBolts', name: 'M12 menetes szár anyával, alátéttel', quantity: bolts,
+    explanation: `${supports} támasz × ${bolts / Math.max(1, supports)} db = ${bolts} db`,
+  });
+  add({
+    id: 'foundation.joistHangers', name: 'Gerendasaru (párnafa–főgerenda)', quantity: hangers,
+    explanation: `${f.joistPositions.length} párnafa × ${f.beamAxes.length} főgerenda = ${hangers} db; csavar: ${hangers} × ${JOIST_HANGER_SCREWS} db`,
+  });
+  res.stats.connectorScrewCount = hangers * JOIST_HANGER_SCREWS;
+  res.pieces = elementsToPieces(elements.filter(e => e.kind === 'beam'));
+  res.warnings = [...f.warnings];
+  return res;
+}
+
 export function calcFoundation(plan: Plan): ModuleResult {
+  if (plan.foundation.type === 'groundScrew') return calcGroundScrew(plan);
   const res = emptyResult();
   const f = plan.foundation;
   const slabX = plan.building.width + 2 * f.slabOverhang;

@@ -85,7 +85,7 @@ const LINE_IDS: Record<string, AssemblyStepId> = {
   'fix.osbScrews': 'wallTop', 'fix.hurricaneTies': 'roofFrame',
   'fix.seamClips': 'covering', 'fix.seamClipScrews': 'covering', 'fix.tileClips': 'covering',
   'fix.counterBattenNails': 'roofLayers', 'fix.battenNails': 'roofLayers',
-  'fix.claddingNails': 'exterior',
+  'fix.claddingNails': 'exterior', 'fix.connectorScrews': 'floor',
 };
 const LINE_PREFIXES: Array<[string, AssemblyStepId]> = [
   ['foundation.', 'foundation'], ['floor.', 'floor'],

@@ -1,12 +1,13 @@
+import type { FoundationType } from '../model/types';
 import type { CalcStats, MaterialLine } from './types';
 import {
   CLADDING_NAILS_PER_M2, COUNTER_BATTEN_NAIL_SPACING, FASTENER_BOX, FRAME_SCREWS_PER_END, HURRICANE_TIE_LABEL,
-  SCREWS_PER_OSB_SHEET, STANDING_SEAM_CLIP_SPACING, STANDING_SEAM_SCREWS_PER_CLIP,
+  JOIST_HANGER_SCREWS, SCREWS_PER_OSB_SHEET, STANDING_SEAM_CLIP_SPACING, STANDING_SEAM_SCREWS_PER_CLIP,
 } from '../catalog';
 import { hu } from './util';
 import type { Supply } from '../pricing/supplyTypes';
 
-export function calcFasteners(stats: CalcStats, supply?: Supply): MaterialLine[] {
+export function calcFasteners(stats: CalcStats, supply?: Supply, foundationType: FoundationType = 'slab'): MaterialLine[] {
   /** A kínálat dobozmérete, ha van; az árlista ezt most nem tartalmazza, így a katalógusérték marad. */
   const boxOf = (kind: keyof typeof FASTENER_BOX): number => supply?.fastenerBox(kind) ?? FASTENER_BOX[kind];
   const lines: MaterialLine[] = [];
@@ -21,7 +22,8 @@ export function calcFasteners(stats: CalcStats, supply?: Supply): MaterialLine[]
 
   if (stats.anchorPoints > 0) {
     lines.push({
-      id: 'fix.anchors', category: 'Kötőelemek', name: 'Talpgerenda-rögzítő (dübel / ászokcsavar)',
+      id: 'fix.anchors', category: 'Kötőelemek', name: foundationType === 'groundScrew'
+        ? 'Talpgerenda-rögzítő csavar (a padlón át a peremgerendába)' : 'Talpgerenda-rögzítő (dübel / ászokcsavar)',
       quantity: stats.anchorPoints, unit: 'db',
       explanation: `${stats.anchorPoints} rögzítési pont a talpgerenda mentén (800 mm-enként, sarkoknál és nyílászáróknál pótlással)`,
     });
@@ -29,6 +31,8 @@ export function calcFasteners(stats: CalcStats, supply?: Supply): MaterialLine[]
   box('fix.frameScrews', 'Vázszerkezeti csavar', stats.frameScrewCount, boxOf('frameScrew'),
     `${hu(stats.frameScrewCount / FRAME_SCREWS_PER_END, 0)} rögzítési pont a vázon (elemvégenként ${FRAME_SCREWS_PER_END} db)`);
   const osbPieces = stats.osbScrewCount + stats.osbSheets * SCREWS_PER_OSB_SHEET;
+  box('fix.connectorScrews', 'Kötőelem-csavar 4×40 (gerendasaruhoz)', stats.connectorScrewCount, boxOf('connectorScrew'),
+    `${hu(stats.connectorScrewCount / JOIST_HANGER_SCREWS, 0)} gerendasaru × ${JOIST_HANGER_SCREWS} db`);
   box('fix.osbScrews', 'OSB-csavar', osbPieces, boxOf('osbScrew'),
     `${stats.osbScrewCount} db a falak kiosztásából + ${stats.osbSheets} tábla × ${SCREWS_PER_OSB_SHEET} db`);
   if (stats.hurricaneTieCount > 0) {
