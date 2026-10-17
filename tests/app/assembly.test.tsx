@@ -10,7 +10,7 @@ import { VIEW_LAYERS, VIEW_NAMES } from '../../src/viewer/layers';
 import { sceneFor } from '../../src/app/selection';
 import { buildAssembly } from '../../src/assembly/steps';
 import { stepOfSolid } from '../../src/assembly/solids';
-import type { Model3d } from '../../src/three-d/model';
+import { buildModel3d, type Model3d } from '../../src/three-d/model';
 
 interface FakeRenderer {
   canvas: HTMLCanvasElement; log: string[];
@@ -167,6 +167,11 @@ test('step change sends filtered model and highlight', async () => {
   expect(stepOf(m).every(i => i <= 0)).toBe(true);
   expect(r.setHighlight).toHaveBeenLastCalledWith(steps[0].elementIds);
   const first = m.solids.length;
+  // a kamera a teljes házra igazít (nem az 1. lépés lemezére), egyszer, az első modell után
+  const full = buildModel3d(store.get().lastValidPlan, scene).bounds;
+  expect(r.setView.mock.calls).toEqual([['persp', full]]);
+  expect(r.log.indexOf('setModel')).toBeLessThan(r.log.indexOf('setView'));
+  expect(m.bounds).not.toEqual(full);
 
   const wall = steps.findIndex(s => s.id === 'wall.W');
   await go(ui, wall);
@@ -183,7 +188,16 @@ test('step change sends filtered model and highlight', async () => {
   expect(stepOf(m)).toContain(steps.length - 1);
   // ugyanaz a kirajzoló: a kamera nem áll alaphelyzetbe
   expect(fake.instances).toHaveLength(1);
-  expect(r.setView).not.toHaveBeenCalled();
+  expect(r.setView).toHaveBeenCalledTimes(1);
+});
+
+test('view reset frames the whole house', async () => {
+  const { store, ui, q } = setup();
+  const r = await ready();
+  await go(ui, 0);
+  await act(() => { fireEvent.click(q('[data-action="assembly-view-reset"]')!); });
+  const full = buildModel3d(store.get().lastValidPlan, sceneFor(store.get().lastValidPlan)).bounds;
+  expect(r.setView).toHaveBeenLastCalledWith('persp', full);
 });
 
 test('hovering a line highlights its elements, leaving restores', async () => {

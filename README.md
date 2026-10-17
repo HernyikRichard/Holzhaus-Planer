@@ -16,7 +16,7 @@ A Holzhaus-Planer egy téglalap alaprajzú, könnyűszerkezetes (favázas) kerti
 ## ✨ Funkciók
 
 ### Lépésről lépésre
-A felület hat lépésre bomlik, amelyek között szabadon lehet ugrálni:
+A felület hét lépésre bomlik, amelyek között szabadon lehet ugrálni:
 
 | Lépés | Amit itt beállítasz |
 |---|---|
@@ -50,7 +50,7 @@ A lépésjelen ✓ mutatja, ha minden mező rendben van, és piros pötty, ha va
 
 ### Szerelési útmutató
 - A **7. Szerelés** lépés sorban végigvezet az építésen: alap, padló, falak (előbb a két futó fal), felső koszorú és OSB, tetőváz, tetőrétegek, héjazat, kiegészítők, nyílászárók, külső és belső rétegek. Csak azok a lépések jelennek meg, amelyek a tervben szerepelnek.
-- Bal oldalt a lépések listája rövid összesítővel (pl. „7 oszlop, 74 csavar”), középen a 3D kép: ami eddig felépült, és kiemelve az, ami most kerül fel. Lépésváltáskor a kamera a helyén marad.
+- Bal oldalt a lépések listája rövid összesítővel (pl. „7 oszlop, 74 csavar”), középen a 3D kép: ami eddig felépült, és kiemelve az, ami most kerül fel. A kamera a teljes házra igazít, így minden lépés azonos léptékű; lépésváltáskor a helyén marad.
 - Alatta a lépés **anyaga**: a faanyag-darabok a vágási terv szálára hivatkozva, a csavarok darabszáma (a beszerzendő doboz halvány megjegyzésként), a többi anyag mennyisége, valamint a terv számaival kitöltött **teendők**.
 - Egy darab- vagy csavarsorra állva (vagy kattintva) a 3D-ben az érintett elemek kiemelődnek; a 3D-ben elemre kattintva megnyílik az adatlapja.
 - Lépni az **Előző / Következő** gombbal, a listában kattintva vagy a `←` `→` billentyűkkel lehet. A lebegő 3D ablak ebben a lépésben rejtve marad.

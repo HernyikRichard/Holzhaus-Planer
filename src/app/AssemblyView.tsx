@@ -12,6 +12,8 @@ import { filterModel, stepOfSolid } from '../assembly/solids';
 // a modell-építő nem húzza be a Three.js-t; a kirajzoló csak dinamikusan töltődik (use3dRenderer)
 import { buildModel3d, type Model3d, type Solid } from '../three-d/model';
 import { canRetry, rendererMessage, use3dRenderer, type Size3d } from './use3dRenderer';
+// csak típus: a kirajzoló (és vele a Three.js) dinamikusan töltődik
+import type { Renderer3d } from '../three-d/renderer';
 import { formatCm, formatQty } from '../ui/format';
 
 /** Ennél kisebb elmozdulás kattintás, nem forgatás. */
@@ -137,6 +139,16 @@ export function AssemblyView({ store, ui }: { store: Store; ui: UiStore }) {
   shownRef.current = shown;
   const highlightRef = useRef(highlight);
   highlightRef.current = highlight;
+  const modelRef = useRef(model);
+  modelRef.current = model;
+  /** Igazított-e már a kamera a teljes házra (kirajzolónként egyszer, az első modell után). */
+  const framed = useRef(false);
+  /** A kamera a teljes házra, nem a szűrt modellre: az 1. lépés se a lemezre nagyítson, a későbbiek se lógjanak ki. */
+  const frameHouse = (r: Renderer3d): void => {
+    if (framed.current || !modelRef.current || !shownRef.current) return;
+    r.setView('persp', modelRef.current.bounds);
+    framed.current = true;
+  };
 
   const measure = (): Size3d => {
     const r = body.current?.getBoundingClientRect();
@@ -148,7 +160,9 @@ export function AssemblyView({ store, ui }: { store: Store; ui: UiStore }) {
     measure,
     init: r => {
       r.setHighlight(highlightRef.current);
+      framed.current = false;
       if (shownRef.current) r.setModel(shownRef.current);
+      frameHouse(r);
     },
     observe: body,
     onDispose: () => {
@@ -157,8 +171,13 @@ export function AssemblyView({ store, ui }: { store: Store; ui: UiStore }) {
     },
   });
 
-  // Lépésváltás / tervváltozás: a szűrt modell (a kirajzoló csak az első modellnél igazít kamerát).
-  useEffect(() => { if (shown) renderer.current?.setModel(shown); }, [shown]);
+  // Lépésváltás / tervváltozás: a szűrt modell; a kamera csak az első modellnél igazodik (a teljes házra).
+  useEffect(() => {
+    const r = renderer.current;
+    if (!r || !shown) return;
+    r.setModel(shown);
+    frameHouse(r);
+  }, [shown]);
   useEffect(() => { renderer.current?.setHighlight(highlight); }, [highlight]);
   useEffect(() => {
     const r = renderer.current;
@@ -253,7 +272,7 @@ export function AssemblyView({ store, ui }: { store: Store; ui: UiStore }) {
         </h2>
         <button type="button" data-action="assembly-next" disabled={cur >= steps.length - 1} onClick={() => goTo(cur + 1)}>Következő →</button>
         <button type="button" data-action="assembly-view-reset" class="assembly-reset" title="A kamera alaphelyzetbe" disabled={!ready}
-          onClick={() => renderer.current?.setView('persp')}>⟲ Nézet</button>
+          onClick={() => renderer.current?.setView('persp', model?.bounds)}>⟲ Nézet</button>
       </div>
       <div class="assembly-body">
         <div class="w3d-body assembly-3d" ref={body}>

@@ -22,6 +22,8 @@ const rec = vi.hoisted(() => ({
   snapshots: 0,
   longStep: false,
   opts: undefined as unknown,
+  views: [] as unknown[][],
+  models: [] as { bounds: unknown }[],
 }));
 
 vi.mock('jspdf', async importOriginal => {
@@ -49,8 +51,8 @@ vi.mock('../../src/three-d/renderer', () => ({
     rec.opts = opts;
     if (rec.fail) throw rec.fail;
     return {
-      setModel: vi.fn(), setVisible: vi.fn(), setHighlight: vi.fn(), setHover: vi.fn(), pick: vi.fn(),
-      setView: vi.fn(), resize: vi.fn(), dispose: vi.fn(),
+      setModel: vi.fn((m: { bounds: unknown }) => { rec.models.push(m); }), setVisible: vi.fn(), setHighlight: vi.fn(), setHover: vi.fn(), pick: vi.fn(),
+      setView: vi.fn((...a: unknown[]) => { rec.views.push(a); }), resize: vi.fn(), dispose: vi.fn(),
       snapshot: vi.fn(() => { rec.snapshots++; return PNG; }),
     };
   },
@@ -80,6 +82,8 @@ beforeEach(async () => {
   rec.fail = null;
   rec.snapshots = 0;
   rec.longStep = false;
+  rec.views.length = 0;
+  rec.models.length = 0;
   const { readFileSync } = await vi.importActual<{ readFileSync(p: string): Uint8Array }>('node:fs');
   vi.stubGlobal('fetch', async (url: string) => {
     const name = String(url).split('?')[0].split('/').pop()!;
@@ -146,6 +150,17 @@ test('renderAssemblyImages never throws', async () => {
 
   rec.fail = null;
   expect(await renderAssemblyImages(model, steps, stepOf, { w: 1200, h: 800 })).toEqual(steps.map(() => PNG));
+});
+
+test('every step image is framed on the whole house', async () => {
+  const { plan, scene, steps } = setup();
+  const model = buildModel3d(plan, scene);
+  const stepOf = (s: Parameters<typeof stepOfSolid>[0]) => stepOfSolid(s, scene, steps);
+  await renderAssemblyImages(model, steps, stepOf, { w: 1200, h: 800 });
+  // a szűrt modellek befoglalója lépésenként más, a kamera mégis mindig a teljes házra áll
+  expect(rec.models).toHaveLength(steps.length);
+  expect(rec.models[0].bounds).not.toEqual(model.bounds);
+  expect(rec.views).toEqual(steps.map(() => ['persp', model.bounds]));
 });
 
 test('long step table breaks onto next page', async () => {

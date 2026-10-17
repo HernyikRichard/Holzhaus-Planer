@@ -12,7 +12,9 @@ export interface Renderer3d {
   setModel(m: Model3d): void; setVisible(l: Partial<Record<Layer3dId, boolean>>): void;
   setHighlight(ids: string[]): void; setHover(id: string | null): void;
   pick(clientX: number, clientY: number): { elementId?: string; label: string } | null;
-  setView(p: ViewPreset): void; resize(w: number, h: number): void; dispose(): void;
+  /** Kameraállás a modell befoglalójára; `frame` megadásával arra (pl. szűrt modellnél a teljes házra). */
+  setView(p: ViewPreset, frame?: Model3d['bounds']): void;
+  resize(w: number, h: number): void; dispose(): void;
   /** Szinkron kirajzolás, majd a vászon PNG data URL-je (a PDF képeihez). */
   snapshot(): string;
 }
@@ -62,9 +64,9 @@ export function createRenderer(canvas: HTMLCanvasElement, opts?: { preserveDrawi
   let hover: string | null = null;
   const raycaster = new THREE.Raycaster();
 
-  const applyView = (p: ViewPreset): void => {
-    if (!bounds) return;
-    const c = presetCamera(p, bounds, FOV, camera.aspect);
+  const applyView = (p: ViewPreset, frame: Model3d['bounds'] | null = bounds): void => {
+    if (!frame) return;
+    const c = presetCamera(p, frame, FOV, camera.aspect);
     camera.position.copy(modelToThree(c.position));
     camera.up.set(0, 1, 0); // modelToThree(+Z); az OrbitControls a létrehozáskori up-ot feltételezi
     controls.target.copy(modelToThree(c.target));
@@ -124,8 +126,8 @@ export function createRenderer(canvas: HTMLCanvasElement, opts?: { preserveDrawi
       }
       return null;
     },
-    setView(p) {
-      applyView(p);
+    setView(p, frame) {
+      applyView(p, frame ?? bounds);
       requestRender();
     },
     resize(w, h) {

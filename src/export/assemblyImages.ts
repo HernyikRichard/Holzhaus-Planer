@@ -43,7 +43,8 @@ export async function renderAssemblyImages(
       try {
         r.setModel(filterModel(model, i, stepOf));
         r.setHighlight(steps[i].elementIds);
-        r.setView('persp');
+        // a teljes házra igazítva: minden kép azonos léptékű, az 1. lépés sem a lemezre nagyít
+        r.setView('persp', model.bounds);
         const url = r.snapshot();
         out[i] = url.startsWith(PNG_PREFIX) ? url : null;
       } catch (err) {
