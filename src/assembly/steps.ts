@@ -42,6 +42,7 @@ const LAST: AssemblyStepId = 'interior';
 const FASTENER_LABELS: Record<FastenerKind, string> = {
   anchor: 'Talpgerenda-rögzítő (dübel / ászokcsavar)', frameScrew: 'Vázszerkezeti csavar',
   osbScrew: 'OSB-csavar', hurricaneTie: HURRICANE_TIE_LABEL,
+  beamBolt: 'M12 menetes szár', joistHanger: 'Gerendasaru',
 };
 
 const wallStep = (group: string): AssemblyStepId => group as AssemblyStepId;
@@ -52,7 +53,7 @@ const wallStep = (group: string): AssemblyStepId => group as AssemblyStepId;
  */
 export function stepIdOfElement(el: Element): AssemblyStepId {
   switch (el.kind) {
-    case 'meshSheet': return 'foundation';
+    case 'meshSheet': case 'support': case 'beam': return 'foundation';
     case 'joist': return 'floor';
     case 'stud': case 'cornerStud': case 'gableStud': case 'kingStud': case 'jackStud': case 'cripple':
     case 'sill': case 'header': case 'bottomPlate': case 'topPlate':
