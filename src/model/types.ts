@@ -19,11 +19,16 @@ export type RoofCovering = 'tile' | 'trapezoid' | 'shingle' | 'epdm' | 'standing
 export type RoofLayerKind = 'decking' | 'underlay' | 'counterBatten' | 'batten';
 export interface RoofLayer { kind: RoofLayerKind; enabled: boolean; material: string }
 // decking: 'osb'|'boards'; underlay: 'foil'|'bitumen'
+export type FoundationType = 'slab' | 'groundScrew'; // betonlemez | talajcsavaros gerendakeret
+export type BeamSectionId = 'b100x150' | 'b120x120' | 'b2x50x150'; // főgerenda keresztmetszete
 export interface Plan {
   version: number; name: string;
   building: { width: Mm; length: Mm; wallHeight: Mm }; // width: x (É/D fal), length: y (K/Ny fal)
   foundation: { slabThickness: Mm; slabOverhang: Mm; concreteGrade: ConcreteGrade;
-    meshType: MeshTypeId; gravelBedThickness: Mm; peFoil: boolean };
+    meshType: MeshTypeId; gravelBedThickness: Mm; peFoil: boolean;
+    type: FoundationType;
+    frame: { beamSection: BeamSectionId; supportSpacing: 'auto' | Mm; groundClearance: Mm }; // csak groundScrew-nál számít
+    groundScrew: { length: 800 | 1000 | 1200; diameter: 76 } };
   floor: { enabled: boolean; joistSection: Section; joistSpacing: Mm;
     insulation: Insulation | null; osbThickness: 18 | 22; vaporBarrier: boolean };
   walls: { studSection: Section; studSpacing: Mm; topPlate: 'single' | 'double'; layers: WallLayer[] };

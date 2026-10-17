@@ -1,4 +1,4 @@
-import type { ConcreteGrade, MeshTypeId, Mm, RoofCovering, Section } from '../model/types';
+import type { BeamSectionId, ConcreteGrade, MeshTypeId, Mm, RoofCovering, Section } from '../model/types';
 
 // Alap
 export const CEMENT_KG_PER_M3: Record<ConcreteGrade, number> = { C16: 300, C20: 340 };
@@ -16,6 +16,21 @@ export const BED_COMPACTION = 1.25;
 export const PE_ROLL_M2 = 100;
 export const FORMWORK_EXTRA = 50;
 export const STAKE_SPACING = 1000;
+
+// Talajcsavaros gerendakeret (tájékoztató határok, nem statikai méretezés)
+export const BEAM_SECTIONS: Record<BeamSectionId, { label: string; width: Mm; height: Mm; plies: 1 | 2; ply: Section }> = {
+  b100x150: { label: '100×150', width: 100, height: 150, plies: 1, ply: { t: 100, w: 150 } },
+  b120x120: { label: '120×120', width: 120, height: 120, plies: 1, ply: { t: 120, w: 120 } },
+  b2x50x150: { label: '2×50×150', width: 100, height: 150, plies: 2, ply: { t: 50, w: 150 } },
+};
+export const BEAM_MAX_SPAN: Record<BeamSectionId, Mm> = { b100x150: 1800, b120x120: 1500, b2x50x150: 1600 };
+export const JOIST_MAX_SPAN: Record<string, Mm> = { '50x100': 1600, '50x150': 2600, '50x200': 3400 };
+export const JOIST_SPAN_FALLBACK: Mm = 1600; // ismeretlen párnafa-keresztmetszetnél
+export const SUPPORT_END_OFFSET: Mm = 150; // a gerenda végétől a támasz tengelyéig
+export const SCREW_HEAD_H: Mm = 80; // állítható U-fej magassága
+export const BEAM_BOLTS_PER_SUPPORT = 2;
+export const JOIST_HANGER_SCREWS = 8;
+export const GROUND_SCREW_LABEL = (d: Mm, len: Mm): string => `Talajcsavar Ø${d} × ${len / 10} cm`;
 
 // Lemezek
 export const OSB_SHEET = { w: 1250, l: 2500 };
@@ -87,7 +102,7 @@ export const COUNTER_BATTEN_NAIL_SPACING = 400;
 export const CLADDING_NAILS_PER_M2 = 30;
 export const FASTENER_BOX = {
   frameScrew: 200, osbScrew: 500, counterBattenNail: 250,
-  battenNail: 250, claddingNail: 500, tileClip: 100,
+  battenNail: 250, claddingNail: 500, tileClip: 100, connectorScrew: 250,
 };
 
 // Vágási veszteség (mm / vágás)
