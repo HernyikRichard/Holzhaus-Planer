@@ -161,7 +161,9 @@ function wall(c: Ctx, side: WallSide): string[] {
   }
   const anchors = fasteners(c, 'anchor');
   const full = w.full ? '' : ' a futó falak közé, csavarozd a sarkokhoz';
-  out.push(`Állítsd fel${full}, függőzd ki, ${anchors ? `rögzítsd ${anchors} db ászokcsavarral` : 'rögzítsd a talpgerendát az alaphoz'}.`);
+  // talajcsavarnál a talpgerenda nem betonba, hanem a padlón át a gerendakeretbe rögzül
+  const how = c.plan.foundation.type === 'groundScrew' ? 'csavarral a padlón át a gerendakeretbe' : 'ászokcsavarral';
+  out.push(`Állítsd fel${full}, függőzd ki, ${anchors ? `rögzítsd ${anchors} db ${how}` : 'rögzítsd a talpgerendát az alaphoz'}.`);
   return out;
 }
 

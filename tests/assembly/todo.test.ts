@@ -62,7 +62,7 @@ describe.each(PLANS)('%s', (_n, plan) => {
       const s = steps.find(x => x.id === `wall.${w.side}`)!;
       const text = s.todo.join('\n');
       expect(text).toMatch(num(piecesOfKind(plan, s, 'stud'), 'oszlop'));
-      expect(text).toMatch(num(fastenerSum(s, 'anchor'), 'db ászokcsavarral'));
+      expect(text).toMatch(num(fastenerSum(s, 'anchor'), plan.foundation.type === 'groundScrew' ? 'db csavarral' : 'db ászokcsavarral'));
       const pos = studPositions(plan, w).map(formatCmNum);
       const list = pos.length > 12 ? `${pos.slice(0, 12).join(', ')}, …` : pos.join(', ');
       expect(text).toContain(`oszlophelyeket a fal elejétől: ${list} cm`);
@@ -186,6 +186,12 @@ describe('groundScrew to-dos', () => {
     expect(t).toContain('100 cm mélyre');
     expect(t).toContain('30 cm-re');
     expect(t).toContain('Szintezd ki az U-fejeket');
+  });
+
+  test('walls: no concrete anchors on the frame', () => {
+    const t = text('wall.E');
+    expect(t).toMatch(/rögzítsd \d+ db csavarral a padlón át a gerendakeretbe/);
+    expect(t).not.toContain('ászokcsavar');
   });
 
   test('beamFrame', () => {
