@@ -48,6 +48,8 @@ export function stepOfSolid(solid: Solid, scene: Scene, steps: AssemblyStep[]): 
     const el = scene.elements.find(e => e.id === solid.elementId);
     if (el) return nearestStep(stepIdOfElement(el), steps);
   }
+  // talaj: csak talajcsavaros tervben van; ha a támaszok lépése hiányzik, a legkorábbi lépés (nem egy későbbi)
+  if (solid.layer === 'ground' && !steps.some(s => s.id === 'supports')) return 0;
   return nearestStep(LAYER_STEP[solid.layer], steps);
 }
 

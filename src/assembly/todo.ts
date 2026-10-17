@@ -3,7 +3,7 @@ import { frameLayout } from '../calc/frame';
 import { beamSegments } from '../scene/frame';
 import { studPositions, wallGeometry } from '../calc/geometry';
 import {
-  BATTEN_GAUGE, BATTEN_SPACING_WALL, EPDM_UPTURN, MESH_SHEET, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
+  BATTEN_GAUGE, BEAM_BOLTS_PER_SUPPORT, BATTEN_SPACING_WALL, EPDM_UPTURN, MESH_SHEET, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
 } from '../catalog';
 import type { Element, ElementKind, FastenerKind, Scene } from '../scene/types';
 import { formatCm, formatCmNum, formatQty } from '../ui/format';
@@ -109,11 +109,10 @@ function supports(c: Ctx): string[] {
 
 function beamFrame(c: Ctx): string[] {
   const f = frameLayout(c.plan);
-  const heads = f.beamAxes.length * f.supportAxes.length;
-  const per = Math.round(fasteners(c, 'beamBolt') / heads);
-  const out = [`Fektesd ${az(f.beamAxes.length)} főgerendát az U-fejekbe, rögzítsd fejenként ${per} db M12 menetes szárral.`];
+  const out = [`Fektesd ${az(f.beamAxes.length)} főgerendát az U-fejekbe, rögzítsd fejenként ${BEAM_BOLTS_PER_SUPPORT} db M12 menetes szárral.`];
   // toldott gerenda: egy főgerendához több szegmens tartozik
   if (beamSegments(f.L, f.supportAxes, c.plan.settings.stockLengths).length > 1) out.push('A toldás mindig támasz fölé essen.');
+  out.push('Ellenőrizd, hogy a főgerendák felső síkja egy szintben van; szükség esetén állíts az U-fejeken.');
   out.push('Ellenőrizd az átlókat: a keret derékszögű legyen.');
   return out;
 }
