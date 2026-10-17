@@ -16,7 +16,7 @@ A Holzhaus-Planer egy téglalap alaprajzú, könnyűszerkezetes (favázas) kerti
 ## ✨ Funkciók
 
 ### Lépésről lépésre
-A felület hat lépésre bomlik, amelyek között szabadon lehet ugrálni:
+A felület hét lépésre bomlik, amelyek között szabadon lehet ugrálni:
 
 | Lépés | Amit itt beállítasz |
 |---|---|
@@ -24,8 +24,9 @@ A felület hat lépésre bomlik, amelyek között szabadon lehet ugrálni:
 | **2. Alap** | betonlemez vastagsága, betonminőség, sóderágy, betonháló, opcionális fa padló |
 | **3. Falak** | oszlop-keresztmetszet és -kiosztás, koszorú, rétegrend (belső burkolat, párazáró, szigetelés, OSB, szélzáró, léc, külső burkolat) |
 | **4. Nyílászárók** | ajtók és ablakok mérete, helye, mellvédmagassága; húzással is mozgathatók |
-| **5. Tető** | dőlésszög, szarufa, túlnyúlások, deszkázat / OSB, alátétfólia, ellenléc, tetőléc, héjazat (cserép, trapézlemez, zsindely, EPDM), kiegészítők |
+| **5. Tető** | dőlésszög, szarufa, túlnyúlások, deszkázat / OSB, alátétfólia, ellenléc, tetőléc, héjazat (cserép, trapézlemez, zsindely, EPDM, állókorcos alumíniumlemez), kiegészítők |
 | **6. Anyaglista** | ráhagyások, kereshető anyaglista, vágási terv |
+| **7. Szerelés** | lépésenkénti építési útmutató 3D-vel, a lépés anyagával, darabjaival, csavarjaival és teendőivel |
 
 A lépésjelen ✓ mutatja, ha minden mező rendben van, és piros pötty, ha valahol hiba van. A program ilyenkor is az utolsó érvényes állapotot rajzolja és számolja.
 
@@ -46,6 +47,13 @@ A lépésjelen ✓ mutatja, ha minden mező rendben van, és piros pötty, ha va
 - A **Rétegek** panelen minden réteg külön ki-be kapcsolható; a **Csak váz** gomb a burkolatok nélküli vázszerkezetet mutatja.
 - **Ráállva** az elem neve buborékban jelenik meg, **kattintásra** kijelölődik: megnyílik az adatlapja, a 2D rajz pedig átvált arra a nézetre, amelyik ábrázolja. A 2D-ben kijelölt elem a 3D-ben is kiemelődik.
 - A 3D rész csak az ablak első megnyitásakor töltődik be, így az alkalmazás indulását nem lassítja. WebGL-képes böngésző kell hozzá.
+
+### Szerelési útmutató
+- A **7. Szerelés** lépés sorban végigvezet az építésen: alap, padló, falak (előbb a két futó fal), felső koszorú és OSB, tetőváz, tetőrétegek, héjazat, kiegészítők, nyílászárók, külső és belső rétegek. Csak azok a lépések jelennek meg, amelyek a tervben szerepelnek.
+- Bal oldalt a lépések listája rövid összesítővel (pl. „7 oszlop, 74 csavar”), középen a 3D kép: ami eddig felépült, és kiemelve az, ami most kerül fel. A kamera a teljes házra igazít, így minden lépés azonos léptékű; lépésváltáskor a helyén marad.
+- Alatta a lépés **anyaga**: a faanyag-darabok a vágási terv szálára hivatkozva, a csavarok darabszáma (a beszerzendő doboz halvány megjegyzésként), a többi anyag mennyisége, valamint a terv számaival kitöltött **teendők**.
+- Egy darab- vagy csavarsorra állva (vagy kattintva) a 3D-ben az érintett elemek kiemelődnek; a 3D-ben elemre kattintva megnyílik az adatlapja.
+- Lépni az **Előző / Következő** gombbal, a listában kattintva vagy a `←` `→` billentyűkkel lehet. A lebegő 3D ablak ebben a lépésben rejtve marad.
 
 ### Anyaglista, ami meg is magyarázza magát
 Minden sor mellett ott a számítás, például:
@@ -98,7 +106,8 @@ src/
   scene/     elemlista: minden oszlop, szarufa, tábla és csavar saját azonosítóval és helyzettel
   viewer/    SVG-tervrajzok, kamera (nagyítás/mozgatás), rétegek, kiemelés
   three-d/   3D modell az elemlistából és a rétegrendből; Three.js-kirajzoló (külön, lusta betöltésű csomag)
-  app/       Preact-felület: lépések, rajzvászon, buborék, adatlap, anyaglista, vágási terv
+  assembly/  szerelési lépések: elemek, darabok, csavarok, anyagsorok és teendők lépésenként
+  app/       Preact-felület: lépések, rajzvászon, buborék, adatlap, anyaglista, vágási terv, szerelés
   export/    PDF, CSV, letöltés
 ```
 
@@ -111,5 +120,6 @@ A számítás és a rajz **ugyanabból az elemlistából** dolgozik, ezért ami 
 ## ⚠️ Fontos tudnivalók
 
 - A program **nem végez statikai méretezést**. Ha a szarufa fesztávja a keresztmetszetéhez képest túl nagy, figyelmeztet, de a szerkezetet építés előtt **szakemberrel ellenőriztesd**.
+- A **tetőhajlást a héjazathoz** is ellenőrzi (cserép legalább 22°, zsindely 15°, trapézlemez 5°, állókorcos lemez 3°; az EPDM-nek nincs alsó határa): túl lapos tetőnél figyelmeztet, és megfelelő héjazatot ajánl. Lapostetőre váltáskor a cserép és a zsindely helyett automatikusan EPDM lesz.
 - A mennyiségek **becslések** a megadott ráhagyásokkal. Rendelés előtt érdemes a tüzéppel egyeztetni a kapható méreteket.
 - Jelenleg csak **téglalap alaprajzú**, válaszfal nélküli épületet és **betonlemez** alapozást kezel. Árakat nem számol.

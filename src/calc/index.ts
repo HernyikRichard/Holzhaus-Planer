@@ -16,7 +16,7 @@ export const CATEGORY_ORDER: Category[] = ['Alap', 'Padló', 'Fal', 'Tető', 'Ki
 const STAT_KEYS: (keyof CalcStats)[] = [
   'osbSheets', 'studs', 'headers', 'collarPairs', 'rafters',
   'anchorPoints', 'counterBattenLength', 'battenCrossings', 'claddingArea', 'tileClips',
-  'frameScrewCount', 'osbScrewCount', 'hurricaneTieCount',
+  'frameScrewCount', 'osbScrewCount', 'hurricaneTieCount', 'seamClips', 'seamClipScrews',
 ];
 
 export function calculate(plan: Plan, supply?: Supply): CalcOutput {

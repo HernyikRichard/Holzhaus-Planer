@@ -301,3 +301,27 @@ button.cutstrip-piece:hover:not(:disabled) { background: #4a90d9; }
   padding: 1rem; text-align: center; font-size: 0.9rem; color: var(--line); background: var(--vw-bg); }
 .w3d-resize { position: absolute; right: 0; bottom: 0; z-index: 4; width: 14px; height: 14px; cursor: nwse-resize; touch-action: none;
   background: linear-gradient(135deg, transparent 50%, var(--accent) 50%, var(--accent) 60%, transparent 60%, transparent 72%, var(--accent) 72%, var(--accent) 82%, transparent 82%); }
+
+/* Szerelés: lépéslista a panelen, beágyazott 3D, alatta anyag és teendők */
+.assembly-steps ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.assembly-steps button { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; text-align: left; padding: 0.35rem 0.5rem; }
+.assembly-steps button.active { background: var(--accent); border-color: var(--select); color: #fff; }
+.as-title { font-weight: 600; }
+.as-sum { color: var(--muted); font-size: 0.8rem; }
+.assembly-steps button.active .as-sum { color: #dbe7ff; }
+.assembly-bar { flex-wrap: nowrap; }
+.assembly-title { flex: 1; min-width: 0; margin: 0; font-size: 1rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.assembly-body { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(220px, 3fr) minmax(120px, 2fr); }
+.assembly-info { overflow: auto; padding: 0.6rem 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.5rem 1.5rem; align-content: start;
+  background: var(--panel); border-top: 1px solid var(--accent); }
+.assembly-info h3 { margin: 0 0 0.3rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.assembly-info .hint { margin: 0 0 0.3rem; }
+.as-list { list-style: none; margin: 0 0 0.4rem; padding: 0; }
+.as-row { display: grid; grid-template-columns: 5.5rem 1fr; gap: 0 0.5rem; padding: 0.15rem 0.3rem; border-radius: 3px; font-size: 0.9rem; }
+.as-row.hl { cursor: pointer; }
+.as-row.hl:hover, .as-row.hl:focus-visible, .as-row.active { background: #1f3552; outline: none; }
+.as-row[aria-pressed='true'] { box-shadow: inset 3px 0 0 var(--select); }
+.as-qty { text-align: right; font-variant-numeric: tabular-nums; }
+.as-cut, .as-order { grid-column: 2; color: var(--muted); font-size: 0.8rem; }
+.assembly-todo { margin: 0; padding-left: 1.3rem; }
+.assembly-todo li { margin-bottom: 0.25rem; }

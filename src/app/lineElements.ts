@@ -23,7 +23,8 @@ export function stepForView(view: ViewId): StepId {
 }
 
 const TIMBER = /^timber\.([^.]+)\.(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)\.(\d+(?:\.\d+)?)$/;
-const FASTENER_LINES: Record<string, FastenerKind> = {
+/** A rajzolt rögzítési pontok beszerzési sora (anyaglista-sor id → rögzítőfajta). */
+export const FASTENER_LINES: Record<string, FastenerKind> = {
   'fix.anchors': 'anchor', 'fix.frameScrews': 'frameScrew', 'fix.osbScrews': 'osbScrew', 'fix.hurricaneTies': 'hurricaneTie',
 };
 

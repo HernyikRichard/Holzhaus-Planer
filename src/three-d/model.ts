@@ -1,5 +1,7 @@
 import type { Mm, Plan, WallLayerKind, WallSide } from '../model/types';
-import { BATTEN_SECTION, BATTEN_SPACING_WALL, COUNTER_BATTEN_SECTION, FASCIA_SECTION, ROOF_BATTEN_SECTION } from '../catalog';
+import {
+  BATTEN_SECTION, BATTEN_SPACING_WALL, COUNTER_BATTEN_SECTION, DECKING_REQUIRED, FASCIA_SECTION, ROOF_BATTEN_SECTION, STANDING_SEAM_WIDTH,
+} from '../catalog';
 import { roofGeometry, studLengthAt, wallGeometry, type WallGeom } from '../calc/geometry';
 import type { Element, ElementKind, Scene } from '../scene/types';
 import { COVERING_T, DECKING_T, FOIL_T, floorTopZ, wallLayerStrips } from '../scene/layerStack';
@@ -93,6 +95,20 @@ export function solidBounds(s: Solid): { min: Vec3; max: Vec3 } {
       }
     }
   }
+  return { min, max };
+}
+
+/** A testek közös világ-befoglalója; üres listánál nullák. */
+export function boundsOf(solids: Solid[]): { min: Vec3; max: Vec3 } {
+  const min: Vec3 = [0, 0, 0];
+  const max: Vec3 = [0, 0, 0];
+  solids.forEach((s, i) => {
+    const b = solidBounds(s);
+    for (let k = 0; k < 3; k++) {
+      min[k] = i === 0 ? b.min[k] : Math.min(min[k], b.min[k]);
+      max[k] = i === 0 ? b.max[k] : Math.max(max[k], b.max[k]);
+    }
+  });
   return { min, max };
 }
 
@@ -338,6 +354,9 @@ function wallLayerSolids(plan: Plan, scene: Scene): Solid[] {
 const GUTTER_R = 62.5;    // félköríves ereszcsatorna sugara (125 mm-es csatorna), csak megjelenítés
 const GUTTER_WALL = 3;
 const GUTTER_SEGMENTS = 12;
+/** Állókorcos lemez a 3D-ben: a lemez vastagsága és a korcborda szélessége (mm); a borda a COVERING_T magasságig ér. */
+const SEAM_PAN_T = 2;
+const SEAM_RIB_W = 20;
 
 /** Egy tetősík az eresz helyével és a gerinc / a túlsó vég felé mutató iránnyal a gerincre merőleges p tengelyen. */
 interface RoofPlane { group: string; pEave: number; dir: 1 | -1; pEnd: number }
@@ -420,7 +439,7 @@ function roofSolids(plan: Plan, scene: Scene): Solid[] {
   }
 
   // tetőrétegek a szarufák felső síkjától, a rétegrend sorrendjében
-  const forced = covering === 'shingle' || covering === 'epdm';
+  const forced = DECKING_REQUIRED.has(covering);
   const counters = els.filter(e => e.kind === 'counterBatten');
   const battens = els.filter(e => e.kind === 'roofBatten');
   let n = rafterSection.w;
@@ -450,7 +469,19 @@ function roofSolids(plan: Plan, scene: Scene): Solid[] {
       n += tk;
     }
   }
-  sheet('covering', covering, COVERING_T[covering]);
+  if (covering === 'standingSeam') {
+    // vékony lemez + korcbordák sávszélességenként (csak látvány, elementId nélkül); együtt a metszet szerinti vastagság
+    const tk = COVERING_T.standingSeam;
+    for (const pl of planes) {
+      push('covering', LAYER3D_NAMES.covering, covering, strip(pl.pEave, pl.pEnd, n, n + SEAM_PAN_T), -og, Lr);
+      const strips = Math.ceil(Lr / STANDING_SEAM_WIDTH - 1e-9);
+      for (let k = 0; k <= strips; k++) {
+        const r = Math.min(Math.max(k * STANDING_SEAM_WIDTH - SEAM_RIB_W / 2, 0), Lr - SEAM_RIB_W);
+        push('covering', 'Állókorc', covering, strip(pl.pEave, pl.pEnd, n + SEAM_PAN_T, n + tk), -og + r, SEAM_RIB_W);
+      }
+    }
+    n += tk;
+  } else sheet('covering', covering, COVERING_T[covering]);
   const nTop = n;
 
   // kiegészítők: homlokdeszka a szarufavégek előtt, oromdeszka a tetősík szélén kívül, ereszcsatorna
@@ -518,14 +549,5 @@ export function buildModel3d(plan: Plan, scene: Scene): Model3d {
     ...roofSolids(plan, scene)];
   const present = new Set(solids.map(s => s.layer));
   const layers = LAYER_ORDER.filter(l => present.has(l));
-  const min: Vec3 = [0, 0, 0];
-  const max: Vec3 = [0, 0, 0];
-  solids.forEach((s, i) => {
-    const b = solidBounds(s);
-    for (let k = 0; k < 3; k++) {
-      min[k] = i === 0 ? b.min[k] : Math.min(min[k], b.min[k]);
-      max[k] = i === 0 ? b.max[k] : Math.max(max[k], b.max[k]);
-    }
-  });
-  return { solids, layers, bounds: { min, max } };
+  return { solids, layers, bounds: boundsOf(solids) };
 }

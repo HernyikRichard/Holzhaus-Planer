@@ -12,23 +12,28 @@ export interface Renderer3d {
   setModel(m: Model3d): void; setVisible(l: Partial<Record<Layer3dId, boolean>>): void;
   setHighlight(ids: string[]): void; setHover(id: string | null): void;
   pick(clientX: number, clientY: number): { elementId?: string; label: string } | null;
-  setView(p: ViewPreset): void; resize(w: number, h: number): void; dispose(): void;
+  /** Kameraállás a modell befoglalójára; `frame` megadásával arra (pl. szűrt modellnél a teljes házra). */
+  setView(p: ViewPreset, frame?: Model3d['bounds']): void;
+  resize(w: number, h: number): void; dispose(): void;
+  /** Szinkron kirajzolás, majd a vászon PNG data URL-je (a PDF képeihez). */
+  snapshot(): string;
 }
 
 const FOV = 35;
 
 /** WebGL hiányában (vagy ha a kontextus nem jön létre) `Error('webgl')`. */
-export function createRenderer(canvas: HTMLCanvasElement): Renderer3d {
+export function createRenderer(canvas: HTMLCanvasElement, opts?: { preserveDrawingBuffer?: boolean; palette?: Record<string, string> }): Renderer3d {
+  const palette = opts?.palette ?? SCREEN_PALETTE;
   let renderer: THREE.WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: opts?.preserveDrawingBuffer ?? false });
   } catch {
     throw new Error('webgl');
   }
   renderer.setPixelRatio(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(SCREEN_PALETTE.bg);
+  scene.background = new THREE.Color(palette.bg);
   const camera = new THREE.PerspectiveCamera(FOV, 1, 10, 1e6);
   scene.add(camera);
   scene.add(new THREE.AmbientLight(0xffffff, 1.1));
@@ -59,9 +64,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer3d {
   let hover: string | null = null;
   const raycaster = new THREE.Raycaster();
 
-  const applyView = (p: ViewPreset): void => {
-    if (!bounds) return;
-    const c = presetCamera(p, bounds, FOV, camera.aspect);
+  const applyView = (p: ViewPreset, frame: Model3d['bounds'] | null = bounds): void => {
+    if (!frame) return;
+    const c = presetCamera(p, frame, FOV, camera.aspect);
     camera.position.copy(modelToThree(c.position));
     camera.up.set(0, 1, 0); // modelToThree(+Z); az OrbitControls a létrehozáskori up-ot feltételezi
     controls.target.copy(modelToThree(c.target));
@@ -82,7 +87,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer3d {
       const first = current === null;
       current?.dispose();
       if (current) scene.remove(current.root);
-      current = buildThreeModel(m);
+      current = buildThreeModel(m, palette);
       current.setVisible(visible);
       current.setHighlight(highlight);
       current.setHover(hover);
@@ -121,8 +126,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer3d {
       }
       return null;
     },
-    setView(p) {
-      applyView(p);
+    setView(p, frame) {
+      applyView(p, frame ?? bounds);
       requestRender();
     },
     resize(w, h) {
@@ -131,6 +136,11 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer3d {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       render(); // szinkron: a vászon átméretezése törli a tartalmát
+    },
+    snapshot() {
+      if (frame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame);
+      render();
+      return canvas.toDataURL('image/png');
     },
     dispose() {
       if (frame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame);

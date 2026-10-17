@@ -1,5 +1,6 @@
 import type { Plan } from '../../model/types';
 import { roofGeometry } from '../../calc/geometry';
+import { STANDING_SEAM_WIDTH } from '../../catalog';
 import type { Element } from '../../scene/types';
 import { elGroup, esc, fxCircle, type Pt } from '../svgKit';
 import { drawEl, fxRadius, layerG, type ViewCtx } from './common';
@@ -71,6 +72,20 @@ export function drawRoof(ctx: ViewCtx): string {
   const els = scene.elements.filter(e => PLANES.has(e.group) || e.group === 'roof.ridge' || e.group === 'roof.collar');
   const frame = ctx.on('frame') ? els.filter(e => FRAME.has(e.kind)).map(drawOne).join('') : '';
   const battens = ctx.on('battens') ? els.filter(e => BATTENS.has(e.kind)).map(drawOne).join('') : '';
+  // állókorcos lemez: korcvonalak a lejtés irányában, sávszélességenként (csak rajz, nincs scene-elem)
+  let seams = '';
+  if (ctx.on('battens') && plan.roof.covering === 'standingSeam') {
+    const strips = Math.ceil(Lr / STANDING_SEAM_WIDTH - 1e-9);
+    const st = kit.stroke('lineMuted', 0.8);
+    for (const [pa, pb] of planes) {
+      for (let k = 0; k <= strips; k++) {
+        const r = -og + Math.min(k * STANDING_SEAM_WIDTH, Lr);
+        const [ax, ay] = m.xy(pa, r);
+        const [bx, by] = m.xy(pb, r);
+        seams += kit.line(ax, ay, bx, by, `class="seam" ${st}`);
+      }
+    }
+  }
   let fx = '';
   if (ctx.on('fasteners')) {
     const r = fxRadius(geom);
@@ -112,6 +127,6 @@ export function drawRoof(ctx: ViewCtx): string {
     dims += across([-oe, S + oe], 2);
   }
   // a lécezés a váz ALÁ kerül: így a szarufák látszanak felül és kapják az egérmutatót
-  return context + labels + layerG('battens', battens) + layerG('frame', frame) + layerG('fasteners', fx) + layerG('dims', dims + kit.takeLabels());
+  return context + labels + layerG('battens', seams + battens) + layerG('frame', frame) + layerG('fasteners', fx) + layerG('dims', dims + kit.takeLabels());
 }
 

@@ -104,3 +104,16 @@ describe('shape validation', () => {
     expect(parsePlan(JSON.stringify(p))).toEqual({ ok: true, plan: createDefaultPlan() });
   });
 });
+test('standingSeam covering round-trips; old covering values still load', () => {
+  const p = createDefaultPlan(); p.roof.covering = 'standingSeam';
+  expect(parsePlan(serializePlan(p))).toEqual({ ok: true, plan: p });
+  for (const c of ['tile', 'trapezoid', 'shingle', 'epdm'] as const) {
+    const q = createDefaultPlan(); q.roof.covering = c;
+    expect(parsePlan(serializePlan(q))).toEqual({ ok: true, plan: q });
+  }
+  const v1: any = createDefaultPlan(); delete v1.pricing; v1.version = 1; v1.roof.covering = 'standingSeam';
+  const r = parsePlan(JSON.stringify(v1));
+  expect(r.ok && r.plan.roof.covering).toBe('standingSeam');
+  const bad: any = createDefaultPlan(); bad.roof.covering = 'slate';
+  expect(parsePlan(JSON.stringify(bad))).toEqual({ ok: false, error: 'Hibás érték: roof.covering' });
+});

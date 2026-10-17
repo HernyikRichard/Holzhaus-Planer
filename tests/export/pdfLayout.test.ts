@@ -2,11 +2,13 @@ import { calculate } from '../../src/calc';
 import { supplyFromPriceList } from '../../src/pricing/supply';
 import { costOf, orderList } from '../../src/pricing/cost';
 import { MATCH_FIXTURE } from '../fixtures/priceList';
-import { formatFt } from '../../src/ui/format';
 import { buildScene } from '../../src/scene/build';
 import { createDefaultPlan } from '../../src/model/defaults';
 import { cutSticks } from '../../src/app/lineElements';
-import { costPageRows, CUT_PLAN_HEADER, cutPlanRows, DEFAULT_PALETTE, substituteCssVars, fitRect, paginateRows, type TableItem } from '../../src/export/pdfLayout';
+import { buildAssembly } from '../../src/assembly/steps';
+import { stepMaterial } from '../../src/assembly/material';
+import { formatCm, formatFt, formatQty } from '../../src/ui/format';
+import { ASSEMBLY_TABLE_HEADER, assemblyTableRows, costPageRows, CUT_PLAN_HEADER, cutPlanRows, DEFAULT_PALETTE, substituteCssVars, fitRect, paginateRows, type TableItem } from '../../src/export/pdfLayout';
 
 test('substituteCssVars replaces known variables with palette values', () => {
   const svg = '<rect fill="var(--fill-wood)" stroke="var(--line)"/><text fill="var(--line)">x</text>';
@@ -126,5 +128,41 @@ describe('costPageRows', () => {
   });
   test('lábjegyzet: forrás és dátum', () => {
     expect(costPageRows(summary, ctx).footnote).toContain('Káplár Fatelep, 2026. 10. 01.');
+  });
+});
+
+test('paginateRows: a smaller first page (content above the table)', () => {
+  const items = [row(8), row(8), row(8), row(8), row(8)];
+  // első oldal: 20 - 10 = 10 hely, a többi 30 - 10 = 20
+  expect(paginateRows(items, 30, 10, 20)).toEqual([[0], [1, 2], [3, 4]]);
+});
+
+test('paginateRows: no room on the first page leaves it empty', () => {
+  expect(paginateRows([row(8), row(8)], 30, 10, 15)).toEqual([[], [0, 1]]);
+  // azonos első oldal: a régi viselkedés (túl magas sor saját oldalon)
+  expect(paginateRows([row(50)], 30, 10, 30)).toEqual([[0]]);
+});
+
+describe('assemblyTableRows', () => {
+  const plan = createDefaultPlan();
+  const scene = buildScene(plan);
+  const steps = buildAssembly(plan, scene, calculate(plan));
+
+  test('header and row shape', () => {
+    expect(ASSEMBLY_TABLE_HEADER).toEqual(['Anyag', 'Mennyiség', 'Megjegyzés']);
+    for (const s of steps) for (const r of assemblyTableRows(s)) expect(r).toHaveLength(3);
+  });
+  test('pieces, fasteners with the order note folded in, then lines', () => {
+    const wall = steps.find(s => s.id.startsWith('wall.') && s.lines.some(l => l.lineId === 'fix.frameScrews'))!;
+    const rows = assemblyTableRows(wall);
+    const p = wall.pieces[0];
+    expect(rows[0]).toEqual([`${p.label} ${p.section}, ${formatCm(p.length)}`, `${formatQty(p.count)} db`, p.cut]);
+    const fs = wall.fasteners.find(f => f.kind === 'frameScrew')!;
+    const line = wall.lines.find(l => l.lineId === 'fix.frameScrews')!;
+    expect(rows).toContainEqual([fs.label, `${formatQty(fs.count)} db`, `rendelés, az egész házra: ${formatQty(line.quantity)} ${line.unit}`]);
+    // a beszerzési sor nem külön tétel
+    expect(rows.some(r => r[1] === `${formatQty(line.quantity)} ${line.unit}`)).toBe(false);
+    const m = stepMaterial(wall);
+    expect(rows).toHaveLength(wall.pieces.length + m.fasteners.length + m.lines.length);
   });
 });

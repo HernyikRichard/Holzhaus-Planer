@@ -3,6 +3,8 @@ import { cutSticks, cutVariants } from '../app/lineElements';
 import { formatCm, formatCmNum, formatDateHu, formatFt, formatQty, sectionLabelWithUnit } from '../ui/format';
 import { CATEGORY_ORDER } from '../calc';
 import { isCart, orderList, type CostSummary } from '../pricing/cost';
+import type { AssemblyStep } from '../assembly/steps';
+import { stepMaterial } from '../assembly/material';
 
 /** A PDF-export tiszta (DOM- és jsPDF-mentes) segédfüggvényei. */
 
@@ -42,25 +44,44 @@ export interface TableItem { kind: 'subtitle' | 'row'; height: number }
 /**
  * Táblázatelemek oldalakra osztása. Minden oldalon `headerHeight` hely a (ismétlődő) fejlécé.
  * Az alcím mindig együtt marad a következő sorral; a túl magas sor külön oldalra kerül.
+ * A `firstPageHeight` az első oldal (kisebb) helye, ha a táblázat fölött más tartalom van; ha oda az első
+ * elem sem fér, az első oldal üres (`[]`) marad, és a táblázat a következő oldalon kezdődik.
  * Visszatérés: oldalanként az elemek indexei.
  */
-export function paginateRows(items: TableItem[], pageHeight: number, headerHeight: number): number[][] {
-  const avail = pageHeight - headerHeight;
+export function paginateRows(items: TableItem[], pageHeight: number, headerHeight: number, firstPageHeight = pageHeight): number[][] {
+  let avail = firstPageHeight - headerHeight;
   const pages: number[][] = [];
   let cur: number[] = [];
   let used = 0;
   items.forEach((it, i) => {
     const need = it.kind === 'subtitle' && i + 1 < items.length ? it.height + items[i + 1].height : it.height;
-    if (cur.length > 0 && used + need > avail) {
+    const shortFirst = pages.length === 0 && firstPageHeight < pageHeight;
+    if ((cur.length > 0 || shortFirst) && used + need > avail) {
       pages.push(cur);
       cur = [];
       used = 0;
+      avail = pageHeight - headerHeight;
     }
     cur.push(i);
     used += it.height;
   });
   if (cur.length > 0) pages.push(cur);
   return pages;
+}
+
+export const ASSEMBLY_TABLE_HEADER = ['Anyag', 'Mennyiség', 'Megjegyzés'];
+
+/**
+ * A szerelési lépés anyagtáblázata (mint a Szerelés lépés felületén): darabok a szál-hivatkozással,
+ * rögzítők (a rajzolt fajta beszerzési sora megjegyzésként a sorukban), majd a többi anyagsor.
+ */
+export function assemblyTableRows(step: AssemblyStep): string[][] {
+  const m = stepMaterial(step);
+  return [
+    ...step.pieces.map(p => [`${p.label} ${p.section}, ${formatCm(p.length)}`, `${formatQty(p.count)} db`, p.cut]),
+    ...m.fasteners.map(f => [f.label, `${formatQty(f.count)} db`, f.order ?? '']),
+    ...m.lines.map(l => [l.name, `${formatQty(l.quantity)} ${l.unit}`, '']),
+  ];
 }
 
 export const CUT_PLAN_HEADER = ['Keresztmetszet', 'Szál', 'Darabok', 'Maradék'];

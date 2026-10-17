@@ -154,6 +154,8 @@ test('preset buttons call setView', async () => {
   expect(buttons.map(b => b.textContent)).toEqual(['Persp.', 'É', 'K', 'D', 'Ny', 'Felül', '⟲']);
   for (const b of buttons) await act(() => { fireEvent.click(b); });
   expect(r.setView.mock.calls.map(c => c[0])).toEqual(['persp', 'N', 'E', 'S', 'W', 'top', 'persp']);
+  // a lebegő ablak a saját (teljes) modelljére igazít: nincs külön keret
+  for (const c of r.setView.mock.calls) expect(c).toHaveLength(1);
 });
 
 test('click on element selects and opens detail', async () => {

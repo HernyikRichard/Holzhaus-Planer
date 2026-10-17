@@ -802,3 +802,42 @@ test('roof layers present and absent per plan', () => {
   expect(n.layers).not.toContain('underlay');
   expect(n.layers).not.toContain('accessories');
 });
+
+describe('állókorcos alumíniumlemez 3D', () => {
+  for (const shape of ['gable', 'mono', 'flat'] as const) {
+    test(`${shape}: fémes héjazatlemez és korcbordák 500 mm-enként, darabra pontosan`, () => {
+      const p = createDefaultPlan();
+      p.roof.shape = shape;
+      p.roof.pitch = shape === 'flat' ? 3 : shape === 'mono' ? 10 : 30;
+      p.roof.covering = 'standingSeam';
+      for (const l of p.roof.layers) l.enabled = true;
+      const scene = buildScene(p);
+      const m = buildModel3d(p, scene);
+      const g = roofGeometry(p);
+      const cov = m.solids.filter(s => s.layer === 'covering');
+      expect(cov.every(s => s.material === 'standingSeam' && s.elementId === undefined)).toBe(true);
+      const plates = cov.filter(s => s.label === LAYER3D_NAMES.covering);
+      const ribs = cov.filter(s => s.label === 'Állókorc');
+      expect(plates).toHaveLength(g.planes);
+      const seams = Math.ceil(g.roofLengthAlongRidge / 500 - 1e-9) + 1;
+      expect(ribs).toHaveLength(seams * g.planes);
+      for (const s of ribs) expect(s.depth).toBe(20);
+      // a bordák a tetősíkon belül, a lemez a metszet szerinti 25 mm-es sávban
+      const { R } = AXIS_OF(p);
+      for (const s of ribs) {
+        const b = solidBounds(s);
+        expect(b.min[R]).toBeGreaterThanOrEqual(-p.roof.gableOverhang - 1e-6);
+        expect(b.max[R]).toBeLessThanOrEqual(g.L + p.roof.gableOverhang + 1e-6);
+      }
+      // nincs léc, és minden scene-elemnek pontosan egy teste van
+      expect(m.layers).not.toContain('counterBatten');
+      expect(m.layers).not.toContain('roofBatten');
+      expect(m.layers).toContain('decking');
+      for (const e of scene.elements.filter(x => x.group.startsWith('roof.') || x.kind === 'fascia' || x.kind === 'barge')) {
+        expect(byId(m.solids, e.id), e.id).toHaveLength(1);
+      }
+      const ids = new Set(scene.elements.map(e => e.id));
+      expect(m.solids.filter(s => s.elementId && !ids.has(s.elementId))).toEqual([]);
+    });
+  }
+});

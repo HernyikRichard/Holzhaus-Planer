@@ -15,7 +15,7 @@ export interface Opening {
   offset: Mm; width: Mm; height: Mm; sillHeight: Mm; swing: 'left' | 'right';
 }
 export type RoofShape = 'flat' | 'mono' | 'gable';
-export type RoofCovering = 'tile' | 'trapezoid' | 'shingle' | 'epdm';
+export type RoofCovering = 'tile' | 'trapezoid' | 'shingle' | 'epdm' | 'standingSeam';
 export type RoofLayerKind = 'decking' | 'underlay' | 'counterBatten' | 'batten';
 export interface RoofLayer { kind: RoofLayerKind; enabled: boolean; material: string }
 // decking: 'osb'|'boards'; underlay: 'foil'|'bitumen'
