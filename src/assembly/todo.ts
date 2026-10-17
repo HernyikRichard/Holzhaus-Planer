@@ -257,7 +257,9 @@ function interior(c: Ctx): string[] {
   const vb = line(c, 'wall.vaporBarrier');
   if (vb) out.push(`Feszítsd fel belülről a párazáró fóliát (${qty(vb)}), az illesztéseket ragaszd le.`);
   const cl = line(c, 'wall.interiorCladding');
-  const screws = line(c, 'fix.osbScrews');
+  // az OSB-csavar sora csak OSB burkolatnál a belső burkolaté (lásd stepIdOfLine)
+  const osb = c.plan.walls.layers.some(l => l.kind === 'interiorCladding' && l.enabled && l.material === 'osb');
+  const screws = osb ? line(c, 'fix.osbScrews') : undefined;
   if (cl) out.push(`Szereld fel a belső burkolatot (${qty(cl)})${screws ? `, ${qty(screws)} OSB-csavarral` : ''}.`);
   return out;
 }

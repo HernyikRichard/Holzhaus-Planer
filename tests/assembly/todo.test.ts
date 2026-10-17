@@ -115,6 +115,16 @@ describe('guards and wording', () => {
     expect(todo).toContain('Szereld össze a vázat a földön: 7 oszlop');
   });
 
+  test('OSB screws in the interior to-do only with OSB cladding', () => {
+    const plan = createDefaultPlan();
+    const scene = buildScene(plan);
+    const s = buildAssembly(plan, scene, calculate(plan)).find(x => x.id === 'interior')!;
+    const withScrews = { ...s, lines: [...s.lines, { lineId: 'fix.osbScrews', name: 'OSB-csavar', quantity: 1, unit: 'doboz' }] };
+    expect(stepTodo(plan, scene, withScrews).join('\n')).toContain('1 doboz OSB-csavarral');
+    for (const l of plan.walls.layers) if (l.kind === 'interiorCladding') l.material = 'gypsum';
+    expect(stepTodo(plan, scene, withScrews).join('\n')).not.toMatch(/OSB/);
+  });
+
   test('missing OSB layer → no empty thickness', () => {
     const plan = createDefaultPlan();
     const scene = buildScene(plan);

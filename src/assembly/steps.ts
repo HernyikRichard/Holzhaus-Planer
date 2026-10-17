@@ -5,7 +5,7 @@ import { wallGeometry } from '../calc/geometry';
 import { wallBattenPieces } from '../calc/walls';
 import { elementsToPieces } from '../scene/toPieces';
 import type { CutRef, Element, FastenerKind, Scene } from '../scene/types';
-import { HURRICANE_TIE_LABEL } from '../catalog';
+import { DECKING_REQUIRED, HURRICANE_TIE_LABEL } from '../catalog';
 import { formatQty, sectionLabelWithUnit } from '../ui/format';
 import { stepTodo } from './todo';
 
@@ -101,7 +101,8 @@ function lookupLine(id: string): AssemblyStepId | null | undefined {
 
 /**
  * Anyaglista-sor → lépés (null = faanyag szálhossz-sor). A terv megadásával a fal-rögzítők sora az első
- * futó falhoz, az OSB-csavar sora fali OSB nélkül a belső rétegekhez kerül; terv nélkül `wall.N` / `wallTop`.
+ * futó falhoz, az OSB-csavar sora az első OSB-t tartalmazó lépéshez kerül (`osbScrewStep`); terv nélkül
+ * `wall.N` / `wallTop`.
  * Ismeretlen id: az utolsó lépés, `console.warn`-nal.
  */
 export function stepIdOfLine(line: Pick<MaterialLine, 'id'>, plan?: Plan): AssemblyStepId | null {
@@ -112,8 +113,22 @@ export function stepIdOfLine(line: Pick<MaterialLine, 'id'>, plan?: Plan): Assem
   }
   if (s === null || !plan) return s;
   if (s.startsWith('wall.')) return wallOrder(plan)[0];
-  if (line.id === 'fix.osbScrews' && !plan.walls.layers.some(l => l.kind === 'osb' && l.enabled)) return 'interior';
+  if (line.id === 'fix.osbScrews') return osbScrewStep(plan);
   return s;
+}
+
+/**
+ * Az OSB-csavar sora (fali, belső, padló- és tető-OSB együtt) az első lépéshez, amelyben OSB-lap van:
+ * fali OSB → belső OSB burkolat → padló → OSB tetődeszkázat.
+ */
+function osbScrewStep(plan: Plan): AssemblyStepId {
+  const wall = (kind: string) => plan.walls.layers.find(l => l.kind === kind && l.enabled);
+  if (wall('osb')) return 'wallTop';
+  if (wall('interiorCladding')?.material === 'osb') return 'interior';
+  if (plan.floor.enabled) return 'floor';
+  const decking = plan.roof.layers.find(l => l.kind === 'decking');
+  if (decking?.material === 'osb' && (decking.enabled || DECKING_REQUIRED.has(plan.roof.covering))) return 'roofLayers';
+  return 'wallTop';
 }
 
 /** A falak lépés-sorrendje: a két futó fal (É, K, D, Ny), aztán a két rövid. */

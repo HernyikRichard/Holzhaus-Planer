@@ -15,13 +15,21 @@ import { mono4x6Plan } from '../fixtures';
 const ORDER: AssemblyStepId[] = ['foundation', 'floor', 'wall.N', 'wall.E', 'wall.S', 'wall.W', 'wallTop',
   'roofFrame', 'roofLayers', 'covering', 'accessories', 'openings', 'exterior', 'interior'];
 
-interface Variant { shape: RoofShape; ridge: 'x' | 'y'; floor: boolean; covering: RoofCovering; plate: 'single' | 'double' }
+interface Variant {
+  shape: RoofShape; ridge: 'x' | 'y'; floor: boolean; covering: RoofCovering; plate: 'single' | 'double';
+  /** minden falréteg kikapcsolva (fali OSB és belső / külső rétegek nélkül) */
+  noWallLayers?: boolean;
+  /** OSB tetődeszkázat */
+  osbDecking?: boolean;
+}
 
 function planOf(v: Variant): Plan {
   const p = mono4x6Plan();
   p.roof = { ...p.roof, shape: v.shape, ridgeDirection: v.ridge, covering: v.covering, pitch: v.shape === 'flat' ? 3 : 25 };
   p.floor.enabled = v.floor;
   p.walls.topPlate = v.plate;
+  if (v.noWallLayers) for (const l of p.walls.layers) l.enabled = false;
+  if (v.osbDecking) for (const l of p.roof.layers) if (l.kind === 'decking') l.material = 'osb';
   return p;
 }
 
@@ -32,6 +40,13 @@ const all: Array<[Variant, number]> = [];
   [true, false].forEach((floor, c) => (['tile', 'trapezoid', 'shingle', 'epdm', 'standingSeam'] as RoofCovering[]).forEach((covering, d) =>
     (['single', 'double'] as const).forEach((plate, e) => all.push([{ shape, ridge, floor, covering, plate }, a + b + c + d + e]))))));
 const matrix = all.filter(([, k]) => k % 2 === 0).map(([v]) => v);
+// falrétegek nélkül: az OSB-csavar sora a padlóhoz / a tetőrétegekhez kerül, belső / külső lépés nincs
+matrix.push(
+  { shape: 'gable', ridge: 'y', floor: true, covering: 'tile', plate: 'double', noWallLayers: true },
+  { shape: 'gable', ridge: 'x', floor: true, covering: 'shingle', plate: 'single', noWallLayers: true, osbDecking: true },
+  { shape: 'mono', ridge: 'x', floor: false, covering: 'standingSeam', plate: 'double', noWallLayers: true, osbDecking: true },
+  { shape: 'flat', ridge: 'y', floor: false, covering: 'epdm', plate: 'single', noWallLayers: true },
+);
 
 /** A héjazattól függő sorok várt lépése (a mátrixban előforduló id-k). */
 const COVERING_LINES: Record<string, AssemblyStepId> = {
@@ -45,7 +60,8 @@ let warn: ReturnType<typeof vi.spyOn>;
 beforeEach(() => { warn = vi.spyOn(console, 'warn').mockImplementation(() => {}); });
 afterEach(() => { warn.mockRestore(); });
 
-const name = (v: Variant) => `${v.shape}/${v.ridge}/${v.floor ? 'padló' : 'nincs padló'}/${v.covering}/${v.plate}`;
+const name = (v: Variant) => `${v.shape}/${v.ridge}/${v.floor ? 'padló' : 'nincs padló'}/${v.covering}/${v.plate}`
+  + `${v.noWallLayers ? '/falrétegek nélkül' : ''}${v.osbDecking ? '/OSB deszkázat' : ''}`;
 
 describe.each(matrix.map(v => [name(v), v] as const))('%s', (_n, v) => {
   const plan = planOf(v);
@@ -132,6 +148,22 @@ describe.each(matrix.map(v => [name(v), v] as const))('%s', (_n, v) => {
     expect(ids.includes('floor')).toBe(v.floor);
   });
 
+  test('disabled layers have no step; OSB screws go to the first step with OSB', () => {
+    const ids = steps.map(s => s.id);
+    const on = (...kinds: string[]) => plan.walls.layers.some(l => kinds.includes(l.kind) && l.enabled);
+    expect(ids.includes('interior')).toBe(on('insulation', 'vaporBarrier', 'interiorCladding'));
+    expect(ids.includes('exterior')).toBe(on('breatherMembrane', 'battens', 'exteriorCladding'));
+    // OSB-t tartalmazó lépések a sorok alapján, szerelési sorrendben
+    const has = (id: string) => calc.lines.some(l => l.id === id);
+    const osbSteps: AssemblyStepId[] = [];
+    if (has('wall.osb')) osbSteps.push('wallTop');
+    if (calc.lines.some(l => l.id === 'wall.interiorCladding' && l.name.includes('OSB'))) osbSteps.push('interior');
+    if (has('floor.osb')) osbSteps.push('floor');
+    if (calc.lines.some(l => l.id === 'roof.decking' && l.unit === 'tábla')) osbSteps.push('roofLayers');
+    const screws = steps.find(s => s.lines.some(l => l.lineId === 'fix.osbScrews'));
+    expect(screws?.id).toBe(osbSteps[0]);
+  });
+
   test('double top plate', () => {
     const top = steps.find(s => s.id === 'wallTop');
     for (const w of wallGeometry(plan)) {
@@ -164,6 +196,37 @@ describe('missing parts drop steps', () => {
     const ids = buildAssembly(p, buildScene(p), calculate(p)).map(s => s.id);
     expect(ids).not.toContain('exterior');
     expect(ids).toContain('interior');
+  });
+
+  test('floor on, wall OSB and interior layers off → OSB screws in the floor step, no interior step', () => {
+    const p = createDefaultPlan();
+    p.floor.enabled = true;
+    for (const l of p.walls.layers) if (['osb', 'insulation', 'vaporBarrier', 'interiorCladding'].includes(l.kind)) l.enabled = false;
+    const steps = buildAssembly(p, buildScene(p), calculate(p));
+    expect(steps.map(s => s.id)).not.toContain('interior');
+    expect(steps.find(s => s.lines.some(l => l.lineId === 'fix.osbScrews'))!.id).toBe('floor');
+  });
+
+  test('wall OSB off, gypsum interior, OSB roof decking → OSB screws in roof layers', () => {
+    const p = createDefaultPlan();
+    for (const l of p.walls.layers) {
+      if (l.kind === 'osb') l.enabled = false;
+      if (l.kind === 'interiorCladding') l.material = 'gypsum';
+    }
+    for (const l of p.roof.layers) if (l.kind === 'decking') l.material = 'osb';
+    const steps = buildAssembly(p, buildScene(p), calculate(p));
+    expect(steps.find(s => s.lines.some(l => l.lineId === 'fix.osbScrews'))!.id).toBe('roofLayers');
+    expect(steps.find(s => s.id === 'interior')!.todo.join('\n')).not.toMatch(/OSB/);
+  });
+
+  test('wall OSB off, OSB interior cladding → OSB screws in the interior step', () => {
+    const p = createDefaultPlan();
+    p.floor.enabled = true;
+    for (const l of p.walls.layers) if (l.kind === 'osb') l.enabled = false;
+    const steps = buildAssembly(p, buildScene(p), calculate(p));
+    const interior = steps.find(s => s.id === 'interior')!;
+    expect(interior.lines.map(l => l.lineId)).toContain('fix.osbScrews');
+    expect(interior.todo.join('\n')).toMatch(/belső burkolatot \(\d+ tábla\), \d+ doboz OSB-csavarral/);
   });
 
   test('all interior layers off → no interior step', () => {
