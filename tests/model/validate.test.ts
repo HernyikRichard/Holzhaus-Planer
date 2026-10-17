@@ -49,6 +49,8 @@ test('every numeric/section panel field has a range check', () => {
     const targets = f.kind === 'section' ? [`${f.path}.t`, `${f.path}.w`] : [f.path];
     for (const t of targets) {
       const p = createDefaultPlan();
+      // a típusfüggő szakaszok mezői csak a saját alaptípusukon érvényesek
+      if (s.id === 'groundScrew' || s.id === 'padFooting' || s.id === 'concretePier') p.foundation.type = s.id;
       expect(getPath(p, t), t).toEqual(expect.any(Number));
       setPath(p, t, absurd);
       expect(paths(p), t).toContain(t);
@@ -112,4 +114,14 @@ test('supportSpacing bounds 800-2500, auto is fine', () => {
     p.foundation.frame.supportSpacing = v;
     expect(paths(p).includes('foundation.frame.supportSpacing')).toBe(bad);
   }
+});
+
+test('footing depth is only validated for pad footing and concrete pier', () => {
+  const p = createDefaultPlan();
+  p.foundation.footing.depth = 5000;
+  expect(paths(p)).not.toContain('foundation.footing.depth');
+  p.foundation.type = 'padFooting';
+  expect(paths(p)).toContain('foundation.footing.depth');
+  p.foundation.type = 'concretePier';
+  expect(paths(p)).toContain('foundation.footing.depth');
 });

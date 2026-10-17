@@ -103,7 +103,7 @@ export function FieldControl({ def, store }: { def: FieldDef; store: Store }) {
       </label>
       <div class="field-error" role="alert">{message}</div>
       {def.path === 'floor.enabled' && hasFrame(plan) &&
-        <p class="hint">Talajcsavaros alapnál a padló a gerendakereten kötelező.</p>}
+        <p class="hint">Gerendakeretes alapnál a padló kötelező.</p>}
     </div>
   );
 }
