@@ -259,7 +259,11 @@ describe('pad footing and concrete pier to-dos', () => {
     expect(s.todo.length).toBeLessThanOrEqual(6);
     expect(t).toContain('12 betonpillér helyét');
     expect(t).toContain('támaszonként 4 db Ø10 hosszvas');
-    expect(t).toContain('2 sor 25 cm-es zsalukőből 30 cm magasra');
+    expect(t).toContain('2 sor 25 cm-es zsalukőből 30 cm magasra (a felső követ méretre vágva)');
+    expect(t).toContain('öntsd ki betonnal (1,54 m³)');
+    expect(t).toContain('töltsd ki betonnal (0,18 m³)');
+    const exact = build(p => { pier('block250')(p); p.foundation.frame.groundClearance = 250; }).todo.join(' ');
+    expect(exact).not.toContain('méretre vágva');
     expect(t).toContain('gerendapapucs');
     expect(t).toContain('7 napig');
     expect(build(pier('block200')).todo.join('\n')).toContain('2 sor 20 cm-es zsalukőből');

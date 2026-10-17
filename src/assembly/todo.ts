@@ -1,10 +1,11 @@
 import type { Mm, Opening, Plan, WallSide } from '../model/types';
 import { frameLayout, hasFrame } from '../calc/frame';
 import { supportQuantities } from '../calc/supports';
+import { ceilTo } from '../calc/util';
 import { beamSegments } from '../scene/frame';
 import { studPositions, wallGeometry } from '../calc/geometry';
 import {
-  BATTEN_GAUGE, BEAM_BOLTS_PER_SUPPORT, BEAM_SECTIONS, BATTEN_SPACING_WALL, CURE_DAYS, EPDM_UPTURN, LONG_BARS_PER_SUPPORT, MESH_SHEET, PIER_TUBE_D, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
+  BATTEN_GAUGE, BEAM_BOLTS_PER_SUPPORT, BEAM_SECTIONS, BATTEN_SPACING_WALL, CURE_DAYS, EPDM_UPTURN, LONG_BARS_PER_SUPPORT, MESH_SHEET, PIER_ROW_H, PIER_TUBE_D, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
 } from '../catalog';
 import type { Element, ElementKind, FastenerKind, Scene } from '../scene/types';
 import { formatCm, formatCmNum, formatQty } from '../ui/format';
@@ -113,18 +114,19 @@ function supports(c: Ctx): string[] {
   const gc = formatCm(frame.groundClearance);
   const footSize = `${formatCmNum(footing.size)}×${formatCm(footing.size)}`;
   const concrete = line(c, 'foundation.concrete');
+  const fill = concrete ? ` (${formatQty(ceilTo(q.concreteM3 - q.footingM3, 0.01))} m³)` : '';
   const each = type === 'padFooting' ? 'talponként' : 'támaszonként';
   const out = [
     `Tűzd ki a ${q.count} ${noun} helyét: ${f.beamAxes.length} sor ${formatCm(f.joistSpan)}-es sorközzel, soronként ${f.supportAxes.length} ${noun} a sarokponttól ${positions(f.supportAxes)}-re.`,
     `Ásd ki a ${q.count} gödröt ${footSize}-re, ${formatCm(footing.depth)} mélyre.`,
-    `Helyezd be a vasalást (${each} ${LONG_BARS_PER_SUPPORT} db Ø10 hosszvas, ${q.stirrupsPerSupport} db Ø6 kengyel), és öntsd ki betonnal${concrete ? ` (${qty(concrete)})` : ''}.`,
+    `Helyezd be a vasalást (${each} ${LONG_BARS_PER_SUPPORT} db Ø10 hosszvas, ${q.stirrupsPerSupport} db Ø6 kengyel), és öntsd ki betonnal${concrete ? ` (${formatQty(ceilTo(q.footingM3, 0.01))} m³)` : ''}.`,
   ];
   if (type === 'padFooting') {
     out.push(`Ágyazd be az oszloptalpakat egy szintre, a fejük ${gc}-re legyen a talaj fölött (zsinór vagy lézer).`);
   } else if (pier.kind === 'tube200') {
-    out.push(`Állítsd be a Ø${PIER_TUBE_D / 10} cm-es zsalucső pilléreket ${gc} magasra, vasald és töltsd ki betonnal; a tetejükre csavarozd fel a gerendapapucsokat.`);
+    out.push(`Állítsd be a Ø${PIER_TUBE_D / 10} cm-es zsalucső pilléreket ${gc} magasra, vasald és töltsd ki betonnal${fill}; a tetejükre csavarozd fel a gerendapapucsokat.`);
   } else {
-    out.push(`Falazd fel a pilléreket ${q.pierRows} sor ${pier.kind === 'block200' ? 20 : 25} cm-es zsalukőből ${gc} magasra, vasald és töltsd ki betonnal; a tetejükre csavarozd fel a gerendapapucsokat.`);
+    out.push(`Falazd fel a pilléreket ${q.pierRows} sor ${pier.kind === 'block200' ? 20 : 25} cm-es zsalukőből ${gc} magasra${frame.groundClearance % PIER_ROW_H !== 0 ? ' (a felső követ méretre vágva)' : ''}, vasald és töltsd ki betonnal${fill}; a tetejükre csavarozd fel a gerendapapucsokat.`);
   }
   out.push(`Hagyd szilárdulni legalább ${CURE_DAYS} napig, mielőtt terheled.`);
   return out;

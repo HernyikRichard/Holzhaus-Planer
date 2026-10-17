@@ -17,6 +17,8 @@ export interface SupportQuantities {
   longBarMm: Mm; stirrupsPerSupport: number; // támaszonként
   pierRows: number;              // zsalukő-sorok támaszonként (0, ha nincs)
   tubeMm: Mm;                    // összes zsalucső-hossz (0, ha nincs)
+  footStirrups: number; pierStirrups: number;        // kengyelek támaszonként a talpban / a pillérben
+  footStirrupMm: Mm; pierStirrupMm: Mm;              // egy kengyel hossza (a pillérnél 0, ha nincs)
 }
 
 export interface SupportSpec {
@@ -86,7 +88,8 @@ export function pierWidth(kind: PierKind): Mm {
   return kind === 'tube200' ? PIER_TUBE_D : kind === 'block200' ? 200 : 250;
 }
 
-const stirrupLen =(side: Mm): Mm => 4 * (Math.max(side, 100) - 2 * REBAR_COVER) + 100;
+/** Egy Ø6-os kengyel hossza: a belső oldal (legalább 100 mm) négyszerese + 100 mm átfedés. */
+const stirrupLen = (side: Mm): Mm => 4 * Math.max(side - 2 * REBAR_COVER, 100) + 100;
 
 /** Pontalap / betonpillér: a támaszok mennyiségei (a rajz, a 3D és az anyaglista közös forrása). */
 export function supportQuantities(plan: Plan): SupportQuantities {
@@ -100,7 +103,9 @@ export function supportQuantities(plan: Plan): SupportQuantities {
   const stirrupsPerSupport = Math.floor(longBarMm / STIRRUP_SPACING) + 1;
   const pierStirrups = pier ? Math.min(stirrupsPerSupport, Math.floor((gc - REBAR_COVER) / STIRRUP_SPACING)) : 0;
   const footStirrups = stirrupsPerSupport - pierStirrups;
-  const stirrupMm = footStirrups * stirrupLen(size) + (pier ? pierStirrups * stirrupLen(pierSide(f.pier.kind)) : 0);
+  const footStirrupMm = stirrupLen(size);
+  const pierStirrupMm = pier ? stirrupLen(pierSide(f.pier.kind)) : 0;
+  const stirrupMm = footStirrups * footStirrupMm + pierStirrups * pierStirrupMm;
   const footingM3 = count * (size / 1000) ** 2 * (depth / 1000);
   const tube = pier && f.pier.kind === 'tube200';
   const pierRows = pier && !tube ? Math.ceil(gc / PIER_ROW_H - 1e-9) : 0;
@@ -114,6 +119,7 @@ export function supportQuantities(plan: Plan): SupportQuantities {
     count, concreteM3: footingM3 + fillM3, footingM3,
     rebar10Mm: count * LONG_BARS_PER_SUPPORT * longBarMm, rebar6Mm: count * stirrupMm,
     longBarMm, stirrupsPerSupport, pierRows, tubeMm: tube ? count * (gc + PIER_TUBE_EMBED) : 0,
+    footStirrups, pierStirrups, footStirrupMm, pierStirrupMm,
   };
 }
 
@@ -159,7 +165,9 @@ function concretePartLines(plan: Plan, layout: FrameLayout): MaterialLine[] {
   bars('foundation.rebar10', `Betonacél Ø10 (${REBAR_BAR_LENGTH / 1000} m-es szál)`, q.rebar10Mm, REBAR_KG_PER_M.d10,
     `${q.count} támasz × ${LONG_BARS_PER_SUPPORT} hosszvas × ${hu(q.longBarMm / 1000)} m`);
   bars('foundation.rebar6', `Betonacél Ø6 (${REBAR_BAR_LENGTH / 1000} m-es szál), kengyel`, q.rebar6Mm, REBAR_KG_PER_M.d6,
-    `${q.count} támasz × ${q.stirrupsPerSupport} kengyel (${hu(STIRRUP_SPACING / 1000)} m-enként)`);
+    q.pierStirrups > 0
+      ? `${q.count} támasz × (${q.footStirrups} talp-kengyel × ${hu(q.footStirrupMm / 1000)} m + ${q.pierStirrups} pillér-kengyel × ${hu(q.pierStirrupMm / 1000)} m) (${hu(STIRRUP_SPACING / 1000)} m-enként)`
+      : `${q.count} támasz × ${q.stirrupsPerSupport} kengyel (${hu(STIRRUP_SPACING / 1000)} m-enként) × ${hu(q.footStirrupMm / 1000)} m`);
 
   if (f.type === 'padFooting') {
     add({

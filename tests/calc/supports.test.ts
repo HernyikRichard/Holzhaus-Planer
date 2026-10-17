@@ -38,6 +38,7 @@ describe('pontalap 3×4 m, alapértékek', () => {
     expect(lineOf(p, 'foundation.rebar10')!.quantity).toBe(6);
     expect(lineOf(p, 'foundation.rebar10')!.secondary).toBe('33,6 fm, 20,73 kg');
     expect(lineOf(p, 'foundation.rebar6')!.quantity).toBe(11);
+    expect(lineOf(p, 'foundation.rebar6')!.explanation).toContain('12 támasz × 4 kengyel (0,2 m-enként) × 1,3 m = 62,4 m');
     expect(lineOf(p, 'foundation.postBase')!.quantity).toBe(12);
     expect(lineOf(p, 'foundation.excavation')!.quantity).toBe(1.54);
     for (const id of ['foundation.groundScrew', 'foundation.screwHead', 'foundation.pierBlock', 'foundation.pierTube', 'foundation.pierBracket']) {
@@ -74,8 +75,11 @@ describe('betonpillér', () => {
     expect(lineOf(p, 'foundation.pierTube')!.quantity).toBe(4.8);
     expect(lineOf(p, 'foundation.pierTube')!.unit).toBe('m');
     expect(lineOf(p, 'foundation.pierBlock')).toBeUndefined();
-    // pillér-kengyel: 4·(141−100)+100 = 264 mm; 1 pillér-kengyel + 5 talp-kengyel (1300 mm)
-    expect(q.rebar6Mm).toBe(12 * (5 * 1300 + 1 * 264));
+    // pillér-kengyel: a belső oldal min. 100 mm → 4·100+100 = 500 mm; 1 pillér-kengyel + 5 talp-kengyel (1300 mm)
+    expect(q.rebar6Mm).toBe(12 * (5 * 1300 + 1 * 500));
+    const ex = lineOf(p, 'foundation.rebar6')!.explanation;
+    expect(ex).toContain('12 támasz × (5 talp-kengyel × 1,3 m + 1 pillér-kengyel × 0,5 m)');
+    expect(ex).toContain('= 84 m');
   });
 });
 

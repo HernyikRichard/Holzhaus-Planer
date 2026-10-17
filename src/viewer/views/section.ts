@@ -86,8 +86,9 @@ function concreteSupports(ctx: ViewCtx, axes: number[], lengthwise: boolean, box
       top += box(x - plate / 2, x + plate / 2, bb - HEAD_PLATE, bb, metal) + ears(x);
     }
   }
-  labels.push({ ax: axes[0], az: -depth / 2, text: `Betontalp ${size / 10}×${size / 10} cm` });
+  // fentről lefelé, a szerkezet sorrendjében: pillér / oszloptalp, majd a talp
   labels.push({ ax: axes[0], az: bb / 2, text: pier ? `${pierDesc(pier)}, gerendapapucs` : 'Állítható oszloptalp U-fejjel' });
+  labels.push({ ax: axes[0], az: -depth / 2, text: `Betontalp ${size / 10}×${size / 10} cm` });
   return `<g data-layer="footing">${footing}</g>`
     + `<g data-layer="${pier ? 'pier' : 'postBase'}">${top}</g>`
     + `<g data-layer="rebar">${rebar}</g>`;
@@ -113,7 +114,10 @@ function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): Frame
 
   // talaj: halvány sáv, a felszín alatt ferde sraffozás
   let ground = box(-so, S + so, bottom, 0, kit.fill('lineMuted', 0.08));
-  for (let x = -so + HATCH; x <= S + so; x += HATCH) ground += kit.line(x, HATCH, x - HATCH, 0, kit.stroke('lineMuted', 0.6));
+  // a talp tetején ne látszódjon át a sraffozás
+  const half = screw ? 0 : plan.foundation.footing.size / 2;
+  const hidden = (x: number): boolean => !screw && axes.some(a => x > a - half && x - HATCH < a + half);
+  for (let x = -so + HATCH; x <= S + so; x += HATCH) if (!hidden(x)) ground += kit.line(x, HATCH, x - HATCH, 0, kit.stroke('lineMuted', 0.6));
   ground += kit.line(-so, 0, S + so, 0, kit.stroke('line', 1.4));
   let svg = `<g data-layer="ground">${ground}</g>`;
 
@@ -132,7 +136,8 @@ function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): Frame
     }
   }
   if (screw) svg += `<g data-layer="groundScrew">${screws}</g>`;
-  else svg += concreteSupports(ctx, axes, lengthwise, box, labels);
+  const concreteLabels: Label[] = [];
+  if (!screw) svg += concreteSupports(ctx, axes, lengthwise, box, concreteLabels);
 
   // főgerenda(k)
   let beams = '';
@@ -160,6 +165,7 @@ function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): Frame
   labels.push({ ax: sw + 100, az: (bt + ft) / 2, text: `Padló – ${ft - bt} mm` });
   labels.push({ ax: lengthwise ? sw / 2 : axes[0], az: (bb + bt) / 2, text: `Főgerenda ${BEAM_SECTIONS[plan.foundation.frame.beamSection].label}` });
   if (screw) labels.push({ ax: axes[0], az: -len / 2, text: GROUND_SCREW_LABEL(d, len) });
+  labels.push(...concreteLabels);
   return { svg, so, bottom, beamBottom: bb, axes, footingDepth };
 }
 

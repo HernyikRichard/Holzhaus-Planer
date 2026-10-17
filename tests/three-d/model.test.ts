@@ -963,7 +963,7 @@ describe('pontalap és betonpillér 3D', () => {
         expect(sups.length).toBeGreaterThan(0);
         for (const e of sups) {
           const parts = byId(m.solids, e.id);
-          expect(parts.length).toBe(type === 'padFooting' ? 2 : 3);
+          expect(parts.length).toBe(type === 'padFooting' ? 2 : 5);
           expect(parts.every(s => s.layer === 'supports')).toBe(true);
           const foot = parts.find(s => s.material === 'concreteBuried')!;
           expect(zr(foot)).toEqual([-depth, 0]);
@@ -990,7 +990,7 @@ describe('pontalap és betonpillér 3D', () => {
           expect(zr(pier)).toEqual([0, clr - 10]);
           const b = solidBounds(pier);
           expect([b.max[0] - b.min[0], b.max[1] - b.min[1]]).toEqual([250, 250]);
-          const br = parts.find(s => s.material === 'metal')!;
+          const br = parts.find(s => s.label.endsWith('– papucs'))!;
           expect(zr(br)[0]).toBe(clr - 10);
           expect(zr(br)[1]).toBe(f.z.beamBottom);
           const bb = solidBounds(br);
@@ -1001,6 +1001,21 @@ describe('pontalap és betonpillér 3D', () => {
       }
     });
   }
+
+  it('a papucs két füle a gerenda két oldalán, a talplemez fölött, a gerendán kívül', () => {
+    const plan = mk('concretePier');
+    const scene = buildScene(plan);
+    const f = frameLayout(plan);
+    const e = scene.elements.find(x => x.kind === 'support')!;
+    const ears = byId(buildModel3d(plan, scene).solids, e.id).filter(s => s.label.endsWith('papucs fül'));
+    expect(ears).toHaveLength(2);
+    const wi = f.along === 'x' ? 1 : 0;
+    const c = (f.along === 'x' ? e.geom.v + e.geom.h / 2 : e.geom.u + e.geom.w / 2);
+    const sides = ears.map(s => { const b = solidBounds(s); return [b.min[wi] - c, b.max[wi] - c]; }).sort((a, b) => a[0] - b[0]);
+    expect(sides[0][1]).toBeCloseTo(-f.beam.width / 2, 6);
+    expect(sides[1][0]).toBeCloseTo(f.beam.width / 2, 6);
+    for (const s of ears) expect(zr(s)[0]).toBe(f.z.beamBottom);
+  });
 
   it('zsalucső pillér: 16 pontú körvonal, Ø200', () => {
     const plan = mk('concretePier', 'tube200');

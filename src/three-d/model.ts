@@ -536,6 +536,7 @@ const UHEAD_SIDE = 10;   // a fej a gerendánál ennyivel szélesebb
 const CYL_SEGMENTS = 16;
 const POST_BASE = 60;     // pontalap: oszloptalp oldala
 const BRACKET_T = 10;     // betonpillér: gerendapapucs lemezvastagsága
+const BRACKET_EAR_T = 5;  // a papucs fülének vastagsága (a lemez a gerendánál 10 mm-rel szélesebb, így oldalanként 5 mm)
 const BRACKET_LEN = 100;  // a papucs hossza a gerenda mentén
 
 /** Gerendakeretes alap: talajlap, talajcsavarnál támaszonként cső + orsó + U-fej, főgerenda-szegmensek. */
@@ -590,6 +591,18 @@ function frameSolids(plan: Plan, scene: Scene): Solid[] {
         part(e.id, `${e.label} – pillér`, 'concrete', kind === 'tube200' ? circleD(cx, cy, pw) : sq(pw, pw), 0, clearance - BRACKET_T);
         part(e.id, `${e.label} – papucs`, 'metal', alongX ? sq(BRACKET_LEN, f.beam.width + UHEAD_SIDE) : sq(f.beam.width + UHEAD_SIDE, BRACKET_LEN),
           clearance - BRACKET_T, BRACKET_T);
+        // két fül: vékony lemez a gerenda két oldalán, a talplemez fölött, a gerendatérfogaton kívül
+        const bw = f.beam.width;
+        const earH = Math.min(100, f.beam.height * 0.6);
+        for (const sgn of [-1, 1]) {
+          const t0 = sgn * bw / 2;
+          const t1 = sgn * (bw / 2 + BRACKET_EAR_T);
+          const [lo, hi] = [Math.min(t0, t1), Math.max(t0, t1)];
+          const outline = alongX
+            ? rect(cx - BRACKET_LEN / 2, cy + lo, cx + BRACKET_LEN / 2, cy + hi)
+            : rect(cx + lo, cy - BRACKET_LEN / 2, cx + hi, cy + BRACKET_LEN / 2);
+          part(e.id, `${e.label} – papucs fül`, 'metal', outline, clearance, earH);
+        }
       }
     }
   }

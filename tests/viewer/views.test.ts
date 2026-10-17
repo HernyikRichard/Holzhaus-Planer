@@ -433,6 +433,36 @@ describe('pontalap és betonpillér rajzai', () => {
       expect(cp, ridge).not.toContain('data-layer="groundScrew"');
     }
   });
+  test('metszet: a talp-feliratok vezetővonalai nem metszik egymást', () => {
+    type Seg = [number, number, number, number];
+    const cross = (a: Seg, b: Seg): boolean => {
+      const d = (p: number, q: number, r: number, s: number, t: number, u: number): number => (r - p) * (u - q) - (s - q) * (t - p);
+      return d(a[0], a[1], a[2], a[3], b[0], b[1]) * d(a[0], a[1], a[2], a[3], b[2], b[3]) < 0
+        && d(b[0], b[1], b[2], b[3], a[0], a[1]) * d(b[0], b[1], b[2], b[3], a[2], a[3]) < 0;
+    };
+    for (const type of ['padFooting', 'concretePier'] as const) {
+      for (const ridge of ['x', 'y'] as const) {
+        const s = g(mk(type, q => { q.roof.ridgeDirection = ridge; }), 'section');
+        const names = ['Padló', 'Főgerenda', type === 'padFooting' ? 'oszloptalp' : 'pillér', 'Betontalp'];
+        const leaders = names.map((n): Seg => {
+          const m = new RegExp(String.raw`<line x1="([-\d.]+)" y1="([-\d.]+)" x2="([-\d.]+)" y2="([-\d.]+)"[^>]*/>\s*<text[^>]*>[^<]*${n}`).exec(s);
+          expect(m, `${type} ${ridge} ${n}`).not.toBeNull();
+          return [+m![1], +m![2], +m![3], +m![4]];
+        });
+        // a feliratok fentről lefelé a szerkezet sorrendjében állnak (a címke-y nő lefelé)
+        for (let i = 1; i < leaders.length; i++) expect(leaders[i][3], `${type} ${ridge} sorrend`).toBeGreaterThan(leaders[i - 1][3]);
+        for (let i = 0; i < leaders.length; i++) for (let j = i + 1; j < leaders.length; j++) expect(cross(leaders[i], leaders[j]), `${type} ${ridge} ${names[i]}/${names[j]}`).toBe(false);
+      }
+    }
+  });
+  test('metszet: a talajsraffozás nem látszik át a talpon, csavarnál változatlan', () => {
+    const pf = mk('padFooting'); const gs = mk('padFooting', q => { q.foundation.type = 'groundScrew'; });
+    const hatchLines = (plan: Plan): number => {
+      const d = new DOMParser().parseFromString(g(plan, 'section'), 'image/svg+xml');
+      return d.querySelectorAll('g[data-layer="ground"] line').length;
+    };
+    expect(hatchLines(pf)).toBeLessThan(hatchLines(gs));
+  });
   test('metszet: a talajsáv a talp alja alá ér, nem a csavarhosszig', () => {
     const q = mk('padFooting', x => { x.foundation.footing.depth = 1200; x.foundation.groundScrew.length = 1000; });
     const s = g(q, 'section');

@@ -28,7 +28,7 @@ export function validatePlan(plan: Plan): ValidationError[] {
   const [gcMin, gcMax] = GROUND_CLEARANCE_RANGE[plan.foundation.type] ?? GROUND_CLEARANCE_RANGE.groundScrew;
   range('foundation.frame.groundClearance', 'Talaj feletti magasság', plan.foundation.frame.groundClearance, gcMin, gcMax);
   if (plan.foundation.type === 'padFooting' || plan.foundation.type === 'concretePier') {
-    range('foundation.footing.depth', 'Alapmélység', plan.foundation.footing.depth, 600, 1200);
+    range('foundation.footing.depth', 'Alapozási mélység', plan.foundation.footing.depth, 600, 1200);
   }
   if (plan.foundation.frame.supportSpacing !== 'auto') {
     range('foundation.frame.supportSpacing', 'Támaszköz', plan.foundation.frame.supportSpacing, 800, 2500);
