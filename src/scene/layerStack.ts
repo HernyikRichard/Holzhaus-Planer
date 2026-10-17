@@ -1,5 +1,6 @@
 import type { Mm, Plan, RoofCovering, WallLayerKind } from '../model/types';
 import { BATTEN_SECTION } from '../catalog';
+import { floorOn, frameLayout } from '../calc/frame';
 
 // Sematikus rajzi vastagságok (mm); a tetőrétegeknek nincs vastagsága a modellben.
 export const DECKING_T = 22;
@@ -17,7 +18,8 @@ export function layerThickness(plan: Plan, l: { kind: WallLayerKind; thickness: 
 
 /** A padló teteje (= a falak talpgerendájának alja): párnafa + padló-OSB, padló nélkül a betonlemez teteje (0). */
 export function floorTopZ(plan: Plan): Mm {
-  return plan.floor.enabled ? plan.floor.joistSection.w + plan.floor.osbThickness : 0;
+  if (plan.foundation.type === 'groundScrew') return frameLayout(plan).z.floorTop;
+  return floorOn(plan) ? plan.floor.joistSection.w + plan.floor.osbThickness : 0;
 }
 
 /**
