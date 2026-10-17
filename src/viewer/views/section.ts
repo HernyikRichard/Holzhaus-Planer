@@ -2,7 +2,7 @@ import type { Plan, RoofCovering, RoofLayerKind, WallLayerKind } from '../../mod
 import {
   BEAM_SECTIONS, COUNTER_BATTEN_SECTION, DECKING_REQUIRED, GROUND_SCREW_LABEL, ROOF_BATTEN_SECTION, SCREW_HEAD_H,
 } from '../../catalog';
-import { frameLayout } from '../../calc/frame';
+import { frameLayout, hasFrame } from '../../calc/frame';
 import { COVERING_T, DECKING_T, FOIL_T, floorTopZ, layerThickness, wallLayerStrips } from '../../scene/layerStack';
 import { cm, type Kit, type Pt } from '../svgKit';
 import { layerG, type ViewCtx } from './common';
@@ -79,7 +79,7 @@ function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): Frame
       screws += box(x + plate / 2 - 6, x + plate / 2, bb, bb + flange, metal);
     }
   }
-  svg += `<g data-layer="groundScrew">${screws}</g>`;
+  if (plan.foundation.type === 'groundScrew') svg += `<g data-layer="groundScrew">${screws}</g>`;
 
   // főgerenda(k)
   let beams = '';
@@ -106,7 +106,7 @@ function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): Frame
   const sw = plan.walls.studSection.w;
   labels.push({ ax: sw + 100, az: (bt + ft) / 2, text: `Padló – ${ft - bt} mm` });
   labels.push({ ax: lengthwise ? sw / 2 : axes[0], az: (bb + bt) / 2, text: `Főgerenda ${BEAM_SECTIONS[plan.foundation.frame.beamSection].label}` });
-  labels.push({ ax: axes[0], az: -len / 2, text: GROUND_SCREW_LABEL(d, len) });
+  if (plan.foundation.type === 'groundScrew') labels.push({ ax: axes[0], az: -len / 2, text: GROUND_SCREW_LABEL(d, len) });
   return { svg, so, bottom, beamBottom: bb, axes };
 }
 
@@ -138,8 +138,8 @@ export function drawSection(ctx: ViewCtx): string {
   let so: number;
   let bedBottom: number;
   let frame: FrameSection | null = null;
-  if (f.type === 'groundScrew') {
-    // talajcsavaros keret: talaj, csavarok, U-fejek, főgerenda, padló
+  if (hasFrame(plan)) {
+    // gerendakeret: talaj, (talajcsavarnál csavarok, U-fejek), főgerenda, padló
     frame = frameSection(ctx, S, box, foundationLabels);
     body += frame.svg;
     so = frame.so;

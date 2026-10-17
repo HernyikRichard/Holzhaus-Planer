@@ -1,7 +1,7 @@
 import { createDefaultPlan } from '../../src/model/defaults';
 import type { BeamSectionId, Plan } from '../../src/model/types';
 import { wallGeometry } from '../../src/calc/geometry';
-import { floorOn, frameLayout, framePt } from '../../src/calc/frame';
+import { floorOn, frameLayout, framePt, hasFrame } from '../../src/calc/frame';
 import { floorTopZ } from '../../src/scene/layerStack';
 import { BEAM_MAX_SPAN, JOIST_MAX_SPAN } from '../../src/catalog';
 
@@ -103,4 +103,9 @@ test('floorOn és floorTopZ', () => {
   p.floor.enabled = false; p.foundation.type = 'groundScrew';
   expect(floorOn(p)).toBe(true);
   expect(floorTopZ(p)).toBe(frameLayout(p).z.floorTop);
+});
+
+test.each([['slab', false], ['groundScrew', true], ['padFooting', true], ['concretePier', true]] as const)('hasFrame %s -> %s', (type, want) => {
+  const p = createDefaultPlan(); p.foundation.type = type;
+  expect(hasFrame(p)).toBe(want);
 });

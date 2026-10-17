@@ -1,5 +1,5 @@
 import type { Mm, Opening, Plan, WallSide } from '../model/types';
-import { frameLayout } from '../calc/frame';
+import { frameLayout, hasFrame } from '../calc/frame';
 import { beamSegments } from '../scene/frame';
 import { studPositions, wallGeometry } from '../calc/geometry';
 import {
@@ -97,6 +97,7 @@ function foundation(c: Ctx): string[] {
 }
 
 function supports(c: Ctx): string[] {
+  if (c.plan.foundation.type !== 'groundScrew') return []; // a pontalap és a betonpillér teendői külön jönnek
   const f = frameLayout(c.plan);
   const { groundScrew, frame } = c.plan.foundation;
   const n = count(c, 'support');
@@ -122,7 +123,7 @@ function floor(c: Ctx): string[] {
   const fl = c.plan.floor;
   const out: string[] = [];
   const joists = c.els.filter(e => e.kind === 'joist').sort((a, b) => a.geom.u - b.geom.u);
-  if (c.plan.foundation.type === 'groundScrew' && joists.length) {
+  if (hasFrame(c.plan) && joists.length) {
     out.push(`Fektesd ${az(joists.length)} párnafát ${formatCm(fl.joistSpacing)}-es kiosztással a főgerendákra, a két szélső párnafa a peremgerenda, a rövid falak alatt fut.`);
     out.push(`Rögzítsd minden kereszteződést gerendasaruval (${fasteners(c, 'joistHanger')} db).`);
   } else if (joists.length) {
@@ -161,8 +162,8 @@ function wall(c: Ctx, side: WallSide): string[] {
   }
   const anchors = fasteners(c, 'anchor');
   const full = w.full ? '' : ' a futó falak közé, csavarozd a sarkokhoz';
-  // talajcsavarnál a talpgerenda nem betonba, hanem a padlón át a gerendakeretbe rögzül
-  const how = c.plan.foundation.type === 'groundScrew' ? 'csavarral a padlón át a gerendakeretbe' : 'ászokcsavarral';
+  // gerendakeretes alapnál a talpgerenda nem betonba, hanem a padlón át a gerendakeretbe rögzül
+  const how = hasFrame(c.plan) ? 'csavarral a padlón át a gerendakeretbe' : 'ászokcsavarral';
   out.push(`Állítsd fel${full}, függőzd ki, ${anchors ? `rögzítsd ${anchors} db ${how}` : 'rögzítsd a talpgerendát az alaphoz'}.`);
   return out;
 }

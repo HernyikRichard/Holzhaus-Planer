@@ -5,7 +5,7 @@ import {
   GRAVEL_T_PER_M3, GROUND_SCREW_LABEL, JOIST_HANGER_SCREWS, MESH_SHEET, MESH_TYPES, PE_ROLL_M2, STAKE_SPACING, WATER_L_PER_M3,
 } from '../catalog';
 import { ceilTo, emptyResult, hu } from './util';
-import { frameLayout } from './frame';
+import { frameLayout, hasFrame } from './frame';
 import { frameElements } from '../scene/frame';
 import { elementsToPieces } from '../scene/toPieces';
 
@@ -23,8 +23,11 @@ export function meshLayout(plan: Plan): MeshLayout {
   return upright.cols * upright.rows <= rotated.cols * rotated.rows ? upright : rotated;
 }
 
-/** Talajcsavaros alap: talajcsavarok, U-fejek, menetes szárak, gerendasarúk és a főgerendák darabjai. */
-function calcGroundScrew(plan: Plan): ModuleResult {
+/**
+ * Gerendakeretes alap: menetes szárak, gerendasaruk és a főgerendák darabjai; talajcsavarnál előttük a
+ * talajcsavarok és az U-fejek. (A pontalap és a betonpillér támasz-anyaga külön jön.)
+ */
+function calcFrameFoundation(plan: Plan): ModuleResult {
   const res = emptyResult();
   const f = frameLayout(plan);
   const { elements, fasteners } = frameElements(plan);
@@ -36,14 +39,16 @@ function calcGroundScrew(plan: Plan): ModuleResult {
   const add = (l: Omit<MaterialLine, 'category' | 'unit'>): void => {
     res.lines.push({ category: 'Alap', unit: 'db', ...l });
   };
-  add({
-    id: 'foundation.groundScrew', name: GROUND_SCREW_LABEL(gs.diameter, gs.length), quantity: supports,
-    explanation: `${f.beamAxes.length} főgerenda × ${f.supportAxes.length} támasz = ${supports} db`,
-  });
-  add({
-    id: 'foundation.screwHead', name: `Állítható U-fej ${f.beam.width} mm-es gerendához`, quantity: supports,
-    explanation: `támaszonként 1 db = ${supports} db`,
-  });
+  if (plan.foundation.type === 'groundScrew') {
+    add({
+      id: 'foundation.groundScrew', name: GROUND_SCREW_LABEL(gs.diameter, gs.length), quantity: supports,
+      explanation: `${f.beamAxes.length} főgerenda × ${f.supportAxes.length} támasz = ${supports} db`,
+    });
+    add({
+      id: 'foundation.screwHead', name: `Állítható U-fej ${f.beam.width} mm-es gerendához`, quantity: supports,
+      explanation: `támaszonként 1 db = ${supports} db`,
+    });
+  }
   add({
     id: 'foundation.beamBolts', name: 'M12 menetes szár anyával, alátéttel', quantity: bolts,
     explanation: `${supports} támasz × ${bolts / Math.max(1, supports)} db = ${bolts} db`,
@@ -59,7 +64,7 @@ function calcGroundScrew(plan: Plan): ModuleResult {
 }
 
 export function calcFoundation(plan: Plan): ModuleResult {
-  if (plan.foundation.type === 'groundScrew') return calcGroundScrew(plan);
+  if (hasFrame(plan)) return calcFrameFoundation(plan);
   const res = emptyResult();
   const f = plan.foundation;
   const slabX = plan.building.width + 2 * f.slabOverhang;

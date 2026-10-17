@@ -1,12 +1,12 @@
 import { FORMWORK_EXTRA, MESH_SHEET } from '../../catalog';
 import { meshLayout } from '../../calc/foundation';
-import { frameLayout, framePt } from '../../calc/frame';
+import { frameLayout, framePt, hasFrame } from '../../calc/frame';
 import { cm, elGroup, fxCircle, n, type Pt } from '../svgKit';
 import { drawEl, elStyle, fxRadius, layerG, type ViewCtx } from './common';
 
 const FORMWORK_BOARD = 25; // zsaluzódeszka vastagsága a rajzon (mm)
 
-/** Talajcsavaros alap felülről: főgerendák, párnafák, támaszok, rögzítési pontok és a támaszrács méretei. */
+/** Gerendakeretes alap felülről: főgerendák, párnafák, támaszok, rögzítési pontok és a támaszrács méretei. */
 function drawFrameFoundation(ctx: ViewCtx): string {
   const { plan, scene, kit } = ctx;
   const { width: W, length: L } = plan.building;
@@ -56,17 +56,19 @@ function drawFrameFoundation(ctx: ViewCtx): string {
     const rOut = out(rows[0], rows[rows.length - 1], P(-1, 0));
     dims += kit.chain(rows, rOut * row);
     dims += kit.dim(...rows[0], ...rows[rows.length - 1], rOut * row * 2, cm(f.W));
-    const n = f.beamAxes.length * f.supportAxes.length;
-    dims += kit.text(0, -row * 2 - fs * 2.6,
-      `Talajcsavar: ${n} db Ø${gs.diameter} × ${cm(gs.length)}, fej ${cm(plan.foundation.frame.groundClearance)}-rel a talaj fölött`,
-      { anchor: 'start' });
+    if (plan.foundation.type === 'groundScrew') {
+      const n = f.beamAxes.length * f.supportAxes.length;
+      dims += kit.text(0, -row * 2 - fs * 2.6,
+        `Talajcsavar: ${n} db Ø${gs.diameter} × ${cm(gs.length)}, fej ${cm(plan.foundation.frame.groundClearance)}-rel a talaj fölött`,
+        { anchor: 'start' });
+    }
   }
   return layerG('frame', frame) + layerG('fasteners', fx) + outline + layerG('dims', dims + kit.takeLabels());
 }
 
-/** Alapnézet alaprajzi koordinátákban (0,0 = az épület sarka): zsaluzás, lemez, hálótáblák; talajcsavarnál a keret. */
+/** Alapnézet alaprajzi koordinátákban (0,0 = az épület sarka): zsaluzás, lemez, hálótáblák; gerendakeretes alapnál a keret. */
 export function drawFoundation(ctx: ViewCtx): string {
-  if (ctx.plan.foundation.type === 'groundScrew') return drawFrameFoundation(ctx);
+  if (hasFrame(ctx.plan)) return drawFrameFoundation(ctx);
   const { plan, scene, kit } = ctx;
   const so = plan.foundation.slabOverhang;
   const { width: W, length: L } = plan.building;

@@ -5,7 +5,7 @@ import {
 import { roofGeometry, studLengthAt, wallGeometry, type WallGeom } from '../calc/geometry';
 import type { Element, ElementKind, Scene } from '../scene/types';
 import { COVERING_T, DECKING_T, FOIL_T, floorTopZ, wallLayerStrips } from '../scene/layerStack';
-import { floorOn, frameLayout } from '../calc/frame';
+import { floorOn, frameLayout, hasFrame } from '../calc/frame';
 import { corners } from '../viewer/views/common';
 import { floorWallMap } from '../viewer/views/floorPlan';
 
@@ -518,7 +518,7 @@ function roofSolids(plan: Plan, scene: Scene): Solid[] {
 }
 
 function foundationSolids(plan: Plan, scene: Scene): Solid[] {
-  if (plan.foundation.type === 'groundScrew') return screwSolids(plan, scene);
+  if (hasFrame(plan)) return frameSolids(plan, scene);
   const { width: W, length: L } = plan.building;
   const { slabOverhang: ov, slabThickness: st } = plan.foundation;
   return [{
@@ -534,8 +534,8 @@ const UHEAD_LEN = 100;
 const UHEAD_SIDE = 10;   // a fej a gerendánál ennyivel szélesebb
 const CYL_SEGMENTS = 16;
 
-/** Talajcsavaros alap: talajlap, támaszonként cső + orsó + U-fej, főgerenda-szegmensek. */
-function screwSolids(plan: Plan, scene: Scene): Solid[] {
+/** Gerendakeretes alap: talajlap, talajcsavarnál támaszonként cső + orsó + U-fej, főgerenda-szegmensek. */
+function frameSolids(plan: Plan, scene: Scene): Solid[] {
   const { width: W, length: L } = plan.building;
   const f = frameLayout(plan);
   const { diameter: d, length: screwLen } = plan.foundation.groundScrew;
@@ -556,7 +556,8 @@ function screwSolids(plan: Plan, scene: Scene): Solid[] {
       origin: [0, 0, z0], uAxis: [...X], vAxis: [...Y], nAxis: [...Z], outline, holes: [], depth,
     });
   };
-  for (const e of scene.elements.filter(x => x.kind === 'support')) {
+  const screws = plan.foundation.type === 'groundScrew' ? scene.elements.filter(x => x.kind === 'support') : [];
+  for (const e of screws) {
     const cx = e.geom.u + e.geom.w / 2;
     const cy = e.geom.v + e.geom.h / 2;
     const alongX = f.along === 'x';
@@ -578,9 +579,8 @@ function screwSolids(plan: Plan, scene: Scene): Solid[] {
 
 function floorSolids(plan: Plan, scene: Scene): Solid[] {
   if (!floorOn(plan)) return [];
-  const screw = plan.foundation.type === 'groundScrew';
   const jw = plan.floor.joistSection.w;
-  const z0 = screw ? frameLayout(plan).z.beamTop : 0;
+  const z0 = hasFrame(plan) ? frameLayout(plan).z.beamTop : 0;
   const out: Solid[] = scene.elements.filter(e => e.group === 'floor' && e.kind === 'joist').map((e): Solid => ({
     layer: 'floor', elementId: e.id, label: e.label, material: 'timber',
     origin: [0, 0, z0], uAxis: [...X], vAxis: [...Y], nAxis: [...Z],

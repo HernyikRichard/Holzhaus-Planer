@@ -1,11 +1,16 @@
 import { formatCm } from '../ui/format';
-import type { Plan, RoofShape } from './types';
+import type { FoundationType, Plan, RoofShape } from './types';
 import { openingEndMargin, studLengthAt, wallGeometry } from '../calc/geometry';
 
 export interface ValidationError { path: string; message: string }
 
 const PITCH_RANGE: Record<RoofShape, [number, number]> = {
   flat: [1, 10], mono: [5, 45], gable: [10, 60],
+};
+
+// a talaj feletti magasság típusfüggő: pontalapnál az állítható oszloptalp tartománya (betonlemeznél nem számít)
+const GROUND_CLEARANCE_RANGE: Record<FoundationType, [number, number]> = {
+  slab: [150, 800], groundScrew: [150, 800], padFooting: [150, 300], concretePier: [150, 800],
 };
 
 export function validatePlan(plan: Plan): ValidationError[] {
@@ -20,7 +25,9 @@ export function validatePlan(plan: Plan): ValidationError[] {
   range('building.wallHeight', 'Falmagasság', plan.building.wallHeight, 1800, 4000);
   range('foundation.slabThickness', 'Lemezvastagság', plan.foundation.slabThickness, 50, 300);
   range('foundation.gravelBedThickness', 'Sóderágy vastagsága', plan.foundation.gravelBedThickness, 0, 500);
-  range('foundation.frame.groundClearance', 'Talaj feletti magasság', plan.foundation.frame.groundClearance, 150, 800);
+  const [gcMin, gcMax] = GROUND_CLEARANCE_RANGE[plan.foundation.type] ?? GROUND_CLEARANCE_RANGE.groundScrew;
+  range('foundation.frame.groundClearance', 'Talaj feletti magasság', plan.foundation.frame.groundClearance, gcMin, gcMax);
+  range('foundation.footing.depth', 'Alapmélység', plan.foundation.footing.depth, 600, 1200);
   if (plan.foundation.frame.supportSpacing !== 'auto') {
     range('foundation.frame.supportSpacing', 'Támaszköz', plan.foundation.frame.supportSpacing, 800, 2500);
   }

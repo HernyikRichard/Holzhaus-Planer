@@ -3,6 +3,7 @@ import {
   ANCHOR_EDGE, ANCHOR_LABEL, FRAME_ANCHOR_LABEL, ANCHOR_SPACING, FRAME_SCREWS_PER_END, FRAME_SCREW_LABEL,
 } from '../catalog';
 import { studLengthAt, studPositions, wallGeometry } from '../calc/geometry';
+import { hasFrame } from '../calc/frame';
 import type { Element, ElementKind, FastenerRef, Geom } from './types';
 
 const LABELS: Partial<Record<ElementKind, string>> = {
@@ -135,7 +136,7 @@ export function wallFrameElements(plan: Plan): { elements: Element[]; fasteners:
     const plateIds = wallEls.filter(e => e.kind === 'bottomPlate').map(e => e.id);
     pts.forEach((u, i) => {
       fasteners.push({
-        id: `${group}.anchor.${i + 1}`, kind: 'anchor', group, u, v: t / 2, count: 1, label: plan.foundation.type === 'groundScrew' ? FRAME_ANCHOR_LABEL : ANCHOR_LABEL, elementIds: plateIds,
+        id: `${group}.anchor.${i + 1}`, kind: 'anchor', group, u, v: t / 2, count: 1, label: hasFrame(plan) ? FRAME_ANCHOR_LABEL : ANCHOR_LABEL, elementIds: plateIds,
       });
     });
     elements.push(...wallEls);

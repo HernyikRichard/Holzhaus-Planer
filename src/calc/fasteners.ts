@@ -5,6 +5,7 @@ import {
   JOIST_HANGER_SCREWS, SCREWS_PER_OSB_SHEET, STANDING_SEAM_CLIP_SPACING, STANDING_SEAM_SCREWS_PER_CLIP,
 } from '../catalog';
 import { hu } from './util';
+import { isFrameType } from './frame';
 import type { Supply } from '../pricing/supplyTypes';
 
 export function calcFasteners(stats: CalcStats, supply?: Supply, foundationType: FoundationType = 'slab'): MaterialLine[] {
@@ -22,7 +23,7 @@ export function calcFasteners(stats: CalcStats, supply?: Supply, foundationType:
 
   if (stats.anchorPoints > 0) {
     lines.push({
-      id: 'fix.anchors', category: 'Kötőelemek', name: foundationType === 'groundScrew'
+      id: 'fix.anchors', category: 'Kötőelemek', name: isFrameType(foundationType)
         ? FRAME_ANCHOR_LABEL : 'Talpgerenda-rögzítő (dübel / ászokcsavar)',
       quantity: stats.anchorPoints, unit: 'db',
       explanation: `${stats.anchorPoints} rögzítési pont a talpgerenda mentén (800 mm-enként, sarkoknál és nyílászáróknál pótlással)`,

@@ -13,9 +13,11 @@ test('createDefaultPlan returns independent copies', () => {
   expect(createDefaultPlan().openings).toHaveLength(2);
 });
 
-test('default plan is v3 slab with default frame and screw', () => {
+test('default plan is v4 slab with default frame, screw, footing and pier', () => {
   const p = createDefaultPlan();
-  expect(p.version).toBe(3);
+  expect(p.version).toBe(4);
+  expect(p.foundation.footing).toEqual({ size: 400, depth: 800 });
+  expect(p.foundation.pier).toEqual({ kind: 'block250' });
   expect(p.foundation.type).toBe('slab');
   expect(p.foundation.frame).toEqual({ beamSection: 'b100x150', supportSpacing: 'auto', groundClearance: 300 });
   expect(p.foundation.groundScrew).toEqual({ length: 1000, diameter: 76 });
