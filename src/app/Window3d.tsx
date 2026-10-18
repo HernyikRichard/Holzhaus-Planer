@@ -6,8 +6,10 @@ import { sceneFor, viewForElement } from './selection';
 import type { Plan } from '../model/types';
 // a modell-építő nem húzza be a Three.js-t; a kirajzoló csak dinamikusan töltődik (külön chunk)
 import { buildModel3d, FRAME_ONLY, LAYER3D_GROUPS, LAYER3D_NAMES, type Layer3dId, type Model3d } from '../three-d/model';
-import type { Renderer3d } from '../three-d/renderer';
 import type { ViewPreset } from '../three-d/threeScene';
+import { canRetry as retryable, rendererMessage, use3dRenderer } from './use3dRenderer';
+
+export { rendererLoader } from './use3dRenderer';
 
 const MIN_W = 240;
 const MIN_H = 180;
@@ -34,13 +36,8 @@ const PRESETS: { id: ViewPreset | 'reset'; label: string; title: string }[] = [
   { id: 'reset', label: '⟲', title: 'Alaphelyzet' },
 ];
 
-/** A kirajzoló betöltése; objektumban, hogy a tesztek a betöltési hibát is ki tudják próbálni. */
-export const rendererLoader = { load: () => import('../three-d/renderer') };
-
 interface Rect { x: number; y: number; w: number; h: number }
 interface Size { w: number; h: number }
-/** import: a chunk nem töltődött be; webgl: nincs WebGL; start: egyéb indítási hiba. */
-type Status = 'loading' | 'ready' | 'import' | 'webgl' | 'start';
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -94,15 +91,12 @@ function Window3dOpen({ store, ui, bounds, reserveBottom = 0 }: Window3dProps) {
   const selected = useUi(ui, s => s.selected);
   const plan = useStore(store, s => s.lastValidPlan);
   const [model, setModel] = useState<Model3d | null>(() => tryBuild(plan));
-  const [status, setStatus] = useState<Status>('loading');
-  const [attempt, setAttempt] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const [live, setLive] = useState<Rect | null>(null);
   const [tip, setTip] = useState<{ x: number; y: number; label: string } | null>(null);
 
   const canvas = useRef<HTMLCanvasElement>(null);
   const body = useRef<HTMLDivElement>(null);
-  const renderer = useRef<Renderer3d | null>(null);
   const builtFor = useRef(plan);
   const modelRef = useRef(model);
   modelRef.current = model;
@@ -125,45 +119,23 @@ function Window3dOpen({ store, ui, bounds, reserveBottom = 0 }: Window3dProps) {
   measureRef.current = measure;
 
   // Kirajzoló: minden próbálkozás saját (friss) vásznon, mert a dispose() elengedi a WebGL-kontextust.
-  useEffect(() => {
-    let cancelled = false;
-    setStatus('loading');
-    rendererLoader.load().then(mod => {
-      if (cancelled || !canvas.current) return;
-      let r: Renderer3d;
-      try {
-        r = mod.createRenderer(canvas.current);
-      } catch (err) {
-        if (err instanceof Error && err.message === 'webgl') { setStatus('webgl'); return; }
-        console.error(err);
-        setStatus('start');
-        return;
+  const { status, renderer, attempt, retry } = use3dRenderer(canvas, {
+    measure: () => measureRef.current(),
+    init: r => {
+      const sel = ui.get().selected;
+      r.setHighlight(sel ? [sel] : []);
+      const m = modelRef.current;
+      if (m) {
+        r.setVisible(visibility(m, ui.get().view3d.layers));
+        r.setModel(m);
       }
-      renderer.current = r; // a takarítás (bezárás / Újra) hiba esetén is elengedi
-      try {
-        const size = measureRef.current();
-        r.resize(size.w, size.h); // a valódi méret az első (perspektív) igazítás előtt
-        const sel = ui.get().selected;
-        r.setHighlight(sel ? [sel] : []);
-        const m = modelRef.current;
-        if (m) {
-          r.setVisible(visibility(m, ui.get().view3d.layers));
-          r.setModel(m);
-        }
-        setStatus('ready');
-      } catch (err) {
-        console.error(err);
-        setStatus('start');
-      }
-    }, () => { if (!cancelled) setStatus('import'); });
-    return () => {
-      cancelled = true;
+    },
+    observe: body,
+    onDispose: () => {
       if (hoverFrame.current && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(hoverFrame.current);
       hoverFrame.current = 0;
-      renderer.current?.dispose();
-      renderer.current = null;
-    };
-  }, [attempt]);
+    },
+  });
 
   // Modell-újraépítés a terv változására, 100 ms-os késleltetéssel; hibás építésnél a régi modell marad.
   useEffect(() => {
@@ -197,16 +169,6 @@ function Window3dOpen({ store, ui, bounds, reserveBottom = 0 }: Window3dProps) {
     const s = measure();
     r.resize(s.w, s.h);
   }, [rect.w, rect.h, status]);
-  useEffect(() => {
-    const el = body.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(() => {
-      const s = measureRef.current();
-      renderer.current?.resize(s.w, s.h);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
 
   const setView3d = (patch: Partial<View3dState>) => ui.set({ view3d: { ...ui.get().view3d, ...patch } });
   const setLayers = (layers: View3dState['layers']) => setView3d({ layers });
@@ -286,12 +248,8 @@ function Window3dOpen({ store, ui, bounds, reserveBottom = 0 }: Window3dProps) {
   };
 
   const ready = status === 'ready';
-  const message = status === 'import' ? 'A 3D nézet nem tölthető be.'
-    : status === 'webgl' ? 'A 3D nézethez WebGL-képes böngésző szükséges.'
-    : status === 'start' ? 'A 3D nézet nem indítható el.'
-    : !model ? 'A 3D modell nem építhető fel ebből a tervből.'
-    : status === 'loading' ? '3D betöltése…' : null;
-  const canRetry = status === 'import' || status === 'start';
+  const message = rendererMessage(status, model !== null);
+  const canRetry = retryable(status);
 
   return (
     <section class={`window3d${v.maximized ? ' maximized' : ''}`} aria-label="3D nézet"
@@ -343,7 +301,7 @@ function Window3dOpen({ store, ui, bounds, reserveBottom = 0 }: Window3dProps) {
         {message !== null && (
           <div class="w3d-msg" role={status === 'loading' && model ? 'status' : 'alert'}>
             <span>{message}</span>
-            {canRetry && <button type="button" data-action="3d-retry" onClick={() => setAttempt(attempt + 1)}>Újra</button>}
+            {canRetry && <button type="button" data-action="3d-retry" onClick={retry}>Újra</button>}
           </div>
         )}
       </div>

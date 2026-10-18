@@ -17,6 +17,8 @@ export interface UiState {
   matOnlyMissing: boolean;
   /** A lebegő 3D ablak állapota (`favazas.3d.v1`). */
   view3d: View3dState;
+  /** Szerelés: az aktuális szerelési lépés indexe (0-tól). */
+  assemblyStep: number;
 }
 export interface UiStore {
   get(): UiState;
@@ -26,7 +28,7 @@ export interface UiStore {
 
 /** Új vagy betöltött terv: nincs kijelölés, kiemelés, tárolt kamera, nyitott adatlap. */
 export const CLEAR_UI: Partial<UiState> = {
-  selected: null, selectedOpening: null, hovered: null, highlight: [], cameras: {}, detailOpen: false, matOnlyMissing: false,
+  selected: null, selectedOpening: null, hovered: null, highlight: [], cameras: {}, detailOpen: false, matOnlyMissing: false, assemblyStep: 0,
 };
 
 const LAYERS_KEY = 'favazas.layers.v1';
@@ -84,7 +86,7 @@ export function createUiStore(): UiStore {
   let state: UiState = {
     step: 'building', view: 'floor', selected: null, selectedOpening: null, hovered: null, highlight: [],
     layers: loadLayers(), cameras: {}, detailOpen: false, matQuery: '', matOpen: [], matClosed: [], matOnlyMissing: false,
-    view3d: loadView3d(),
+    view3d: loadView3d(), assemblyStep: 0,
   };
   const listeners = new Set<() => void>();
   return {

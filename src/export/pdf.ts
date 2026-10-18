@@ -11,7 +11,14 @@ import regularUrl from 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf?url';
 import boldUrl from 'dejavu-fonts-ttf/ttf/DejaVuSans-Bold.ttf?url';
 import type { CostSummary } from '../pricing/cost';
 import { BUNDLED_PRICE_LIST } from '../prices';
-import { COST_TABLE_HEADER, costPageRows, type CostTableRow, CUT_PLAN_HEADER, cutPlanRows, fitRect, paginateRows, substituteCssVars, type TableItem } from './pdfLayout';
+import type { Scene } from '../scene/types';
+import { buildAssembly, type AssemblyStep } from '../assembly/steps';
+import { stepOfSolid } from '../assembly/solids';
+import { stepSummary, TIMBER_NOTE } from '../assembly/material';
+// a modell-építő nem húzza be a Three.js-t; a kirajzolót az assemblyImages dinamikusan tölti
+import { buildModel3d, type Model3d } from '../three-d/model';
+import { renderAssemblyImages } from './assemblyImages';
+import { ASSEMBLY_TABLE_HEADER, assemblyTableRows, COST_TABLE_HEADER, costPageRows, type CostTableRow, CUT_PLAN_HEADER, cutPlanRows, fitRect, paginateRows, substituteCssVars, type TableItem } from './pdfLayout';
 
 export interface PdfOptions { drawings: boolean; materials: boolean; explanations: boolean; cutPlan: boolean; cost?: boolean }
 
@@ -44,6 +51,22 @@ function viewBoxSize(svg: string): { w: number; h: number } {
   const m = /viewBox="\s*[-\d.]+[ ,]+[-\d.]+[ ,]+([\d.]+)[ ,]+([\d.]+)\s*"/.exec(svg);
   if (!m) throw new Error('SVG without viewBox');
   return { w: Number(m[1]), h: Number(m[2]) };
+}
+
+/** A szerelési lépések képeinek pixelmérete és helye az oldalon (teljes szélesség, arányos magasság). */
+const ASSEMBLY_IMAGE = { w: 1200, h: 800 };
+const ASSEMBLY_IMAGE_H = CONTENT_W * ASSEMBLY_IMAGE.h / ASSEMBLY_IMAGE.w;
+
+/** Lépésenként a 3D kép (PNG data URL); ha a modell vagy a kirajzolás nem sikerül, null-ok. */
+async function stepImages(plan: Plan, scene: Scene, steps: AssemblyStep[]): Promise<(string | null)[]> {
+  let model: Model3d;
+  try {
+    model = buildModel3d(plan, scene);
+  } catch (err) {
+    console.warn('Szerelési útmutató: a 3D modell nem készült el, a képek kimaradnak.', err);
+    return steps.map(() => null);
+  }
+  return renderAssemblyImages(model, steps, s => stepOfSolid(s, scene, steps), ASSEMBLY_IMAGE);
 }
 
 /** A költségoldalak a `cost` összesítőből készülnek (alapból be; árlista nélkül kimaradnak). */
@@ -347,6 +370,112 @@ export async function exportPdf(plan: Plan, output: CalcOutput, opts: PdfOptions
       doc.text(lines, MARGIN + 5, wy + 3.5);
       wy += h;
     }
+  }
+
+  // 5. Szerelési útmutató: áttekintő oldal, majd lépésenként új oldal (cím, kép, teendők, anyagtáblázat)
+  {
+    const scene = buildScene(plan, supplyFor(plan));
+    const steps = buildAssembly(plan, scene, output);
+    const images = await stepImages(plan, scene, steps);
+
+    doc.addPage();
+    pageTitle('Szerelési útmutató');
+    setText(10);
+    let oy = BODY_TOP + 2;
+    const intro = doc.splitTextToSize(`A ház felépítése ${steps.length} lépésben. Lépésenként: az addig felépült rész `
+      + '(a lépés elemei kiemelve), a teendők és a lépés anyaga. ' + TIMBER_NOTE, CONTENT_W) as string[];
+    doc.text(intro, MARGIN, oy + 3.5);
+    oy += intro.length * 4.6 + 4;
+    steps.forEach((s, i) => {
+      setText(10, 'bold');
+      doc.text(`${i + 1}.`, MARGIN, oy + 3.5);
+      setText(10);
+      doc.text((doc.splitTextToSize(`${s.title} – ${stepSummary(s)}`, CONTENT_W - 8) as string[])[0], MARGIN + 8, oy + 3.5);
+      oy += 6;
+    });
+
+    const colW = [80, 25, 75];
+    const colX = colW.map((_, i) => MARGIN + colW.slice(0, i).reduce((a, b) => a + b, 0));
+    const PAD = 1.5; const LH = 3.8; const FS = 8.5; const HEADER_H = 7;
+    const lhf = LH / (FS * 0.3528);
+    const TODO_LH = 4.6;
+    const tableHeader = (ty: number) => {
+      doc.setFillColor(230, 230, 226);
+      doc.rect(MARGIN, ty, CONTENT_W, HEADER_H, 'F');
+      setText(FS, 'bold');
+      const base = ty + HEADER_H / 2 + 1.3;
+      ASSEMBLY_TABLE_HEADER.forEach((h, k) => {
+        if (k === 1) doc.text(h, colX[k] + colW[k] - PAD, base, { align: 'right' });
+        else doc.text(h, colX[k] + PAD, base);
+      });
+      doc.setDrawColor(200);
+      doc.setLineWidth(0.15);
+      return ty + HEADER_H;
+    };
+
+    steps.forEach((step, si) => {
+      const title = `${si + 1}. ${step.title}`;
+      doc.addPage();
+      pageTitle(title);
+      let y = BODY_TOP;
+      const img = images[si];
+      if (img) {
+        const box = fitRect(ASSEMBLY_IMAGE.w, ASSEMBLY_IMAGE.h, CONTENT_W, ASSEMBLY_IMAGE_H, MARGIN, y);
+        doc.addImage(img, 'PNG', box.x, box.y, box.width, box.height);
+        y += ASSEMBLY_IMAGE_H + 6;
+      }
+
+      setText(11, 'bold');
+      doc.text('Teendők', MARGIN, y + 4);
+      y += 7;
+      setText(10);
+      for (const t of step.todo) {
+        const lines = doc.splitTextToSize(t, CONTENT_W - 5) as string[];
+        doc.text('•', MARGIN, y + 3.5);
+        doc.text(lines, MARGIN + 5, y + 3.5);
+        y += lines.length * TODO_LH + 1;
+      }
+      y += 4;
+
+      setText(11, 'bold');
+      doc.text('Anyag', MARGIN, y + 4);
+      y += 7;
+      if (step.pieces.length > 0) {
+        setText(8.5);
+        doc.setTextColor(90);
+        doc.text(TIMBER_NOTE, MARGIN, y + 3);
+        y += 5.5;
+      }
+      setText(FS);
+      const cells = assemblyTableRows(step).map(r => r.map((c, k) => (c ? doc.splitTextToSize(c, colW[k] - 2 * PAD) as string[] : [])));
+      if (cells.length === 0) {
+        setText(10);
+        doc.text('Ehhez a lépéshez nincs külön anyag.', MARGIN, y + 4);
+        return;
+      }
+      const items: TableItem[] = cells.map(c => ({ kind: 'row', height: Math.max(...c.map(l => l.length), 1) * LH + 2 * PAD }));
+      const pages = paginateRows(items, BODY_BOTTOM - BODY_TOP, HEADER_H, BODY_BOTTOM - y);
+      pages.forEach((idxs, pi) => {
+        if (pi > 0) {
+          doc.addPage();
+          pageTitle(`${title} (folytatás)`);
+          y = BODY_TOP;
+        }
+        if (idxs.length === 0) return;
+        let ty = tableHeader(y);
+        for (const i of idxs) {
+          setText(FS);
+          const base = ty + PAD + 2.8;
+          cells[i].forEach((c, k) => {
+            if (c.length === 0) return;
+            if (k === 1) doc.text(c, colX[k] + colW[k] - PAD, base, { align: 'right' });
+            else doc.text(c, colX[k] + PAD, base, { lineHeightFactor: lhf });
+          });
+          doc.line(MARGIN, ty + items[i].height, MARGIN + CONTENT_W, ty + items[i].height);
+          ty += items[i].height;
+        }
+      });
+    });
   }
 
   // Lábléc minden oldalon

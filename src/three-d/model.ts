@@ -98,6 +98,20 @@ export function solidBounds(s: Solid): { min: Vec3; max: Vec3 } {
   return { min, max };
 }
 
+/** A testek közös világ-befoglalója; üres listánál nullák. */
+export function boundsOf(solids: Solid[]): { min: Vec3; max: Vec3 } {
+  const min: Vec3 = [0, 0, 0];
+  const max: Vec3 = [0, 0, 0];
+  solids.forEach((s, i) => {
+    const b = solidBounds(s);
+    for (let k = 0; k < 3; k++) {
+      min[k] = i === 0 ? b.min[k] : Math.min(min[k], b.min[k]);
+      max[k] = i === 0 ? b.max[k] : Math.max(max[k], b.max[k]);
+    }
+  });
+  return { min, max };
+}
+
 /** Függőleges falelem körvonala: lejtős koszorú alatt ferdére vágott tető, oromoszlopnál az oromvonalig. */
 function verticalOutline(plan: Plan, wall: WallGeom, e: Element): [number, number][] {
   const { u, v, w, h } = e.geom;
@@ -535,14 +549,5 @@ export function buildModel3d(plan: Plan, scene: Scene): Model3d {
     ...roofSolids(plan, scene)];
   const present = new Set(solids.map(s => s.layer));
   const layers = LAYER_ORDER.filter(l => present.has(l));
-  const min: Vec3 = [0, 0, 0];
-  const max: Vec3 = [0, 0, 0];
-  solids.forEach((s, i) => {
-    const b = solidBounds(s);
-    for (let k = 0; k < 3; k++) {
-      min[k] = i === 0 ? b.min[k] : Math.min(min[k], b.min[k]);
-      max[k] = i === 0 ? b.max[k] : Math.max(max[k], b.max[k]);
-    }
-  });
-  return { solids, layers, bounds: { min, max } };
+  return { solids, layers, bounds: boundsOf(solids) };
 }
