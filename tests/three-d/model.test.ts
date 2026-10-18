@@ -1,5 +1,10 @@
 import { createDefaultPlan } from '../../src/model/defaults';
-import type { Plan, WallSide } from '../../src/model/types';
+import type { Plan, PlinthBlock, WallSide } from '../../src/model/types';
+import { stripLayout } from '../../src/calc/strip';
+import { calculate } from '../../src/calc';
+import { buildAssembly } from '../../src/assembly/steps';
+import { stepOfSolid } from '../../src/assembly/solids';
+import { PLINTH_BLOCK_WIDTH } from '../../src/catalog';
 import { roofGeometry, wallGeometry } from '../../src/calc/geometry';
 import { COUNTER_BATTEN_SECTION, ROOF_BATTEN_SECTION, SCREW_HEAD_H } from '../../src/catalog';
 import { buildScene } from '../../src/scene/build';
@@ -1036,4 +1041,89 @@ describe('pontalap és betonpillér 3D', () => {
     const b = solidBounds(pier);
     expect([b.max[0] - b.min[0], b.max[1] - b.min[1]]).toEqual([200, 200]);
   });
+});
+
+describe('sávalap 3D', () => {
+  const strip = (w = 3000, l = 4000, block: PlinthBlock = 'block250', clearance = 300): Plan => {
+    const p = createDefaultPlan();
+    p.building.width = w; p.building.length = l;
+    p.foundation.type = 'stripFooting';
+    p.foundation.plinth.block = block;
+    p.foundation.frame.groundClearance = clearance;
+    return p;
+  };
+  const area = (s: Solid): number => {
+    let a = 0;
+    s.outline.forEach(([x, y], i) => { const [x2, y2] = s.outline[(i + 1) % s.outline.length]; a += x * y2 - x2 * y; });
+    return Math.abs(a) / 2;
+  };
+  const cases: Array<[string, Plan]> = [
+    ['3x4', strip()], ['4x3', strip(4000, 3000)], ['3x3', strip(3000, 3000)], ['block200', strip(3000, 4000, 'block200', 450)],
+    ['block300', strip(5000, 6000, 'block300', 150)], ['2x2', strip(2000, 2000)], ['8x5', strip(8000, 5000)],
+  ];
+  for (const [name, plan] of cases) {
+    describe(name, () => {
+      const scene = buildScene(plan);
+      const m = buildModel3d(plan, scene);
+      const { z } = frameLayout(plan);
+      const clearance = plan.foundation.frame.groundClearance;
+      const { depth } = plan.foundation.strip;
+
+      it('minden stripFooting / plinth / beam / support elemnek van teste', () => {
+        for (const e of scene.elements.filter(x => ['stripFooting', 'plinth', 'beam', 'support'].includes(x.kind))) {
+          expect(byId(m.solids, e.id).length, e.id).toBeGreaterThan(0);
+        }
+      });
+      it('sáv: concreteBuried, supports, Z -depth..0', () => {
+        for (const e of scene.elements.filter(x => x.kind === 'stripFooting')) {
+          const [s] = byId(m.solids, e.id);
+          expect([s.layer, s.material]).toEqual(['supports', 'concreteBuried']);
+          const b = solidBounds(s);
+          expect([b.min[2], b.max[2]]).toEqual([-depth, 0]);
+          expect([b.min[0], b.min[1], b.max[0], b.max[1]]).toEqual([e.geom.u, e.geom.v, e.geom.u + e.geom.w, e.geom.v + e.geom.h]);
+        }
+      });
+      it('lábazat teteje = talpgerenda alja = groundClearance', () => {
+        const plinths = scene.elements.filter(x => x.kind === 'plinth');
+        expect(plinths).toHaveLength(4);
+        const sills = m.solids.filter(s => scene.elements.find(e => e.id === s.elementId)?.id.startsWith('frame.sill.'));
+        expect(sills.length).toBeGreaterThan(0);
+        for (const e of plinths) {
+          const [s] = byId(m.solids, e.id);
+          expect([s.layer, s.material]).toEqual(['supports', 'concrete']);
+          const b = solidBounds(s);
+          expect([b.min[2], b.max[2]]).toEqual([0, clearance]);
+        }
+        for (const s of sills) expect(solidBounds(s).min[2]).toBe(clearance);
+        expect(z.beamBottom).toBe(clearance);
+      });
+      it('a lábazat-szakaszok térfogatösszege = P · blokkszélesség · clearance (±1 %)', () => {
+        const bw = PLINTH_BLOCK_WIDTH[plan.foundation.plinth.block];
+        const vol = scene.elements.filter(x => x.kind === 'plinth').reduce((a, e) => a + byId(m.solids, e.id).reduce((b, s) => b + area(s) * s.depth, 0), 0);
+        const want = stripLayout(plan).P * bw * clearance;
+        expect(Math.abs(vol - want) / want).toBeLessThan(0.01);
+      });
+      it('belső pillér: talp strip.width, pillér blokkszélesség, papucs', () => {
+        const bw = PLINTH_BLOCK_WIDTH[plan.foundation.plinth.block];
+        for (const e of scene.elements.filter(x => x.kind === 'support')) {
+          const parts = byId(m.solids, e.id);
+          const foot = parts.find(s => s.material === 'concreteBuried')!;
+          const fb = solidBounds(foot);
+          expect([fb.max[0] - fb.min[0], fb.max[1] - fb.min[1], fb.min[2], fb.max[2]]).toEqual([plan.foundation.strip.width, plan.foundation.strip.width, -depth, 0]);
+          const pier = parts.find(s => s.material === 'concrete')!;
+          const pb = solidBounds(pier);
+          expect([pb.max[0] - pb.min[0], pb.max[1] - pb.min[1], pb.min[2], pb.max[2]]).toEqual([bw, bw, 0, clearance - 10]);
+          expect(parts.filter(s => s.material === 'metal')).toHaveLength(3);
+        }
+      });
+      it('stepOfSolid: a sáv-test a supports lépéshez tartozik', () => {
+        const steps = buildAssembly(plan, scene, calculate(plan));
+        const idx = steps.findIndex(s => s.id === 'supports');
+        expect(idx).toBeGreaterThanOrEqual(0);
+        for (const e of scene.elements.filter(x => x.kind === 'stripFooting' || x.kind === 'plinth')) {
+          expect(stepOfSolid(byId(m.solids, e.id)[0], scene, steps)).toBe(idx);
+        }
+      });
+    });
+  }
 });
