@@ -3,6 +3,7 @@ import type { Element, FastenerRef, Scene } from '../scene/types';
 import { formatCmNum } from '../ui/format';
 import { groupLength, neighbours } from '../scene/neighbours';
 import { pierDesc } from '../calc/supports';
+import { PLINTH_BLOCK_WIDTH } from '../catalog';
 
 const GROUP_NAMES: Record<string, string> = {
   'wall.N': 'É fal', 'wall.E': 'K fal', 'wall.S': 'D fal', 'wall.W': 'Ny fal',
@@ -59,6 +60,11 @@ function positionLine(group: string, along: number, v: number, x = along): strin
 function supportSize(plan: Plan, el: Element): string {
   const f = plan.foundation;
   if (f.type === 'groundScrew') return `Ø${c(el.geom.w)} cm · hossza ${c(el.length)} cm`;
+  if (f.type === 'stripFooting') {
+    // a belső pillér talpa a sáv szélességű négyzet, a pillér a lábazat zsalukövéből
+    const s = c(PLINTH_BLOCK_WIDTH[f.plinth.block]);
+    return `Talp ${c(f.strip.width)}×${c(f.strip.width)} cm · ${c(f.strip.depth)} cm mélyen · ${s}×${s} cm-es zsalukő pillér`;
+  }
   const foot = `Talp ${c(f.footing.size)}×${c(f.footing.size)} cm · ${c(f.footing.depth)} cm mélyen`;
   return f.type === 'concretePier' ? `${foot} · ${pierDesc(f.pier.kind)}` : foot;
 }
@@ -77,7 +83,11 @@ export function tooltipLines(scene: Scene, plan: Plan, target: { el?: string; fx
 
   const nb = neighbours(scene, groupLength(plan, el.group), el.id);
   const g = el.geom;
+  const f = plan.foundation;
   const size = el.kind === 'support' ? supportSize(plan, el)
+    : el.kind === 'stripFooting' ? `${c(f.strip.width)} cm széles · ${c(f.strip.depth)} cm mély · hossza ${c(el.length)} cm`
+    : el.kind === 'plinth'
+      ? `${c(PLINTH_BLOCK_WIDTH[f.plinth.block])} cm-es zsalukő · ${c(f.frame.groundClearance)} cm magas · hossza ${c(el.length)} cm`
     : el.section ? `${c(el.section.t)}×${c(el.section.w)} cm · hossza ${c(el.length)} cm` : `${c(g.w)} × ${c(g.h)} cm`;
   const pos = positionLine(el.group, nb.fromStart, g.v, g.u);
   const side = (axis?: number, clear?: number): string => (axis === undefined || clear === undefined ? '—' : `${c(axis)} cm (${c(clear)} szabad)`);

@@ -141,3 +141,23 @@ test('a támasz buboréka pontalapnál és betonpillérnél', () => {
   const f = sc.fasteners.find(x => x.kind === 'beamBolt')!;
   expect(tooltipLines(sc, p, { fx: f.id })[3]).toBe('Elem: Főgerenda #1, Pontalap #1');
 });
+
+test('a sávalap elemeinek buboréka', () => {
+  const p = createDefaultPlan(); p.foundation.type = 'stripFooting'; const sc = buildScene(p);
+  const t = tooltipLines(sc, p, { el: 'frame.sill.1' });
+  expect(t[0]).toBe('Talpgerenda #1 · gerendakeret');
+  expect(t[1]).toBe('10×15 cm · hossza 400 cm');
+  const pl = tooltipLines(sc, p, { el: 'frame.plinth.N' });
+  expect(pl[0]).toBe('Lábazat: É · gerendakeret');
+  expect(pl[1]).toBe('25 cm-es zsalukő · 30 cm magas · hossza 290 cm');
+  const st = tooltipLines(sc, p, { el: 'frame.strip.N' });
+  expect(st[0]).toBe('Sávalap: É · gerendakeret');
+  expect(st[1]).toBe('40 cm széles · 80 cm mély · hossza 290 cm');
+  const s = tooltipLines(sc, p, { el: 'frame.support.1' });
+  expect(s[0]).toBe('Betonpillér #1 · gerendakeret');
+  expect(s[1]).toBe('Talp 40×40 cm · 80 cm mélyen · 25×25 cm-es zsalukő pillér');
+  for (const e of sc.elements.filter(x => x.group === 'frame')) expect(tooltipLines(sc, p, { el: e.id }).join('\n'), e.id).not.toMatch(/NaN|undefined/);
+  for (const f of sc.fasteners.filter(x => x.group === 'frame')) expect(tooltipLines(sc, p, { fx: f.id }).length, f.id).toBe(4);
+  p.foundation.plinth.block = 'block300';
+  expect(tooltipLines(buildScene(p), p, { el: 'frame.support.1' })[1]).toBe('Talp 40×40 cm · 80 cm mélyen · 30×30 cm-es zsalukő pillér');
+});
