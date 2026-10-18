@@ -2,6 +2,7 @@ import type { Plan } from '../model/types';
 import type { Element, FastenerRef, Scene } from '../scene/types';
 import { formatCmNum } from '../ui/format';
 import { groupLength, neighbours } from '../scene/neighbours';
+import { pierDesc } from '../calc/supports';
 
 const GROUP_NAMES: Record<string, string> = {
   'wall.N': 'É fal', 'wall.E': 'K fal', 'wall.S': 'D fal', 'wall.W': 'Ny fal',
@@ -54,6 +55,14 @@ function positionLine(group: string, along: number, v: number, x = along): strin
   return `Pozíció: x: ${c(x)} cm, y: ${c(v)} cm`;
 }
 
+/** A támasz méretsora: talajcsavarnál átmérő és hossz, pontalapnál/betonpillérnél a talp (és a pillér). */
+function supportSize(plan: Plan, el: Element): string {
+  const f = plan.foundation;
+  if (f.type === 'groundScrew') return `Ø${c(el.geom.w)} cm · hossza ${c(el.length)} cm`;
+  const foot = `Talp ${c(f.footing.size)}×${c(f.footing.size)} cm · ${c(f.footing.depth)} cm mélyen`;
+  return f.type === 'concretePier' ? `${foot} · ${pierDesc(f.pier.kind)}` : foot;
+}
+
 /** A buborék sorai egy elemhez (`el`) vagy rögzítéshez (`fx`); hibás nyílásnál a hibaüzenetekkel (`errors`). */
 export function tooltipLines(scene: Scene, plan: Plan, target: { el?: string; fx?: string }, errors: string[] = []): string[] {
   if (target.fx) {
@@ -68,7 +77,7 @@ export function tooltipLines(scene: Scene, plan: Plan, target: { el?: string; fx
 
   const nb = neighbours(scene, groupLength(plan, el.group), el.id);
   const g = el.geom;
-  const size = el.kind === 'support' ? `Ø${c(el.geom.w)} cm · hossza ${c(el.length)} cm`
+  const size = el.kind === 'support' ? supportSize(plan, el)
     : el.section ? `${c(el.section.t)}×${c(el.section.w)} cm · hossza ${c(el.length)} cm` : `${c(g.w)} × ${c(g.h)} cm`;
   const pos = positionLine(el.group, nb.fromStart, g.v, g.u);
   const side = (axis?: number, clear?: number): string => (axis === undefined || clear === undefined ? '—' : `${c(axis)} cm (${c(clear)} szabad)`);

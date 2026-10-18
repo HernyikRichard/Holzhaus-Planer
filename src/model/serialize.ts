@@ -1,7 +1,7 @@
 import type { Plan } from './types';
 import { createDefaultPlan, DEFAULT_PRICING } from './defaults';
 
-export const CURRENT_VERSION = 3;
+export const CURRENT_VERSION = 4;
 
 /** MIGRATIONS[v] a v verziójú nyers adatot v+1 verzióra alakítja. */
 export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {
@@ -11,6 +11,12 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record
     const def = createDefaultPlan().foundation;
     const old = isPlainObject(raw.foundation) ? raw.foundation : {};
     return { ...raw, version: 3, foundation: { ...old, type: 'slab', frame: structuredClone(def.frame), groundScrew: structuredClone(def.groundScrew) } };
+  },
+  // v3 -> v4: a típus változatlan, a pontalap és a betonpillér mezői alapértéket kapnak
+  3: raw => {
+    const def = createDefaultPlan().foundation;
+    const old = isPlainObject(raw.foundation) ? raw.foundation : {};
+    return { ...raw, version: 4, foundation: { ...old, footing: structuredClone(def.footing), pier: structuredClone(def.pier) } };
   },
 };
 
@@ -102,10 +108,12 @@ function checkShape(plan: Plan): string | null {
   const checks: [string, boolean][] = [
     ['foundation.concreteGrade', oneOf(plan.foundation.concreteGrade, ['C16', 'C20'])],
     ['foundation.meshType', oneOf(plan.foundation.meshType, ['d4_150', 'd5_150', 'd6_150'])],
-    ['foundation.type', oneOf(plan.foundation.type, ['slab', 'groundScrew'])],
+    ['foundation.type', oneOf(plan.foundation.type, ['slab', 'groundScrew', 'padFooting', 'concretePier'])],
     ['foundation.frame.beamSection', oneOf(plan.foundation.frame.beamSection, ['b100x150', 'b120x120', 'b2x50x150'])],
     ['foundation.groundScrew.length', oneOf(plan.foundation.groundScrew.length, [800, 1000, 1200])],
     ['foundation.groundScrew.diameter', oneOf(plan.foundation.groundScrew.diameter, [76])],
+    ['foundation.footing.size', oneOf(plan.foundation.footing.size, [300, 400, 500])],
+    ['foundation.pier.kind', oneOf(plan.foundation.pier.kind, ['block200', 'block250', 'tube200'])],
     ['floor.osbThickness', oneOf(plan.floor.osbThickness, [18, 22])],
     ['walls.topPlate', oneOf(plan.walls.topPlate, ['single', 'double'])],
     ['roof.shape', oneOf(plan.roof.shape, ['flat', 'mono', 'gable'])],

@@ -1,6 +1,7 @@
 import type { Mm, Plan, WallSide } from '../model/types';
 import { formatCm } from '../ui/format';
 import { roofGeometry, wallGeometry } from '../calc/geometry';
+import { hasFrame } from '../calc/frame';
 import type { Element, ElementKind, Scene } from './types';
 
 export interface NeighbourInfo {
@@ -26,8 +27,8 @@ export function groupLength(plan: Plan, group: string): Mm {
     return w.length;
   }
   if (group.startsWith('roof.')) return roofGeometry(plan).roofLengthAlongRidge;
-  // talajcsavarnál a párnafák a gerendák mentén, a hosszabb oldal teljes hosszán állnak
-  if (group === 'floor' && plan.foundation.type === 'groundScrew') return Math.max(plan.building.width, plan.building.length);
+  // gerendakeretes alapnál a párnafák a gerendák mentén, a hosszabb oldal teljes hosszán állnak
+  if (group === 'floor' && hasFrame(plan)) return Math.max(plan.building.width, plan.building.length);
   if (group === 'floor') return plan.building.width - 2 * plan.walls.studSection.w;
   if (group === 'foundation') return plan.building.width + 2 * plan.foundation.slabOverhang;
   if (group === 'frame') return plan.building.width; // a keret elemei alaprajzi (x, y) koordinátában

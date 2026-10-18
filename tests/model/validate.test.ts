@@ -49,6 +49,8 @@ test('every numeric/section panel field has a range check', () => {
     const targets = f.kind === 'section' ? [`${f.path}.t`, `${f.path}.w`] : [f.path];
     for (const t of targets) {
       const p = createDefaultPlan();
+      // a típusfüggő szakaszok mezői csak a saját alaptípusukon érvényesek
+      if (s.id === 'groundScrew' || s.id === 'padFooting' || s.id === 'concretePier') p.foundation.type = s.id;
       expect(getPath(p, t), t).toEqual(expect.any(Number));
       setPath(p, t, absurd);
       expect(paths(p), t).toContain(t);
@@ -79,10 +81,47 @@ test('groundClearance bounds 150-800', () => {
     expect(paths(p).includes('foundation.frame.groundClearance')).toBe(bad);
   }
 });
+test('footing depth bounds 600-1200', () => {
+  const p = createDefaultPlan(); p.foundation.type = 'padFooting';
+  for (const [v, bad] of [[599, true], [600, false], [1200, false], [1201, true]] as const) {
+    p.foundation.footing.depth = v;
+    expect(paths(p).includes('foundation.footing.depth')).toBe(bad);
+  }
+});
+test('groundClearance range depends on foundation type', () => {
+  const cases = [
+    ['groundScrew', 301, false], ['groundScrew', 800, false], ['groundScrew', 801, true], ['groundScrew', 149, true],
+    ['padFooting', 300, false], ['padFooting', 301, true], ['padFooting', 150, false], ['padFooting', 149, true],
+    ['concretePier', 800, false], ['concretePier', 801, true], ['concretePier', 150, false], ['concretePier', 149, true],
+  ] as const;
+  for (const [type, v, bad] of cases) {
+    const p = createDefaultPlan(); p.foundation.type = type; p.foundation.frame.groundClearance = v;
+    expect([type, v, paths(p).includes('foundation.frame.groundClearance')]).toEqual([type, v, bad]);
+  }
+});
+test('switching to padFooting with 500 mm clearance flags the field, switching back clears it', () => {
+  const p = createDefaultPlan(); p.foundation.type = 'groundScrew'; p.foundation.frame.groundClearance = 500;
+  expect(paths(p)).not.toContain('foundation.frame.groundClearance');
+  p.foundation.type = 'padFooting';
+  const e = validatePlan(p).find(x => x.path === 'foundation.frame.groundClearance');
+  expect(e?.message).toBe('Talaj feletti magasság: 150–300 mm közötti érték szükséges.');
+  p.foundation.type = 'groundScrew';
+  expect(paths(p)).not.toContain('foundation.frame.groundClearance');
+});
 test('supportSpacing bounds 800-2500, auto is fine', () => {
   const p = createDefaultPlan();
   for (const [v, bad] of [[799, true], [800, false], [2500, false], [2501, true], ['auto', false]] as const) {
     p.foundation.frame.supportSpacing = v;
     expect(paths(p).includes('foundation.frame.supportSpacing')).toBe(bad);
   }
+});
+
+test('footing depth is only validated for pad footing and concrete pier', () => {
+  const p = createDefaultPlan();
+  p.foundation.footing.depth = 5000;
+  expect(paths(p)).not.toContain('foundation.footing.depth');
+  p.foundation.type = 'padFooting';
+  expect(paths(p)).toContain('foundation.footing.depth');
+  p.foundation.type = 'concretePier';
+  expect(paths(p)).toContain('foundation.footing.depth');
 });

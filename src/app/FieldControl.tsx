@@ -4,6 +4,7 @@ import { SECTIONS, getPath, type FieldDef } from '../ui/fields';
 import { formatCm } from '../ui/format';
 import { useStore } from './hooks';
 import { applyFieldChange, toDisplay, toStored } from './fieldLogic';
+import { hasFrame } from '../calc/frame';
 
 const SUPPORT_SPACING = 'foundation.frame.supportSpacing';
 
@@ -83,8 +84,8 @@ export function FieldControl({ def, store }: { def: FieldDef; store: Store }) {
       </select>
     );
   } else {
-    // talajcsavarnál a padló a gerendakereten kötelező: bekapcsoltnak látszik, a tárolt érték nem változik
-    const locked = def.path === 'floor.enabled' && plan.foundation.type === 'groundScrew';
+    // gerendakeretes alapnál a padló kötelező: bekapcsoltnak látszik, a tárolt érték nem változik
+    const locked = def.path === 'floor.enabled' && hasFrame(plan);
     control = (
       <input type="checkbox" data-path={def.path} checked={locked || getPath(plan, def.path) === true}
         disabled={locked} aria-label={label} class={invalid ? 'error' : undefined} aria-invalid={invalid ? 'true' : undefined}
@@ -101,8 +102,8 @@ export function FieldControl({ def, store }: { def: FieldDef; store: Store }) {
         <span class="control">{control}</span>
       </label>
       <div class="field-error" role="alert">{message}</div>
-      {def.path === 'floor.enabled' && plan.foundation.type === 'groundScrew' &&
-        <p class="hint">Talajcsavaros alapnál a padló a gerendakereten kötelező.</p>}
+      {def.path === 'floor.enabled' && hasFrame(plan) &&
+        <p class="hint">Gerendakeretes alapnál a padló kötelező.</p>}
     </div>
   );
 }

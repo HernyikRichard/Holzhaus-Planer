@@ -1,4 +1,4 @@
-import type { Mm, Plan, Section } from '../model/types';
+import type { FoundationType, Mm, Plan, Section } from '../model/types';
 import { BEAM_MAX_SPAN, BEAM_SECTIONS, JOIST_MAX_SPAN, JOIST_SPAN_FALLBACK, SUPPORT_END_OFFSET } from '../catalog';
 import { hu, sectionKey, sectionLabel } from './util';
 
@@ -77,9 +77,19 @@ export function frameLayout(plan: Plan): FrameLayout {
   };
 }
 
-/** A padló számít-e: a kapcsoló, vagy talajcsavarnál mindig. */
+/** Gerendakeretes-e az alap (talajcsavar, pontalap, betonpillér): támaszrács, főgerendák, padló a kereten. */
+export function hasFrame(plan: Plan): boolean {
+  return isFrameType(plan.foundation.type);
+}
+
+/** `hasFrame` típus szerint (ahol csak az alaptípus ismert). */
+export function isFrameType(type: FoundationType): boolean {
+  return type !== 'slab';
+}
+
+/** A padló számít-e: a kapcsoló, vagy gerendakeretes alapnál mindig. */
 export function floorOn(plan: Plan): boolean {
-  return plan.foundation.type === 'groundScrew' || plan.floor.enabled;
+  return hasFrame(plan) || plan.floor.enabled;
 }
 
 /** Keret (l a gerendák mentén, w rájuk merőlegesen) → világ (x, y). */

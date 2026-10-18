@@ -7,7 +7,7 @@ test('roundtrip', () => {
   expect(r).toEqual({ ok: true, plan: p });
 });
 test('serializePlan uses 2-space indentation', () => {
-  expect(serializePlan(createDefaultPlan())).toContain('\n  "version": 3');
+  expect(serializePlan(createDefaultPlan())).toContain('\n  "version": 4');
 });
 test('garbage and future versions are rejected with Hungarian messages', () => {
   expect(parsePlan('nem json')).toEqual({ ok: false, error: 'A fájl nem érvényes JSON.' });
@@ -15,7 +15,7 @@ test('garbage and future versions are rejected with Hungarian messages', () => {
     ok: false,
     error: 'A fájl egy újabb programverzióval készült (v99), ezt a verziót nem tudom betölteni.',
   });
-  expect(CURRENT_VERSION).toBe(3);
+  expect(CURRENT_VERSION).toBe(4);
 });
 test('missing or invalid version is rejected', () => {
   const p: any = createDefaultPlan(); delete p.version;
@@ -47,15 +47,15 @@ test('wrong types are rejected naming the field path', () => {
   expect(r.ok).toBe(false);
   expect(!r.ok && r.error).toContain('building.width');
 });
-test('MIGRATIONS has the v1 -> v2 and v2 -> v3 steps', () => {
-  expect(Object.keys(MIGRATIONS)).toEqual(['1', '2']);
+test('MIGRATIONS has the v1 -> v2, v2 -> v3 and v3 -> v4 steps', () => {
+  expect(Object.keys(MIGRATIONS)).toEqual(['1', '2', '3']);
 });
 test('v1 file migrates to v2 with default pricing', () => {
   const v1: any = createDefaultPlan(); delete v1.pricing; v1.version = 1; v1.name = 'Régi';
   const r = parsePlan(JSON.stringify(v1));
   expect(r.ok).toBe(true);
   if (r.ok) {
-    expect(r.plan.version).toBe(3);
+    expect(r.plan.version).toBe(4);
     expect(r.plan.foundation.type).toBe('slab');
     expect(r.plan.pricing).toEqual(DEFAULT_PRICING);
     expect(r.plan.pricing).not.toBe(DEFAULT_PRICING);
@@ -119,22 +119,60 @@ test('standingSeam covering round-trips; old covering values still load', () => 
   expect(parsePlan(JSON.stringify(bad))).toEqual({ ok: false, error: 'Hibás érték: roof.covering' });
 });
 
-test('v2 file migrates to v3 as slab with default frame', () => {
+test('v2 file migrates to v4 as slab with default frame', () => {
   const v2: any = createDefaultPlan(); v2.version = 2;
   delete v2.foundation.type; delete v2.foundation.frame; delete v2.foundation.groundScrew;
+  delete v2.foundation.footing; delete v2.foundation.pier;
   const r = parsePlan(JSON.stringify(v2));
   expect(r.ok).toBe(true);
   if (r.ok) {
-    expect(r.plan.version).toBe(3);
+    expect(r.plan.version).toBe(4);
     expect(r.plan).toEqual(createDefaultPlan());
   }
 });
-test('v1 -> v3 chain works', () => {
+test('v1 -> v4 chain works', () => {
   const v1: any = createDefaultPlan(); delete v1.pricing; v1.version = 1;
   delete v1.foundation.type; delete v1.foundation.frame; delete v1.foundation.groundScrew;
+  delete v1.foundation.footing; delete v1.foundation.pier;
   const r = parsePlan(JSON.stringify(v1));
   expect(r.ok).toBe(true);
-  if (r.ok) expect(r.plan.foundation.frame).toEqual({ beamSection: 'b100x150', supportSpacing: 'auto', groundClearance: 300 });
+  if (r.ok) {
+    expect(r.plan.version).toBe(4);
+    expect(r.plan.foundation.type).toBe('slab');
+    expect(r.plan.foundation.frame).toEqual({ beamSection: 'b100x150', supportSpacing: 'auto', groundClearance: 300 });
+    expect(r.plan.foundation.footing).toEqual({ size: 400, depth: 800 });
+    expect(r.plan.foundation.pier).toEqual({ kind: 'block250' });
+  }
+});
+test('v3 groundScrew file migrates to v4 keeping its type, footing and pier get defaults', () => {
+  const v3: any = createDefaultPlan(); v3.version = 3;
+  delete v3.foundation.footing; delete v3.foundation.pier;
+  v3.foundation.type = 'groundScrew'; v3.foundation.frame.groundClearance = 500; v3.foundation.groundScrew.length = 1200;
+  const r = parsePlan(JSON.stringify(v3));
+  expect(r.ok).toBe(true);
+  if (r.ok) {
+    expect(r.plan.version).toBe(4);
+    expect(r.plan.foundation.type).toBe('groundScrew');
+    expect(r.plan.foundation.frame.groundClearance).toBe(500);
+    expect(r.plan.foundation.groundScrew.length).toBe(1200);
+    expect(r.plan.foundation.footing).toEqual({ size: 400, depth: 800 });
+    expect(r.plan.foundation.pier).toEqual({ kind: 'block250' });
+  }
+});
+test('MIGRATIONS[3] keeps the type and adds fresh default footing and pier', () => {
+  const out = MIGRATIONS[3]({ version: 3, foundation: { type: 'groundScrew', slabThickness: 120 } }) as any;
+  expect(out.version).toBe(4);
+  expect(out.foundation).toEqual({ type: 'groundScrew', slabThickness: 120, footing: { size: 400, depth: 800 }, pier: { kind: 'block250' } });
+});
+test('padFooting round-trip', () => {
+  const p = createDefaultPlan();
+  p.foundation.type = 'padFooting'; p.foundation.footing = { size: 500, depth: 1100 };
+  expect(parsePlan(serializePlan(p))).toEqual({ ok: true, plan: p });
+});
+test.each(['block200', 'block250', 'tube200'] as const)('concretePier round-trip with %s', kind => {
+  const p = createDefaultPlan();
+  p.foundation.type = 'concretePier'; p.foundation.footing = { size: 300, depth: 600 }; p.foundation.pier = { kind };
+  expect(parsePlan(serializePlan(p))).toEqual({ ok: true, plan: p });
 });
 test.each([1200, 'auto'] as const)('groundScrew round-trip with supportSpacing %s', sp => {
   const p = createDefaultPlan();
@@ -147,6 +185,8 @@ test.each([
   ['foundation.frame.beamSection', (p: any) => { p.foundation.frame.beamSection = 'b80'; }],
   ['foundation.groundScrew.length', (p: any) => { p.foundation.groundScrew.length = 900; }],
   ['foundation.frame.supportSpacing', (p: any) => { p.foundation.frame.supportSpacing = 'kicsi'; }],
+  ['foundation.pier.kind', (p: any) => { p.foundation.pier.kind = 'block300'; }],
+  ['foundation.footing.size', (p: any) => { p.foundation.footing.size = 450; }],
 ])('invalid %s is rejected with its path', (path, mutate) => {
   const p: any = createDefaultPlan(); mutate(p);
   const r = parsePlan(JSON.stringify(p));

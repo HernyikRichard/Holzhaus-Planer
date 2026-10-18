@@ -70,6 +70,24 @@ const roofLayerFields: FieldDef[] = ROOF_LAYERS.flatMap((l, i) => [
   ...(l.materials ? [select(`roof.layers.${i}.material`, `${l.label} anyaga`, l.materials)] : []),
 ]);
 
+const CONCRETE_GRADE = select('foundation.concreteGrade', 'Beton szilárdsági osztálya', opts(['C16', 'C16'], ['C20', 'C20']));
+
+// a gerendakeretes alaptípusok közös mezői: egy helyen definiálva, a szakaszok használják
+const FRAME_FIELDS: FieldDef[] = [
+  num('foundation.frame.groundClearance', 'Talaj feletti magasság', 'cm'),
+  select('foundation.frame.beamSection', 'Főgerenda keresztmetszete',
+    opts(['b100x150', '100×150'], ['b120x120', '120×120'], ['b2x50x150', '2×50×150'])),
+  select('foundation.frame.supportSpacing', 'Támaszköz',
+    opts(['auto', 'Automatikus'], ...Array.from({ length: 18 }, (_, i): [string, string] =>
+      [String(800 + i * 100), `${80 + i * 10} cm`]))),
+];
+
+const FOOTING_FIELDS: FieldDef[] = [
+  select('foundation.footing.size', 'Talp mérete', opts(['300', '30×30 cm'], ['400', '40×40 cm'], ['500', '50×50 cm'])),
+  num('foundation.footing.depth', 'Alapozási mélység', 'cm'),
+  CONCRETE_GRADE,
+];
+
 export const SECTIONS: SectionDef[] = [
   { id: 'building', title: 'Épület', fields: [
     num('building.width', 'Szélesség', 'm'),
@@ -79,7 +97,7 @@ export const SECTIONS: SectionDef[] = [
   { id: 'foundation', title: 'Alap', fields: [
     num('foundation.slabThickness', 'Lemezvastagság', 'cm'),
     num('foundation.slabOverhang', 'Lemez túlnyúlása', 'cm'),
-    select('foundation.concreteGrade', 'Beton szilárdsági osztálya', opts(['C16', 'C16'], ['C20', 'C20'])),
+    CONCRETE_GRADE,
     select('foundation.meshType', 'Hálótípus',
       opts(['d4_150', 'Ø4 15×15'], ['d5_150', 'Ø5 15×15'], ['d6_150', 'Ø6 15×15'])),
     num('foundation.gravelBedThickness', 'Sóderágy vastagsága', 'cm'),
@@ -88,12 +106,14 @@ export const SECTIONS: SectionDef[] = [
   { id: 'groundScrew', title: 'Talajcsavar és gerendakeret', fields: [
     select('foundation.groundScrew.length', 'Talajcsavar hossza',
       opts(['800', '80 cm'], ['1000', '100 cm'], ['1200', '120 cm'])),
-    num('foundation.frame.groundClearance', 'Talaj feletti magasság', 'cm'),
-    select('foundation.frame.beamSection', 'Főgerenda keresztmetszete',
-      opts(['b100x150', '100×150'], ['b120x120', '120×120'], ['b2x50x150', '2×50×150'])),
-    select('foundation.frame.supportSpacing', 'Támaszköz',
-      opts(['auto', 'Automatikus'], ...Array.from({ length: 18 }, (_, i): [string, string] =>
-        [String(800 + i * 100), `${80 + i * 10} cm`]))),
+    ...FRAME_FIELDS,
+  ] },
+  { id: 'padFooting', title: 'Pontalap és gerendakeret', fields: [...FOOTING_FIELDS, ...FRAME_FIELDS] },
+  { id: 'concretePier', title: 'Betonpillér és gerendakeret', fields: [
+    ...FOOTING_FIELDS,
+    select('foundation.pier.kind', 'Pillér',
+      opts(['block200', '20×20 cm zsalukő'], ['block250', '25×25 cm zsalukő'], ['tube200', 'Ø20 cm zsalucső'])),
+    ...FRAME_FIELDS,
   ] },
   { id: 'floor', title: 'Padló', fields: [
     check('floor.enabled', 'Padlószerkezet'),

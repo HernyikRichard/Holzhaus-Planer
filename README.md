@@ -21,7 +21,7 @@ A felület hét lépésre bomlik, amelyek között szabadon lehet ugrálni:
 | Lépés | Amit itt beállítasz |
 |---|---|
 | **1. Épület** | szélesség, hosszúság, falmagasság, tetőforma (lapos / félnyereg / nyereg) |
-| **2. Alap** | betonlemez vagy talajcsavar gerendakerettel; betonlemeznél vastagság, betonminőség, sóderágy, betonháló; opcionális fa padló (talajcsavarnál kötelező) |
+| **2. Alap** | betonlemez, talajcsavar, pontalap vagy betonpillér (az utóbbi három gerendakerettel); betonlemeznél vastagság, betonminőség, sóderágy, betonháló; pontalapnál és betonpillérnél talpméret, alapozási mélység, betonosztály, pillér; opcionális fa padló (gerendakeretes alapnál kötelező) |
 | **3. Falak** | oszlop-keresztmetszet és -kiosztás, koszorú, rétegrend (belső burkolat, párazáró, szigetelés, OSB, szélzáró, léc, külső burkolat) |
 | **4. Nyílászárók** | ajtók és ablakok mérete, helye, mellvédmagassága; húzással is mozgathatók |
 | **5. Tető** | dőlésszög, szarufa, túlnyúlások, deszkázat / OSB, alátétfólia, ellenléc, tetőléc, héjazat (cserép, trapézlemez, zsindely, EPDM, állókorcos alumíniumlemez), kiegészítők |
@@ -122,5 +122,6 @@ A számítás és a rajz **ugyanabból az elemlistából** dolgozik, ezért ami 
 - A program **nem végez statikai méretezést**. Ha a szarufa fesztávja a keresztmetszetéhez képest túl nagy, figyelmeztet, de a szerkezetet építés előtt **szakemberrel ellenőriztesd**.
 - A **tetőhajlást a héjazathoz** is ellenőrzi (cserép legalább 22°, zsindely 15°, trapézlemez 5°, állókorcos lemez 3°; az EPDM-nek nincs alsó határa): túl lapos tetőnél figyelmeztet, és megfelelő héjazatot ajánl. Lapostetőre váltáskor a cserép és a zsindely helyett automatikusan EPDM lesz.
 - A talajcsavaros alap **támasz- és fesztávtáblázata tájékoztató**, nem statikai méretezés; a talajcsavarok teherbírását és mélységét a talajviszonyok alapján ellenőriztesd.
+- A pontalap és a betonpillér **támaszköz- és talpméretei tájékoztatók**, nem statikai méretezés; a talp méretét és az alapozási mélységet a talajviszonyok és a fagyhatár alapján ellenőriztesd.
 - A mennyiségek **becslések** a megadott ráhagyásokkal. Rendelés előtt érdemes a tüzéppel egyeztetni a kapható méreteket.
-- Jelenleg csak **téglalap alaprajzú**, válaszfal nélküli épületet és **betonlemez** vagy **talajcsavar** alapozást kezel. Árakat nem számol.
+- Jelenleg csak **téglalap alaprajzú**, válaszfal nélküli épületet és **betonlemez**, **talajcsavar**, **pontalap** vagy **betonpillér** alapozást kezel. Árakat nem számol.

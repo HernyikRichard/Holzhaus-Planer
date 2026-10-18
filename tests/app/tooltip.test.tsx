@@ -125,3 +125,19 @@ test('a gerendakeret elemeinek buboréka (talajcsavar)', () => {
   const f = sc.fasteners.find(x => x.kind === 'beamBolt')!;
   expect(tooltipLines(sc, p, { fx: f.id })[3]).toBe('Elem: Főgerenda #1, Talajcsavar #1');
 });
+
+test('a támasz buboréka pontalapnál és betonpillérnél', () => {
+  const p = createDefaultPlan(); p.foundation.type = 'padFooting'; const sc = buildScene(p);
+  const s = tooltipLines(sc, p, { el: 'frame.support.1' });
+  expect(s[0]).toBe('Pontalap #1 · gerendakeret');
+  expect(s[1]).toBe('Talp 40×40 cm · 80 cm mélyen');
+  expect(s.join('\n')).toContain('M12 menetes szár');
+  const q = createDefaultPlan(); q.foundation.type = 'concretePier'; const qs = buildScene(q);
+  const t = tooltipLines(qs, q, { el: 'frame.support.1' });
+  expect(t[0]).toBe('Betonpillér #1 · gerendakeret');
+  expect(t[1]).toBe('Talp 40×40 cm · 80 cm mélyen · 25×25 cm-es zsalukő pillér');
+  q.foundation.pier.kind = 'tube200';
+  expect(tooltipLines(buildScene(q), q, { el: 'frame.support.1' })[1]).toBe('Talp 40×40 cm · 80 cm mélyen · Ø20 cm-es zsalucső pillér');
+  const f = sc.fasteners.find(x => x.kind === 'beamBolt')!;
+  expect(tooltipLines(sc, p, { fx: f.id })[3]).toBe('Elem: Főgerenda #1, Pontalap #1');
+});

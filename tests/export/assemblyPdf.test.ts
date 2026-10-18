@@ -92,9 +92,10 @@ beforeEach(async () => {
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-function setup(groundScrew = false) {
+function setup(groundScrew = false, type?: 'padFooting') {
   const plan = createDefaultPlan();
   if (groundScrew) plan.foundation.type = 'groundScrew';
+  if (type) { plan.foundation.type = type; plan.foundation.frame.groundClearance = 300; }
   const output = calculate(plan, supplyFor(plan));
   const scene = buildScene(plan, supplyFor(plan));
   const steps = buildAssembly(plan, scene, output);
@@ -128,6 +129,13 @@ test('groundScrew plan: supports and beam frame sections in the chapter', async 
   });
   expect(texts()).toContain('1. Támaszok');
   expect(texts()).toContain('2. Gerendakeret');
+});
+
+test('padFooting plan: Pontalapok section and its to-dos in the chapter', async () => {
+  const { plan, output, steps } = setup(false, 'padFooting');
+  await exportPdf(plan, output, OPTS);
+  expect(texts()).toContain('1. Pontalapok');
+  for (const todo of steps[0].todo) expect(texts().join(' ')).toContain(todo);
 });
 
 test('images added when snapshots available', async () => {

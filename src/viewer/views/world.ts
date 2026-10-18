@@ -1,5 +1,6 @@
 import type { Plan } from '../../model/types';
 import { roofGeometry } from '../../calc/geometry';
+import { hasFrame } from '../../calc/frame';
 import type { Element } from '../../scene/types';
 import type { ViewId } from '../layers';
 import type { Pt } from '../svgKit';
@@ -60,8 +61,8 @@ export function elementPoly(plan: Plan, view: ViewId, e: Element): Pt[] | null {
     return pts.every(p => p !== null) ? (pts as Pt[]) : null;
   }
   if (view === 'foundation') {
-    // talajcsavarnál a keret és a párnafák is az alapnézetben
-    const frame = e.group === 'frame' || (e.kind === 'joist' && plan.foundation.type === 'groundScrew');
+    // gerendakeretes alapnál a keret és a párnafák is az alapnézetben
+    const frame = e.group === 'frame' || (e.kind === 'joist' && hasFrame(plan));
     return e.group === 'foundation' || frame ? corners(e) : null;
   }
   return null;

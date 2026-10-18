@@ -1,6 +1,6 @@
 import type { Plan, WallSide } from '../../model/types';
 import { roofGeometry, wallGeometry, type WallGeom } from '../../calc/geometry';
-import { frameLayout } from '../../calc/frame';
+import { frameLayout, hasFrame } from '../../calc/frame';
 import type { Element } from '../../scene/types';
 import { cm, esc, fxCircle, n, type Pt } from '../svgKit';
 import { drawEl, drawOpening, fxRadius, layerG, type ViewCtx } from './common';
@@ -149,8 +149,8 @@ export function drawWall(ctx: ViewCtx, side: WallSide, withRoof = false): string
   const xs = [...outline, ...roof].map(p => p[0]);
   const xMin = Math.min(...xs);
   const xMax = Math.max(...xs);
-  // talajcsavarnál a fal alatt a keret halvány sávja (a fal a padló tetejéről áll), alatta a talajvonal
-  const band = plan.foundation.type === 'groundScrew' ? frameBand(ctx, C(0, 0)[0], C(A, 0)[0]) : null;
+  // gerendakeretes alapnál a fal alatt a keret halvány sávja (a fal a padló tetejéről áll), alatta a talajvonal
+  const band = hasFrame(plan) ? frameBand(ctx, C(0, 0)[0], C(A, 0)[0]) : null;
   if (band) context += band.svg;
   const geom = kit.snapshot();
   kit.scaleTo(geom);

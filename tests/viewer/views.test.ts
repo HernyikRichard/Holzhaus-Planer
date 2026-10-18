@@ -372,3 +372,128 @@ describe('talajcsavaros alap rajzai', () => {
     expect(scene.fasteners.filter(f => !fxs.has(f.id)).map(f => f.id)).toEqual([]);
   });
 });
+
+describe('pontalap és betonpillér rajzai', () => {
+  const mk = (type: 'padFooting' | 'concretePier', mut?: (q: Plan) => void): Plan => {
+    const q = createDefaultPlan(); q.foundation.type = type; mut?.(q); return q;
+  };
+  const g = (plan: Plan, v: ViewId, layers = all) => renderView({ plan, scene: buildScene(plan), view: v, layers, palette: SCREEN_PALETTE }).svg;
+  const pierCount = (s: string) => count(s, /data-pier="/g);
+
+  test('pontalap alapnézet: támaszonként talp, felirat, pillérjel nincs', () => {
+    const p1 = mk('padFooting'); const s1 = buildScene(p1);
+    const s = g(p1, 'foundation');
+    const supports = s1.elements.filter(e => e.kind === 'support').length;
+    expect(supports).toBe(12);
+    expect(count(s, /data-el="frame\.support\./g)).toBe(supports);
+    expect(s).toContain('Pontalap: 12 db 40×40 cm, 80 cm mélyen');
+    expect(s).not.toContain('Talajcsavar');
+    expect(pierCount(s)).toBe(0);
+    expect(count(s, /data-fx="/g)).toBe(s1.fasteners.filter(f => f.group === 'frame').length);
+  });
+  test('betonpillér alapnézet: pillérjel támaszonként, zsalukőnél négyzet, csőnél kör', () => {
+    const p1 = mk('concretePier');
+    const s = g(p1, 'foundation');
+    expect(count(s, /data-el="frame\.support\./g)).toBe(12);
+    expect(pierCount(s)).toBe(12);
+    expect(s).toContain('Betonpillér: 12 db 25×25 cm-es zsalukő pillér 40×40 cm-es talpon, 80 cm mélyen');
+    expect(count(s, /<rect [^>]*data-pier="block250"/g)).toBe(12);
+    const b2 = g(mk('concretePier', q => { q.foundation.pier.kind = 'block200'; }), 'foundation');
+    expect(b2).toContain('Betonpillér: 12 db 20×20 cm-es zsalukő pillér 40×40 cm-es talpon, 80 cm mélyen');
+    const t = g(mk('concretePier', q => { q.foundation.pier.kind = 'tube200'; q.foundation.footing = { size: 500, depth: 1000 }; }), 'foundation');
+    expect(pierCount(t)).toBe(12);
+    expect(count(t, /<circle [^>]*data-pier="tube200"/g)).toBe(12);
+    expect(t).toContain('Betonpillér: 12 db Ø20 cm-es zsalucső pillér 50×50 cm-es talpon, 100 cm mélyen');
+  });
+  test('a támasz geomja a talp négyzete a tengely körül', () => {
+    const p1 = mk('padFooting', q => { q.foundation.footing.size = 500; });
+    const gs = mk('padFooting', q => { q.foundation.type = 'groundScrew'; });
+    const a = buildScene(p1).elements.filter(e => e.kind === 'support');
+    const b = buildScene(gs).elements.filter(e => e.kind === 'support');
+    a.forEach((e, i) => {
+      expect(e.geom.w).toBe(500); expect(e.geom.h).toBe(500);
+      expect(e.geom.u + 250).toBeCloseTo(b[i].geom.u + b[i].geom.w / 2, 6);
+      expect(e.geom.v + 250).toBeCloseTo(b[i].geom.v + b[i].geom.h / 2, 6);
+      expect(e.label).toBe(`Pontalap #${i + 1}`);
+    });
+  });
+  test('metszet: talp a talaj alatt, mélység-méret; pillérnél pillér-réteg', () => {
+    for (const ridge of ['x', 'y'] as const) {
+      const pf = g(mk('padFooting', q => { q.roof.ridgeDirection = ridge; }), 'section');
+      expect(pf, ridge).toContain('data-layer="footing"');
+      expect(pf, ridge).toContain('>80 cm<');
+      expect(pf, ridge).toContain('>30 cm<');
+      expect(pf, ridge).toContain('data-layer="beam"');
+      expect(pf, ridge).not.toContain('data-layer="groundScrew"');
+      expect(pf, ridge).not.toContain('data-layer="pier"');
+      const cp = g(mk('concretePier', q => { q.roof.ridgeDirection = ridge; }), 'section');
+      expect(cp, ridge).toContain('data-layer="footing"');
+      expect(cp, ridge).toContain('data-layer="pier"');
+      expect(cp, ridge).toContain('>80 cm<');
+      expect(cp, ridge).not.toContain('data-layer="groundScrew"');
+    }
+  });
+  test('metszet: a talp-feliratok vezetővonalai nem metszik egymást', () => {
+    type Seg = [number, number, number, number];
+    const cross = (a: Seg, b: Seg): boolean => {
+      const d = (p: number, q: number, r: number, s: number, t: number, u: number): number => (r - p) * (u - q) - (s - q) * (t - p);
+      return d(a[0], a[1], a[2], a[3], b[0], b[1]) * d(a[0], a[1], a[2], a[3], b[2], b[3]) < 0
+        && d(b[0], b[1], b[2], b[3], a[0], a[1]) * d(b[0], b[1], b[2], b[3], a[2], a[3]) < 0;
+    };
+    for (const type of ['padFooting', 'concretePier'] as const) {
+      for (const ridge of ['x', 'y'] as const) {
+        const s = g(mk(type, q => { q.roof.ridgeDirection = ridge; }), 'section');
+        const names = ['Padló', 'Főgerenda', type === 'padFooting' ? 'oszloptalp' : 'pillér', 'Betontalp'];
+        const leaders = names.map((n): Seg => {
+          const m = new RegExp(String.raw`<line x1="([-\d.]+)" y1="([-\d.]+)" x2="([-\d.]+)" y2="([-\d.]+)"[^>]*/>\s*<text[^>]*>[^<]*${n}`).exec(s);
+          expect(m, `${type} ${ridge} ${n}`).not.toBeNull();
+          return [+m![1], +m![2], +m![3], +m![4]];
+        });
+        // a feliratok fentről lefelé a szerkezet sorrendjében állnak (a címke-y nő lefelé)
+        for (let i = 1; i < leaders.length; i++) expect(leaders[i][3], `${type} ${ridge} sorrend`).toBeGreaterThan(leaders[i - 1][3]);
+        for (let i = 0; i < leaders.length; i++) for (let j = i + 1; j < leaders.length; j++) expect(cross(leaders[i], leaders[j]), `${type} ${ridge} ${names[i]}/${names[j]}`).toBe(false);
+      }
+    }
+  });
+  test('metszet: a talajsraffozás nem látszik át a talpon, csavarnál változatlan', () => {
+    const pf = mk('padFooting'); const gs = mk('padFooting', q => { q.foundation.type = 'groundScrew'; });
+    const hatchLines = (plan: Plan): number => {
+      const d = new DOMParser().parseFromString(g(plan, 'section'), 'image/svg+xml');
+      return d.querySelectorAll('g[data-layer="ground"] line').length;
+    };
+    expect(hatchLines(pf)).toBeLessThan(hatchLines(gs));
+  });
+  test('metszet: a talajsáv a talp alja alá ér, nem a csavarhosszig', () => {
+    const q = mk('padFooting', x => { x.foundation.footing.depth = 1200; x.foundation.groundScrew.length = 1000; });
+    const s = g(q, 'section');
+    expect(s).toContain('>120 cm<');
+    const doc = new DOMParser().parseFromString(renderStandalone({ plan: q, scene: buildScene(q), view: 'section', layers: all, palette: PRINT_PALETTE }), 'image/svg+xml');
+    const band = doc.querySelector('g[data-layer="ground"] rect')!;
+    const bottom = Number(band.getAttribute('y')) + Number(band.getAttribute('height'));
+    expect(bottom).toBeGreaterThan(1200);
+  });
+  test('minden nézet jól formált és véges (pontalap, betonpillér; mindkét gerincirány, minden pillérfajta)', () => {
+    const plans: Plan[] = [];
+    for (const ridge of ['x', 'y'] as const) {
+      plans.push(mk('padFooting', q => { q.roof.ridgeDirection = ridge; }));
+      for (const kind of ['block200', 'block250', 'tube200'] as const) {
+        plans.push(mk('concretePier', q => { q.roof.ridgeDirection = ridge; q.foundation.pier.kind = kind; }));
+      }
+    }
+    for (const q of plans) {
+      const qs = buildScene(q);
+      for (const v of VIEWS) {
+        const s = renderStandalone({ plan: q, scene: qs, view: v, layers: all, palette: PRINT_PALETTE });
+        expect(new DOMParser().parseFromString(s, 'image/svg+xml').querySelector('parsererror'), v).toBeNull();
+        expect(s, v).not.toMatch(/NaN|Infinity/);
+      }
+    }
+  });
+  test('minden jelenetelem és rögzítés látszik valamelyik nézetben (pontalap, betonpillér)', () => {
+    for (const type of ['padFooting', 'concretePier'] as const) {
+      const { els, fxs, scene } = drawnIds(mk(type));
+      expect(scene.elements.filter(e => !els.has(e.id)).map(e => e.id)).toEqual([]);
+      expect(scene.fasteners.filter(f => !fxs.has(f.id)).map(f => f.id)).toEqual([]);
+    }
+  });
+});

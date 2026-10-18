@@ -32,6 +32,18 @@ export const BEAM_BOLTS_PER_SUPPORT = 2;
 export const JOIST_HANGER_SCREWS = 8;
 export const GROUND_SCREW_LABEL = (d: Mm, len: Mm): string => `Talajcsavar Ø${d} × ${len / 10} cm`;
 
+// Pontalap és betonpillér (vasalás, zsalukő, zsalucső)
+export const REBAR_COVER: Mm = 50; // betontakarás
+export const STIRRUP_SPACING: Mm = 200; // kengyeltávolság
+export const REBAR_BAR_LENGTH: Mm = 6000; // betonacél szálhossza
+export const REBAR_KG_PER_M = { d10: 0.617, d6: 0.222 }; // folyóméter-tömeg (kg/m)
+export const LONG_BARS_PER_SUPPORT = 4; // Ø10 hosszvas támaszonként
+export const PIER_ROW_H: Mm = 250; // zsalukő-sor magassága
+export const PIER_FILL_M3_PER_ROW = { block200: 0.0042, block250: 0.0072 }; // kitöltő beton soronként (m³)
+export const PIER_TUBE_D: Mm = 200; // zsalucső átmérője
+export const PIER_TUBE_EMBED: Mm = 100; // a zsalucső beágyazása a talpba
+export const CURE_DAYS = 7; // kötési idő terhelés előtt (nap)
+
 // Lemezek
 export const OSB_SHEET = { w: 1250, l: 2500 };
 export const OSB_TG_SHEET = { w: 675, l: 2500 };

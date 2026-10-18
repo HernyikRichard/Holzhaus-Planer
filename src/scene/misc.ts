@@ -2,12 +2,13 @@ import type { Plan } from '../model/types';
 import { FASCIA_SECTION, MESH_SHEET } from '../catalog';
 import { meshLayout } from '../calc/foundation';
 import { roofGeometry } from '../calc/geometry';
+import { hasFrame } from '../calc/frame';
 import { frameElements } from './frame';
 import type { Element, ElementKind, Geom } from './types';
 
 /** Padló párnafák: alaprajzi koordináták (u = x, v = y). */
 export function floorElements(plan: Plan): Element[] {
-  if (plan.foundation.type === 'groundScrew') return frameElements(plan).elements.filter(e => e.kind === 'joist');
+  if (hasFrame(plan)) return frameElements(plan).elements.filter(e => e.kind === 'joist');
   const fl = plan.floor;
   if (!fl.enabled) return [];
   const wall = plan.walls.studSection.w;
@@ -28,7 +29,7 @@ export function floorElements(plan: Plan): Element[] {
 
 /** Betonháló táblák a `meshLayout` szerint (alaprajzi koordináták, a lemez sarkától). */
 export function foundationElements(plan: Plan): Element[] {
-  if (plan.foundation.type === 'groundScrew') return [];
+  if (hasFrame(plan)) return [];
   const lay = meshLayout(plan);
   const ov = plan.foundation.slabOverhang;
   const slabX = plan.building.width + 2 * ov;

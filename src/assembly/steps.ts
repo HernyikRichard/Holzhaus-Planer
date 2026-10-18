@@ -5,9 +5,10 @@ import { wallGeometry } from '../calc/geometry';
 import { wallBattenPieces } from '../calc/walls';
 import { elementsToPieces } from '../scene/toPieces';
 import type { CutRef, Element, FastenerKind, Scene } from '../scene/types';
-import { floorOn } from '../calc/frame';
+import { floorOn, hasFrame } from '../calc/frame';
 import { DECKING_REQUIRED, FRAME_ANCHOR_LABEL, HURRICANE_TIE_LABEL } from '../catalog';
 import { formatQty, sectionLabelWithUnit } from '../ui/format';
+import { supportSpec } from '../calc/supports';
 import { stepTodo } from './todo';
 
 export type AssemblyStepId = 'foundation' | 'supports' | 'beamFrame' | 'floor' | 'wall.N' | 'wall.E' | 'wall.S' | 'wall.W' | 'wallTop'
@@ -119,6 +120,7 @@ export function stepIdOfLine(line: Pick<MaterialLine, 'id'>, plan?: Plan): Assem
     return LAST;
   }
   if (s === null || !plan) return s;
+  if (s === 'foundation' && hasFrame(plan)) return 'supports';
   if (s.startsWith('wall.')) return wallOrder(plan)[0];
   if (line.id === 'fix.osbScrews') return osbScrewStep(plan);
   return s;
@@ -210,7 +212,7 @@ export function buildAssembly(plan: Plan, scene: Scene, calc: CalcOutput): Assem
       : f.kind === 'hurricaneTie' ? 'roofFrame'
         : stepOf.get(f.elementIds[0]) ?? wallStep(f.group);
     const m = fx.get(s) ?? fx.set(s, new Map()).get(s)!;
-    const cur = m.get(f.kind) ?? { kind: f.kind, label: f.kind === 'anchor' && plan.foundation.type === 'groundScrew' ? FRAME_ANCHOR_LABEL : FASTENER_LABELS[f.kind], count: 0, elementIds: [] };
+    const cur = m.get(f.kind) ?? { kind: f.kind, label: f.kind === 'anchor' && hasFrame(plan) ? FRAME_ANCHOR_LABEL : FASTENER_LABELS[f.kind], count: 0, elementIds: [] };
     cur.count += f.count;
     for (const id of f.elementIds) if (!cur.elementIds.includes(id)) cur.elementIds.push(id);
     m.set(f.kind, cur);
@@ -229,7 +231,7 @@ export function buildAssembly(plan: Plan, scene: Scene, calc: CalcOutput): Assem
   for (const id of order) {
     const pieces = [...elementsToPieces(els.get(id)!), ...(id === 'exterior' ? battens : [])];
     const step: AssemblyStep = {
-      id, index: 0, title: ASSEMBLY_TITLES[id],
+      id, index: 0, title: id === 'supports' && hasFrame(plan) ? supportSpec(plan).stepTitle : ASSEMBLY_TITLES[id],
       elementIds: els.get(id)!.map(e => e.id),
       lines: lines.get(id)!,
       pieces: mergePieces(pieces, scene),

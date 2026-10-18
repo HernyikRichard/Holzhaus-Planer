@@ -2,10 +2,11 @@ import type { Plan } from '../model/types';
 import type { MaterialLine, ModuleResult } from './types';
 import {
   BED_COMPACTION, CEMENT_BAG_KG, CEMENT_KG_PER_M3, FORMWORK_EXTRA, GRAVEL_LOOSE_T_PER_M3,
-  GRAVEL_T_PER_M3, GROUND_SCREW_LABEL, JOIST_HANGER_SCREWS, MESH_SHEET, MESH_TYPES, PE_ROLL_M2, STAKE_SPACING, WATER_L_PER_M3,
+  GRAVEL_T_PER_M3, JOIST_HANGER_SCREWS, MESH_SHEET, MESH_TYPES, PE_ROLL_M2, STAKE_SPACING, WATER_L_PER_M3,
 } from '../catalog';
 import { ceilTo, emptyResult, hu } from './util';
-import { frameLayout } from './frame';
+import { concreteLines, supportSpec } from './supports';
+import { frameLayout, hasFrame } from './frame';
 import { frameElements } from '../scene/frame';
 import { elementsToPieces } from '../scene/toPieces';
 
@@ -23,8 +24,11 @@ export function meshLayout(plan: Plan): MeshLayout {
   return upright.cols * upright.rows <= rotated.cols * rotated.rows ? upright : rotated;
 }
 
-/** Talajcsavaros alap: talajcsavarok, U-fejek, menetes szárak, gerendasarúk és a főgerendák darabjai. */
-function calcGroundScrew(plan: Plan): ModuleResult {
+/**
+ * Gerendakeretes alap: menetes szárak, gerendasaruk és a főgerendák darabjai; talajcsavarnál előttük a
+ * talajcsavarok és az U-fejek. (A pontalap és a betonpillér támasz-anyaga külön jön.)
+ */
+function calcFrameFoundation(plan: Plan): ModuleResult {
   const res = emptyResult();
   const f = frameLayout(plan);
   const { elements, fasteners } = frameElements(plan);
@@ -32,18 +36,10 @@ function calcGroundScrew(plan: Plan): ModuleResult {
   const sum = (kind: string): number => fasteners.filter(x => x.kind === kind).reduce((s, x) => s + x.count, 0);
   const bolts = sum('beamBolt');
   const hangers = sum('joistHanger');
-  const gs = plan.foundation.groundScrew;
   const add = (l: Omit<MaterialLine, 'category' | 'unit'>): void => {
     res.lines.push({ category: 'Alap', unit: 'db', ...l });
   };
-  add({
-    id: 'foundation.groundScrew', name: GROUND_SCREW_LABEL(gs.diameter, gs.length), quantity: supports,
-    explanation: `${f.beamAxes.length} főgerenda × ${f.supportAxes.length} támasz = ${supports} db`,
-  });
-  add({
-    id: 'foundation.screwHead', name: `Állítható U-fej ${f.beam.width} mm-es gerendához`, quantity: supports,
-    explanation: `támaszonként 1 db = ${supports} db`,
-  });
+  res.lines.push(...supportSpec(plan).lines(plan, f));
   add({
     id: 'foundation.beamBolts', name: 'M12 menetes szár anyával, alátéttel', quantity: bolts,
     explanation: `${supports} támasz × ${bolts / Math.max(1, supports)} db = ${bolts} db`,
@@ -59,7 +55,7 @@ function calcGroundScrew(plan: Plan): ModuleResult {
 }
 
 export function calcFoundation(plan: Plan): ModuleResult {
-  if (plan.foundation.type === 'groundScrew') return calcGroundScrew(plan);
+  if (hasFrame(plan)) return calcFrameFoundation(plan);
   const res = emptyResult();
   const f = plan.foundation;
   const slabX = plan.building.width + 2 * f.slabOverhang;
@@ -72,39 +68,8 @@ export function calcFoundation(plan: Plan): ModuleResult {
     res.lines.push({ category: 'Alap', ...l });
   };
 
-  add({
-    id: 'foundation.concrete', name: 'Beton', quantity: ceilTo(vol, 0.01), unit: 'm³',
-    explanation: `${dims}; ${hu(area)} m² × ${hu(t, 3)} m = ${hu(vol, 4)} m³ → ${hu(ceilTo(vol, 0.01))} m³`,
-  });
-
-  const kgPerM3 = CEMENT_KG_PER_M3[f.concreteGrade];
-  const cementRaw = vol * kgPerM3;
-  const cementKg = Math.ceil(cementRaw - 1e-9);
-  const bags = Math.ceil(cementKg / CEMENT_BAG_KG - 1e-9);
-  add({
-    id: 'foundation.cement', name: `Cement (${f.concreteGrade})`, quantity: cementKg, unit: 'kg',
-    secondary: `${bags} zsák (${CEMENT_BAG_KG} kg)`,
-    explanation: `${hu(area)} m² × ${hu(t, 3)} m = ${hu(vol, 4)} m³ beton × ${kgPerM3} kg/m³ = ${hu(cementRaw)} kg → ${cementKg} kg`,
-  });
-  add({
-    id: 'foundation.cementBags', name: `Cement zsák (${CEMENT_BAG_KG} kg)`, quantity: bags, unit: 'zsák',
-    explanation: `${cementKg} kg / ${CEMENT_BAG_KG} kg = ${hu(cementKg / CEMENT_BAG_KG)} → ${bags} zsák`,
-  });
-
-  const gravelT = vol * GRAVEL_T_PER_M3;
-  const gravelLoose = gravelT / GRAVEL_LOOSE_T_PER_M3;
-  add({
-    id: 'foundation.gravel', name: 'Betonsóder 0/16', quantity: ceilTo(gravelT, 0.01), unit: 't',
-    secondary: `${hu(ceilTo(gravelLoose, 0.01))} m³ laza`,
-    explanation: `${hu(vol, 4)} m³ beton × ${hu(GRAVEL_T_PER_M3)} t/m³ = ${hu(gravelT, 3)} t → ${hu(ceilTo(gravelT, 0.01))} t; laza térfogat: ${hu(gravelT, 3)} t / ${hu(GRAVEL_LOOSE_T_PER_M3)} t/m³ = ${hu(gravelLoose, 3)} m³`,
-  });
-
-  const waterRaw = vol * WATER_L_PER_M3;
-  const water = Math.ceil(waterRaw - 1e-9);
-  add({
-    id: 'foundation.water', name: 'Víz (tájékoztató)', quantity: water, unit: 'l',
-    explanation: `${hu(vol, 4)} m³ × ${WATER_L_PER_M3} l/m³ = ${hu(waterRaw)} l → ${water} l`,
-  });
+  const volSrc = `${hu(area)} m² × ${hu(t, 3)} m = ${hu(vol, 4)} m³`;
+  res.lines.push(...concreteLines(plan, vol, `${dims}; ${volSrc}`, volSrc));
 
   const mesh = MESH_TYPES[f.meshType];
   const layout = meshLayout(plan);

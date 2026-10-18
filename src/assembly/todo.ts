@@ -1,9 +1,11 @@
 import type { Mm, Opening, Plan, WallSide } from '../model/types';
-import { frameLayout } from '../calc/frame';
+import { frameLayout, hasFrame } from '../calc/frame';
+import { supportQuantities } from '../calc/supports';
+import { ceilTo } from '../calc/util';
 import { beamSegments } from '../scene/frame';
 import { studPositions, wallGeometry } from '../calc/geometry';
 import {
-  BATTEN_GAUGE, BEAM_BOLTS_PER_SUPPORT, BEAM_SECTIONS, BATTEN_SPACING_WALL, EPDM_UPTURN, MESH_SHEET, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
+  BATTEN_GAUGE, BEAM_BOLTS_PER_SUPPORT, BEAM_SECTIONS, BATTEN_SPACING_WALL, CURE_DAYS, EPDM_UPTURN, LONG_BARS_PER_SUPPORT, MESH_SHEET, PIER_ROW_H, PIER_TUBE_D, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
 } from '../catalog';
 import type { Element, ElementKind, FastenerKind, Scene } from '../scene/types';
 import { formatCm, formatCmNum, formatQty } from '../ui/format';
@@ -98,13 +100,36 @@ function foundation(c: Ctx): string[] {
 
 function supports(c: Ctx): string[] {
   const f = frameLayout(c.plan);
-  const { groundScrew, frame } = c.plan.foundation;
-  const n = count(c, 'support');
-  return [
-    `Tűzd ki a ${n} csavar helyét: ${f.beamAxes.length} sor ${formatCm(f.joistSpan)}-es sorközzel, soronként ${f.supportAxes.length} csavar a sarokponttól ${positions(f.supportAxes)}-re.`,
-    `Hajtsd be a csavarokat ${formatCm(groundScrew.length)} mélyre, függőlegesen; a fejük ${formatCm(frame.groundClearance)}-re legyen a talaj fölött.`,
-    'Szintezd ki az U-fejeket egy magasságra (lézer vagy vízmérték).',
+  const { groundScrew, frame, footing, pier, type } = c.plan.foundation;
+  if (type === 'groundScrew') {
+    const n = count(c, 'support');
+    return [
+      `Tűzd ki a ${n} csavar helyét: ${f.beamAxes.length} sor ${formatCm(f.joistSpan)}-es sorközzel, soronként ${f.supportAxes.length} csavar a sarokponttól ${positions(f.supportAxes)}-re.`,
+      `Hajtsd be a csavarokat ${formatCm(groundScrew.length)} mélyre, függőlegesen; a fejük ${formatCm(frame.groundClearance)}-re legyen a talaj fölött.`,
+      'Szintezd ki az U-fejeket egy magasságra (lézer vagy vízmérték).',
+    ];
+  }
+  const q = supportQuantities(c.plan);
+  const noun = type === 'padFooting' ? 'pontalap' : 'betonpillér';
+  const gc = formatCm(frame.groundClearance);
+  const footSize = `${formatCmNum(footing.size)}×${formatCm(footing.size)}`;
+  const concrete = line(c, 'foundation.concrete');
+  const fill = concrete ? ` (${formatQty(ceilTo(q.concreteM3 - q.footingM3, 0.01))} m³)` : '';
+  const each = type === 'padFooting' ? 'talponként' : 'támaszonként';
+  const out = [
+    `Tűzd ki a ${q.count} ${noun} helyét: ${f.beamAxes.length} sor ${formatCm(f.joistSpan)}-es sorközzel, soronként ${f.supportAxes.length} ${noun} a sarokponttól ${positions(f.supportAxes)}-re.`,
+    `Ásd ki a ${q.count} gödröt ${footSize}-re, ${formatCm(footing.depth)} mélyre.`,
+    `Helyezd be a vasalást (${each} ${LONG_BARS_PER_SUPPORT} db Ø10 hosszvas, ${q.stirrupsPerSupport} db Ø6 kengyel), és öntsd ki betonnal${concrete ? ` (${formatQty(ceilTo(q.footingM3, 0.01))} m³)` : ''}.`,
   ];
+  if (type === 'padFooting') {
+    out.push(`Ágyazd be az oszloptalpakat egy szintre, a fejük ${gc}-re legyen a talaj fölött (zsinór vagy lézer).`);
+  } else if (pier.kind === 'tube200') {
+    out.push(`Állítsd be a Ø${PIER_TUBE_D / 10} cm-es zsalucső pilléreket ${gc} magasra, vasald és töltsd ki betonnal${fill}; a tetejükre csavarozd fel a gerendapapucsokat.`);
+  } else {
+    out.push(`Falazd fel a pilléreket ${q.pierRows} sor ${pier.kind === 'block200' ? 20 : 25} cm-es zsalukőből ${gc} magasra${frame.groundClearance % PIER_ROW_H !== 0 ? ' (a felső követ méretre vágva)' : ''}, vasald és töltsd ki betonnal${fill}; a tetejükre csavarozd fel a gerendapapucsokat.`);
+  }
+  out.push(`Hagyd szilárdulni legalább ${CURE_DAYS} napig, mielőtt terheled.`);
+  return out;
 }
 
 function beamFrame(c: Ctx): string[] {
@@ -122,7 +147,7 @@ function floor(c: Ctx): string[] {
   const fl = c.plan.floor;
   const out: string[] = [];
   const joists = c.els.filter(e => e.kind === 'joist').sort((a, b) => a.geom.u - b.geom.u);
-  if (c.plan.foundation.type === 'groundScrew' && joists.length) {
+  if (hasFrame(c.plan) && joists.length) {
     out.push(`Fektesd ${az(joists.length)} párnafát ${formatCm(fl.joistSpacing)}-es kiosztással a főgerendákra, a két szélső párnafa a peremgerenda, a rövid falak alatt fut.`);
     out.push(`Rögzítsd minden kereszteződést gerendasaruval (${fasteners(c, 'joistHanger')} db).`);
   } else if (joists.length) {
@@ -161,8 +186,8 @@ function wall(c: Ctx, side: WallSide): string[] {
   }
   const anchors = fasteners(c, 'anchor');
   const full = w.full ? '' : ' a futó falak közé, csavarozd a sarkokhoz';
-  // talajcsavarnál a talpgerenda nem betonba, hanem a padlón át a gerendakeretbe rögzül
-  const how = c.plan.foundation.type === 'groundScrew' ? 'csavarral a padlón át a gerendakeretbe' : 'ászokcsavarral';
+  // gerendakeretes alapnál a talpgerenda nem betonba, hanem a padlón át a gerendakeretbe rögzül
+  const how = hasFrame(c.plan) ? 'csavarral a padlón át a gerendakeretbe' : 'ászokcsavarral';
   out.push(`Állítsd fel${full}, függőzd ki, ${anchors ? `rögzítsd ${anchors} db ${how}` : 'rögzítsd a talpgerendát az alaphoz'}.`);
   return out;
 }

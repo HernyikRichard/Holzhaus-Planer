@@ -1,12 +1,14 @@
 import { FORMWORK_EXTRA, MESH_SHEET } from '../../catalog';
 import { meshLayout } from '../../calc/foundation';
-import { frameLayout, framePt } from '../../calc/frame';
+import { frameLayout, framePt, hasFrame } from '../../calc/frame';
+import { pierDesc, pierWidth } from '../../calc/supports';
 import { cm, elGroup, fxCircle, n, type Pt } from '../svgKit';
 import { drawEl, elStyle, fxRadius, layerG, type ViewCtx } from './common';
 
 const FORMWORK_BOARD = 25; // zsaluzódeszka vastagsága a rajzon (mm)
+const POST_BASE_W = 100;   // az oszloptalp jele a pontalapon (mm)
 
-/** Talajcsavaros alap felülről: főgerendák, párnafák, támaszok, rögzítési pontok és a támaszrács méretei. */
+/** Gerendakeretes alap felülről: főgerendák, párnafák, támaszok, rögzítési pontok és a támaszrács méretei. */
 function drawFrameFoundation(ctx: ViewCtx): string {
   const { plan, scene, kit } = ctx;
   const { width: W, length: L } = plan.building;
@@ -25,9 +27,26 @@ function drawFrameFoundation(ctx: ViewCtx): string {
       frame += elGroup(e.id, e.kind, kit.rect(e.geom.u, e.geom.v, e.geom.w, e.geom.h, `${kit.fill('lineMuted', 0.08)} ${kit.stroke('lineMuted', 0.6)}`));
     }
     for (const e of scene.elements.filter(x => x.kind === 'beam')) frame += drawEl(kit, e, p => p);
-    const rs = Math.max(gs.diameter / 2, fs * 0.45);
-    for (const e of scene.elements.filter(x => x.kind === 'support')) {
-      frame += elGroup(e.id, e.kind, kit.circle(e.geom.u + e.geom.w / 2, e.geom.v + e.geom.h / 2, rs, elStyle(kit, e.kind)));
+    const supports = scene.elements.filter(x => x.kind === 'support');
+    if (plan.foundation.type === 'groundScrew') {
+      const rs = Math.max(gs.diameter / 2, fs * 0.45);
+      for (const e of supports) {
+        frame += elGroup(e.id, e.kind, kit.circle(e.geom.u + e.geom.w / 2, e.geom.v + e.geom.h / 2, rs, elStyle(kit, e.kind)));
+      }
+    } else {
+      // talp: szaggatott négyzet (a geom); rajta a pillér (teli négyzet / kör) vagy az oszloptalp (kis teli négyzet)
+      const pier = plan.foundation.type === 'concretePier' ? plan.foundation.pier.kind : null;
+      const pw = pier ? pierWidth(pier) : Math.max(POST_BASE_W, fs * 0.9);
+      const solid = `${kit.fill('concrete', 0.85)} ${kit.stroke('line', 1.2)}`;
+      for (const e of supports) {
+        const cx = e.geom.u + e.geom.w / 2;
+        const cy = e.geom.v + e.geom.h / 2;
+        let body = kit.rect(e.geom.u, e.geom.v, e.geom.w, e.geom.h, `fill="none" ${kit.stroke('line', 1, [6, 4])}`);
+        if (pier === 'tube200') body += kit.circle(cx, cy, pw / 2, `${solid} data-pier="${pier}"`);
+        else if (pier) body += kit.rect(cx - pw / 2, cy - pw / 2, pw, pw, `${solid} data-pier="${pier}"`);
+        else body += kit.rect(cx - pw / 2, cy - pw / 2, pw, pw, elStyle(kit, e.kind));
+        frame += elGroup(e.id, e.kind, body);
+      }
     }
   }
 
@@ -56,17 +75,27 @@ function drawFrameFoundation(ctx: ViewCtx): string {
     const rOut = out(rows[0], rows[rows.length - 1], P(-1, 0));
     dims += kit.chain(rows, rOut * row);
     dims += kit.dim(...rows[0], ...rows[rows.length - 1], rOut * row * 2, cm(f.W));
-    const n = f.beamAxes.length * f.supportAxes.length;
-    dims += kit.text(0, -row * 2 - fs * 2.6,
-      `Talajcsavar: ${n} db Ø${gs.diameter} × ${cm(gs.length)}, fej ${cm(plan.foundation.frame.groundClearance)}-rel a talaj fölött`,
-      { anchor: 'start' });
+    if (plan.foundation.type === 'groundScrew') {
+      const n = f.beamAxes.length * f.supportAxes.length;
+      dims += kit.text(0, -row * 2 - fs * 2.6,
+        `Talajcsavar: ${n} db Ø${gs.diameter} × ${cm(gs.length)}, fej ${cm(plan.foundation.frame.groundClearance)}-rel a talaj fölött`,
+        { anchor: 'start' });
+    } else {
+      const n = f.beamAxes.length * f.supportAxes.length;
+      const { size, depth } = plan.foundation.footing;
+      const foot = `${size / 10}×${size / 10} cm`;
+      const text = plan.foundation.type === 'concretePier'
+        ? `Betonpillér: ${n} db ${pierDesc(plan.foundation.pier.kind)} ${foot}-es talpon, ${cm(depth)} mélyen`
+        : `Pontalap: ${n} db ${foot}, ${cm(depth)} mélyen`;
+      dims += kit.text(0, -row * 2 - fs * 2.6, text, { anchor: 'start' });
+    }
   }
   return layerG('frame', frame) + layerG('fasteners', fx) + outline + layerG('dims', dims + kit.takeLabels());
 }
 
-/** Alapnézet alaprajzi koordinátákban (0,0 = az épület sarka): zsaluzás, lemez, hálótáblák; talajcsavarnál a keret. */
+/** Alapnézet alaprajzi koordinátákban (0,0 = az épület sarka): zsaluzás, lemez, hálótáblák; gerendakeretes alapnál a keret. */
 export function drawFoundation(ctx: ViewCtx): string {
-  if (ctx.plan.foundation.type === 'groundScrew') return drawFrameFoundation(ctx);
+  if (hasFrame(ctx.plan)) return drawFrameFoundation(ctx);
   const { plan, scene, kit } = ctx;
   const so = plan.foundation.slabOverhang;
   const { width: W, length: L } = plan.building;

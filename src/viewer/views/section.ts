@@ -1,8 +1,10 @@
 import type { Plan, RoofCovering, RoofLayerKind, WallLayerKind } from '../../model/types';
 import {
-  BEAM_SECTIONS, COUNTER_BATTEN_SECTION, DECKING_REQUIRED, GROUND_SCREW_LABEL, ROOF_BATTEN_SECTION, SCREW_HEAD_H,
+  BEAM_SECTIONS, COUNTER_BATTEN_SECTION, DECKING_REQUIRED, GROUND_SCREW_LABEL, PIER_ROW_H, REBAR_COVER, ROOF_BATTEN_SECTION,
+  SCREW_HEAD_H,
 } from '../../catalog';
-import { frameLayout } from '../../calc/frame';
+import { frameLayout, hasFrame } from '../../calc/frame';
+import { pierDesc, pierWidth } from '../../calc/supports';
 import { COVERING_T, DECKING_T, FOIL_T, floorTopZ, layerThickness, wallLayerStrips } from '../../scene/layerStack';
 import { cm, type Kit, type Pt } from '../svgKit';
 import { layerG, type ViewCtx } from './common';
@@ -37,11 +39,60 @@ function placeLabels(kit: Kit, items: Label[], labelX: number, anchor: 'start' |
 }
 
 type Box = (x0: number, x1: number, z0: number, z1: number, fill: string) => string;
-interface FrameSection { svg: string; so: number; bottom: number; beamBottom: number; axes: number[] }
+interface FrameSection { svg: string; so: number; bottom: number; beamBottom: number; axes: number[]; footingDepth: number | null }
 
 const GROUND_MARGIN = 300; // a talajsáv túlnyúlása a ház két oldalán (mm)
 const HATCH = 150;         // a talaj sraffozásának mélysége és lépésköze (mm)
 const HEAD_PLATE = 8;      // az U-fej talplemeze (mm)
+const POST_ROD = 40;       // az oszloptalp menetes szára a rajzon (mm)
+const POST_EMBED = 150;    // az oszloptalp beágyazása a talpba (mm)
+const BRACKET_T = 10;      // a gerendapapucs talplemeze (mm), a 3D-vel egyezően
+
+/**
+ * Pontalap / betonpillér a metszetben: a talp a talaj alatt (beton, a hosszvasak szaggatottan), fölötte az oszloptalp
+ * U-fejjel, ill. a pillér (zsalukőnél a sorhatárokkal) és a gerendapapucs.
+ */
+function concreteSupports(ctx: ViewCtx, axes: number[], lengthwise: boolean, box: Box, labels: Label[]): string {
+  const { plan, kit } = ctx;
+  const fl = frameLayout(plan);
+  const bb = fl.z.beamBottom;
+  const { size, depth } = plan.foundation.footing;
+  const pier = plan.foundation.type === 'concretePier' ? plan.foundation.pier.kind : null;
+  const concrete = kit.fill('concrete', 0.75);
+  const metal = kit.fill('lineMuted', 0.6);
+  const plate = lengthwise ? (pier ? pierWidth(pier) : 120) : fl.beam.width + 12;
+  const flange = Math.min(100, fl.beam.height * 0.6);
+  const ears = (x: number): string => (lengthwise ? ''
+    : box(x - plate / 2, x - plate / 2 + 6, bb, bb + flange, metal) + box(x + plate / 2 - 6, x + plate / 2, bb, bb + flange, metal));
+
+  let footing = '';
+  let top = '';
+  let rebar = '';
+  const pw = pier ? pierWidth(pier) : 0;
+  // a hosszvasak a vasalt keresztmetszet sarkaiban (zsalucsőnél a beírt négyzetben), takarással
+  const barHalf = (pier === 'tube200' ? pw / Math.SQRT2 : pier ? pw : size) / 2 - REBAR_COVER;
+  const barTop = pier ? bb - REBAR_COVER : -REBAR_COVER;
+  for (const x of axes) {
+    footing += box(x - size / 2, x + size / 2, -depth, 0, concrete);
+    for (const bx of [x - barHalf, x + barHalf]) rebar += kit.line(bx, depth - REBAR_COVER, bx, -barTop, kit.stroke('line', 0.8, [6, 4]));
+    if (pier) {
+      top += box(x - pw / 2, x + pw / 2, 0, bb - BRACKET_T, concrete);
+      if (pier !== 'tube200') {
+        for (let z = PIER_ROW_H; z < bb - BRACKET_T; z += PIER_ROW_H) top += kit.line(x - pw / 2, -z, x + pw / 2, -z, kit.stroke('line', 0.6));
+      }
+      top += box(x - plate / 2, x + plate / 2, bb - BRACKET_T, bb, metal) + ears(x);
+    } else {
+      top += box(x - POST_ROD / 2, x + POST_ROD / 2, -POST_EMBED, bb - HEAD_PLATE, metal);
+      top += box(x - plate / 2, x + plate / 2, bb - HEAD_PLATE, bb, metal) + ears(x);
+    }
+  }
+  // fentről lefelé, a szerkezet sorrendjében: pillér / oszloptalp, majd a talp
+  labels.push({ ax: axes[0], az: bb / 2, text: pier ? `${pierDesc(pier)}, gerendapapucs` : 'Állítható oszloptalp U-fejjel' });
+  labels.push({ ax: axes[0], az: -depth / 2, text: `Betontalp ${size / 10}×${size / 10} cm` });
+  return `<g data-layer="footing">${footing}</g>`
+    + `<g data-layer="${pier ? 'pier' : 'postBase'}">${top}</g>`
+    + `<g data-layer="rebar">${rebar}</g>`;
+}
 
 /**
  * Talajcsavaros alap a metszetben (x: 0…S a metszet mentén, z: a talajtól felfelé). Ha a metszet a főgerendákra merőleges,
@@ -55,13 +106,18 @@ function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): Frame
   const lengthwise = (plan.roof.ridgeDirection === 'x' ? 'y' : 'x') === fl.along;
   const axes = lengthwise ? fl.supportAxes : fl.beamAxes;
   const so = GROUND_MARGIN;
-  const bottom = -len - HATCH;
+  const screw = plan.foundation.type === 'groundScrew';
+  const footingDepth = screw ? null : plan.foundation.footing.depth;
+  const bottom = footingDepth === null ? -len - HATCH : -footingDepth - HATCH;
   const wood = kit.fill('wood', 0.55);
   const metal = kit.fill('lineMuted', 0.6);
 
   // talaj: halvány sáv, a felszín alatt ferde sraffozás
   let ground = box(-so, S + so, bottom, 0, kit.fill('lineMuted', 0.08));
-  for (let x = -so + HATCH; x <= S + so; x += HATCH) ground += kit.line(x, HATCH, x - HATCH, 0, kit.stroke('lineMuted', 0.6));
+  // a talp tetején ne látszódjon át a sraffozás
+  const half = screw ? 0 : plan.foundation.footing.size / 2;
+  const hidden = (x: number): boolean => !screw && axes.some(a => x > a - half && x - HATCH < a + half);
+  for (let x = -so + HATCH; x <= S + so; x += HATCH) if (!hidden(x)) ground += kit.line(x, HATCH, x - HATCH, 0, kit.stroke('lineMuted', 0.6));
   ground += kit.line(-so, 0, S + so, 0, kit.stroke('line', 1.4));
   let svg = `<g data-layer="ground">${ground}</g>`;
 
@@ -69,7 +125,7 @@ function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): Frame
   const plate = lengthwise ? d * 2 : fl.beam.width + 12;
   const flange = Math.min(100, fl.beam.height * 0.6);
   let screws = '';
-  for (const x of axes) {
+  for (const x of screw ? axes : []) {
     screws += kit.rect(x - d / 2, 0, d, len, `fill="none" ${kit.stroke('line', 0.8, [6, 4])}`);
     screws += box(x - d / 2, x + d / 2, 0, bb - SCREW_HEAD_H, metal);
     screws += box(x - d / 4, x + d / 4, bb - SCREW_HEAD_H, bb - HEAD_PLATE, metal);
@@ -79,7 +135,9 @@ function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): Frame
       screws += box(x + plate / 2 - 6, x + plate / 2, bb, bb + flange, metal);
     }
   }
-  svg += `<g data-layer="groundScrew">${screws}</g>`;
+  if (screw) svg += `<g data-layer="groundScrew">${screws}</g>`;
+  const concreteLabels: Label[] = [];
+  if (!screw) svg += concreteSupports(ctx, axes, lengthwise, box, concreteLabels);
 
   // főgerenda(k)
   let beams = '';
@@ -106,8 +164,9 @@ function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): Frame
   const sw = plan.walls.studSection.w;
   labels.push({ ax: sw + 100, az: (bt + ft) / 2, text: `Padló – ${ft - bt} mm` });
   labels.push({ ax: lengthwise ? sw / 2 : axes[0], az: (bb + bt) / 2, text: `Főgerenda ${BEAM_SECTIONS[plan.foundation.frame.beamSection].label}` });
-  labels.push({ ax: axes[0], az: -len / 2, text: GROUND_SCREW_LABEL(d, len) });
-  return { svg, so, bottom, beamBottom: bb, axes };
+  if (screw) labels.push({ ax: axes[0], az: -len / 2, text: GROUND_SCREW_LABEL(d, len) });
+  labels.push(...concreteLabels);
+  return { svg, so, bottom, beamBottom: bb, axes, footingDepth };
 }
 
 /** Metszet a gerincre merőlegesen: alap, padló, falak rétegrendje, tető rétegrendje (a régi metszet logikája). */
@@ -138,8 +197,8 @@ export function drawSection(ctx: ViewCtx): string {
   let so: number;
   let bedBottom: number;
   let frame: FrameSection | null = null;
-  if (f.type === 'groundScrew') {
-    // talajcsavaros keret: talaj, csavarok, U-fejek, főgerenda, padló
+  if (hasFrame(plan)) {
+    // gerendakeret: talaj, (talajcsavarnál csavarok, U-fejek), főgerenda, padló
     frame = frameSection(ctx, S, box, foundationLabels);
     body += frame.svg;
     so = frame.so;
@@ -230,6 +289,8 @@ export function drawSection(ctx: ViewCtx): string {
   if (ctx.on('dims') && frame) {
     // talaj → főgerenda alja a jobb oldalon, alul a csavartengelyek lánca és a teljes méret
     dims += kit.dim(S, Y(0), S, Y(frame.beamBottom), so + fs * 1.2, cm(frame.beamBottom));
+    // pontalapnál/betonpillérnél a talp mélysége (talaj → talp alja), ugyanazon az oldalon
+    if (frame.footingDepth !== null) dims += kit.dim(S, Y(-frame.footingDepth), S, Y(0), so + fs * 1.2, cm(frame.footingDepth));
     dims += kit.chain([0, ...frame.axes, S].map((x): Pt => [x, Y(bedBottom)]), fs * 2.4);
     dims += kit.dim(0, Y(bedBottom), S, Y(bedBottom), fs * 4.8, cm(S));
   } else if (ctx.on('dims')) {
