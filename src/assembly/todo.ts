@@ -1,11 +1,12 @@
 import type { Mm, Opening, Plan, WallSide } from '../model/types';
 import { frameLayout, hasFrame } from '../calc/frame';
-import { supportQuantities } from '../calc/supports';
+import { stripQuantities, supportQuantities } from '../calc/supports';
+import { stripLayout } from '../calc/strip';
 import { ceilTo } from '../calc/util';
 import { beamSegments } from '../scene/frame';
 import { studPositions, wallGeometry } from '../calc/geometry';
 import {
-  BATTEN_GAUGE, BEAM_BOLTS_PER_SUPPORT, BEAM_SECTIONS, BATTEN_SPACING_WALL, CURE_DAYS, EPDM_UPTURN, LONG_BARS_PER_SUPPORT, MESH_SHEET, PIER_ROW_H, PIER_TUBE_D, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
+  BATTEN_GAUGE, BEAM_BOLTS_PER_SUPPORT, BEAM_SECTIONS, BATTEN_SPACING_WALL, CURE_DAYS, EPDM_UPTURN, LONG_BARS_PER_SUPPORT, PLINTH_BLOCK_WIDTH, PLINTH_DOWEL_SPACING, PLINTH_ROW_BARS, STRIP_LONG_BARS, STRIP_STIRRUP_SPACING, MESH_SHEET, PIER_ROW_H, PIER_TUBE_D, OSB_SCREW_EDGE_SPACING, OSB_SCREW_FIELD_SPACING,
 } from '../catalog';
 import type { Element, ElementKind, FastenerKind, Scene } from '../scene/types';
 import { formatCm, formatCmNum, formatQty } from '../ui/format';
@@ -98,9 +99,27 @@ function foundation(c: Ctx): string[] {
   return out;
 }
 
+/** Sávalap és lábazat: kitűzés, árok, vasalás + beton, lábazat, kötési idő (belső pillér nélkül a pillérek kimaradnak). */
+function stripSupports(c: Ctx): string[] {
+  const { strip, plinth, frame } = c.plan.foundation;
+  const s = stripLayout(c.plan);
+  const q = stripQuantities(c.plan);
+  const piers = s.pierCount > 0;
+  const cm = formatCmNum(PLINTH_BLOCK_WIDTH[plinth.block]);
+  const w = formatCmNum(strip.width);
+  return [
+    `Tűzd ki a sávalap tengelyét (${formatQty(s.sides[0].length / 1000)} × ${formatQty(s.sides[1].length / 1000)} m)${piers ? ` és a ${s.pierCount} belső pillér helyét` : ''}.`,
+    `Ásd ki az árkot ${w} cm szélesen, ${formatCm(strip.depth)} mélyre (${formatQty(s.P / 1000)} m)${piers ? `, és a ${s.pierCount} pillér gödrét ${w}×${formatCm(strip.width)}-re` : ''}.`,
+    `Helyezd be a vasalást (${STRIP_LONG_BARS} db Ø10 hosszvas, Ø6 kengyel ${formatCm(STRIP_STIRRUP_SPACING)}-enként, a lábazat bekötővasai ${formatCm(PLINTH_DOWEL_SPACING)}-enként${piers ? `, a pillértalpakban ${LONG_BARS_PER_SUPPORT} db Ø10 hosszvas` : ''}), és öntsd ki betonnal (${formatQty(ceilTo(q.stripM3 + q.footingM3, 0.01))} m³).`,
+    `Falazd fel a lábazatot ${q.plinthBlocks} db ${cm} cm-es zsalukőből ${s.rows} sorban ${formatCm(frame.groundClearance)} magasra${s.topRowCut ? ' (a felső sort méretre vágva)' : ''}, soronként ${PLINTH_ROW_BARS} db Ø8 vassal; töltsd ki betonnal (${formatQty(ceilTo(q.plinthM3, 0.01))} m³).${piers ? ' A belső pilléreket ugyanígy.' : ''}`,
+    `Hagyd szilárdulni legalább ${CURE_DAYS} napig, mielőtt terheled.`,
+  ];
+}
+
 function supports(c: Ctx): string[] {
   const f = frameLayout(c.plan);
   const { groundScrew, frame, footing, pier, type } = c.plan.foundation;
+  if (type === 'stripFooting') return stripSupports(c);
   if (type === 'groundScrew') {
     const n = count(c, 'support');
     return [
@@ -132,7 +151,28 @@ function supports(c: Ctx): string[] {
   return out;
 }
 
+/** Sávalapnál a gerendakeret: vízszigetelő lemez, lábazati gerendák horgonyokkal, belső főgerendák. */
+function stripBeamFrame(c: Ctx): string[] {
+  const s = stripLayout(c.plan);
+  const dpc = line(c, 'foundation.dpc');
+  const anchors = line(c, 'foundation.sillAnchors');
+  const out: string[] = [];
+  if (dpc) out.push(`Terítsd le a vízszigetelő lemezt a lábazat tetejére (${qty(dpc)}).`);
+  out.push(`Rögzítsd a ${s.longSills.length + s.shortSills.length} lábazati gerendát${anchors ? ` ${qty(anchors)} ragasztott M12 horgonnyal` : ''}, a rövideket a hosszúak közé illesztve.`);
+  const n = s.innerBeamAxes.length;
+  if (n > 0) {
+    const ends = 'a végeit illeszd a rövid lábazati gerendákhoz, és rögzítsd szögvassal';
+    out.push(s.innerSupportAxes.length > 0
+      ? `Fektesd ${n > 1 ? `a ${n} belső főgerendát` : 'a belső főgerendát'} a papucsokba, ${ends}.`
+      : `Fektesd ${n > 1 ? `a ${n} belső főgerendát` : 'a belső főgerendát'}, ${ends}.`);
+  }
+  if (BEAM_SECTIONS[c.plan.foundation.frame.beamSection].plies === 2) out.push('A 2×50×150-es lábazati gerenda és főgerenda két összeszegezett pallóból áll.');
+  out.push('Ellenőrizd az átlókat: a keret derékszögű legyen.');
+  return out;
+}
+
 function beamFrame(c: Ctx): string[] {
+  if (c.plan.foundation.type === 'stripFooting') return stripBeamFrame(c);
   const f = frameLayout(c.plan);
   const out = [`Fektesd ${az(f.beamAxes.length)} főgerendát az U-fejekbe, rögzítsd fejenként ${BEAM_BOLTS_PER_SUPPORT} db M12 menetes szárral.`];
   if (BEAM_SECTIONS[c.plan.foundation.frame.beamSection].plies === 2) out.push('A 2×50×150-es főgerenda két összeszegezett pallóból áll.');
@@ -143,12 +183,18 @@ function beamFrame(c: Ctx): string[] {
   return out;
 }
 
+/** A padló párnafáinak alátámasztása: sávalapnál a lábazati gerendák (és a belső főgerendák), egyébként a főgerendák. */
+function floorBearers(c: Ctx): string {
+  if (c.plan.foundation.type !== 'stripFooting') return 'a főgerendákra';
+  return stripLayout(c.plan).innerBeamAxes.length > 0 ? 'a lábazati gerendákra és a belső főgerendákra' : 'a lábazati gerendákra';
+}
+
 function floor(c: Ctx): string[] {
   const fl = c.plan.floor;
   const out: string[] = [];
   const joists = c.els.filter(e => e.kind === 'joist').sort((a, b) => a.geom.u - b.geom.u);
   if (hasFrame(c.plan) && joists.length) {
-    out.push(`Fektesd ${az(joists.length)} párnafát ${formatCm(fl.joistSpacing)}-es kiosztással a főgerendákra, a két szélső párnafa a peremgerenda, a rövid falak alatt fut.`);
+    out.push(`Fektesd ${az(joists.length)} párnafát ${formatCm(fl.joistSpacing)}-es kiosztással ${floorBearers(c)}, a két szélső párnafa a peremgerenda, a rövid falak alatt fut.`);
     out.push(`Rögzítsd minden kereszteződést gerendasaruval (${fasteners(c, 'joistHanger')} db).`);
   } else if (joists.length) {
     const u0 = joists[0].geom.u;

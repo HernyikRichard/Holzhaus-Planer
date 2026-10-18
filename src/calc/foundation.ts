@@ -40,13 +40,28 @@ function calcFrameFoundation(plan: Plan): ModuleResult {
     res.lines.push({ category: 'Alap', unit: 'db', ...l });
   };
   res.lines.push(...supportSpec(plan).lines(plan, f));
-  add({
-    id: 'foundation.beamBolts', name: 'M12 menetes szár anyával, alátéttel', quantity: bolts,
-    explanation: `${supports} támasz × ${bolts / Math.max(1, supports)} db = ${bolts} db`,
-  });
+  const strip = plan.foundation.type === 'stripFooting';
+  if (!strip || bolts > 0) {
+    add({
+      id: 'foundation.beamBolts', name: 'M12 menetes szár anyával, alátéttel', quantity: bolts,
+      explanation: `${supports} támasz × ${bolts / Math.max(1, supports)} db = ${bolts} db`,
+    });
+  }
+  let hangerExpl = `${f.joistPositions.length} párnafa × ${f.beamAxes.length} főgerenda = ${hangers} db; csavar: ${hangers} × ${JOIST_HANGER_SCREWS} db`;
+  if (strip) {
+    // a rövid lábazati gerendán fekvő peremi párnafák csak a hosszú lábazati gerendákra akasztanak: a darabszám a jelenetből
+    const perJoist = new Map<string, number>();
+    for (const x of fasteners) {
+      if (x.kind === 'joistHanger') perJoist.set(x.elementIds[0], (perJoist.get(x.elementIds[0]) ?? 0) + x.count);
+    }
+    const groups = new Map<number, number>();
+    for (const c of perJoist.values()) groups.set(c, (groups.get(c) ?? 0) + 1);
+    const terms = [...groups].sort((a, b) => b[0] - a[0]).map(([per, n]) => `${n} párnafa × ${per} gerenda`);
+    hangerExpl = `${terms.join(' + ')} = ${hangers} db; csavar: ${hangers} × ${JOIST_HANGER_SCREWS} db`;
+  }
   add({
     id: 'foundation.joistHangers', name: 'Gerendasaru (párnafa–főgerenda)', quantity: hangers,
-    explanation: `${f.joistPositions.length} párnafa × ${f.beamAxes.length} főgerenda = ${hangers} db; csavar: ${hangers} × ${JOIST_HANGER_SCREWS} db`,
+    explanation: hangerExpl,
   });
   res.stats.connectorScrewCount = hangers * JOIST_HANGER_SCREWS;
   res.pieces = elementsToPieces(elements.filter(e => e.kind === 'beam'));

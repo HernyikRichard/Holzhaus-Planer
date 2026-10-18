@@ -50,7 +50,7 @@ test('every numeric/section panel field has a range check', () => {
     for (const t of targets) {
       const p = createDefaultPlan();
       // a típusfüggő szakaszok mezői csak a saját alaptípusukon érvényesek
-      if (s.id === 'groundScrew' || s.id === 'padFooting' || s.id === 'concretePier') p.foundation.type = s.id;
+      if (s.id === 'groundScrew' || s.id === 'padFooting' || s.id === 'concretePier' || s.id === 'stripFooting') p.foundation.type = s.id;
       expect(getPath(p, t), t).toEqual(expect.any(Number));
       setPath(p, t, absurd);
       expect(paths(p), t).toContain(t);
@@ -124,4 +124,30 @@ test('footing depth is only validated for pad footing and concrete pier', () => 
   expect(paths(p)).toContain('foundation.footing.depth');
   p.foundation.type = 'concretePier';
   expect(paths(p)).toContain('foundation.footing.depth');
+});
+
+test('strip depth bounds 600-1200 only on stripFooting', () => {
+  const p = createDefaultPlan(); p.foundation.type = 'stripFooting';
+  for (const [v, bad] of [[599, true], [600, false], [1200, false], [1201, true]] as const) {
+    p.foundation.strip.depth = v;
+    expect([v, paths(p).includes('foundation.strip.depth')]).toEqual([v, bad]);
+  }
+  p.foundation.strip.depth = 1201;
+  for (const type of ['slab', 'groundScrew', 'padFooting', 'concretePier'] as const) {
+    p.foundation.type = type;
+    expect(paths(p)).not.toContain('foundation.strip.depth');
+  }
+});
+test('stripFooting plinth height (groundClearance) bounds 150-600', () => {
+  for (const [v, bad] of [[149, true], [150, false], [300, false], [600, false], [601, true]] as const) {
+    const p = createDefaultPlan(); p.foundation.type = 'stripFooting'; p.foundation.frame.groundClearance = v;
+    expect([v, paths(p).includes('foundation.frame.groundClearance')]).toEqual([v, bad]);
+  }
+  const p = createDefaultPlan(); p.foundation.type = 'stripFooting'; p.foundation.frame.groundClearance = 601;
+  expect(validatePlan(p).find(x => x.path === 'foundation.frame.groundClearance')?.message)
+    .toBe('Lábazat magassága: 150–600 mm közötti érték szükséges.');
+});
+test('default stripFooting plan is valid', () => {
+  const p = createDefaultPlan(); p.foundation.type = 'stripFooting';
+  expect(validatePlan(p)).toEqual([]);
 });

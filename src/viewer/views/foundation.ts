@@ -1,6 +1,8 @@
-import { FORMWORK_EXTRA, MESH_SHEET } from '../../catalog';
+import { FORMWORK_EXTRA, MESH_SHEET, PLINTH_BLOCK_WIDTH } from '../../catalog';
 import { meshLayout } from '../../calc/foundation';
 import { frameLayout, framePt, hasFrame } from '../../calc/frame';
+import { stripLayout } from '../../calc/strip';
+import { hu } from '../../calc/util';
 import { pierDesc, pierWidth } from '../../calc/supports';
 import { cm, elGroup, fxCircle, n, type Pt } from '../svgKit';
 import { drawEl, elStyle, fxRadius, layerG, type ViewCtx } from './common';
@@ -8,20 +10,49 @@ import { drawEl, elStyle, fxRadius, layerG, type ViewCtx } from './common';
 const FORMWORK_BOARD = 25; // zsaluzódeszka vastagsága a rajzon (mm)
 const POST_BASE_W = 100;   // az oszloptalp jele a pontalapon (mm)
 
-/** Gerendakeretes alap felülről: főgerendák, párnafák, támaszok, rögzítési pontok és a támaszrács méretei. */
+/**
+ * Gerendakeretes alap felülről: főgerendák, párnafák, támaszok, rögzítési pontok és a támaszrács méretei.
+ * Sávalapnál alattuk a sáv (szaggatott külső és belső körvonal) és a lábazat (teli sáv), oldalanként egy-egy elem.
+ */
 function drawFrameFoundation(ctx: ViewCtx): string {
   const { plan, scene, kit } = ctx;
   const { width: W, length: L } = plan.building;
   const f = frameLayout(plan);
   const gs = plan.foundation.groundScrew;
+  const strip = plan.foundation.type === 'stripFooting';
   kit.ext(0, 0);
   kit.ext(W, L);
+  if (strip) {
+    // a sáv külső éle a falsíkon kívül: a lábazat-tengely (bw / 2) mínusz a sáv fele
+    const o = f.beam.width / 2 - plan.foundation.strip.width / 2;
+    kit.ext(o, o);
+    kit.ext(W - o, L - o);
+  }
   const geom = kit.snapshot();
   kit.scaleTo(geom);
   const fs = kit.fs;
 
   let frame = '';
   if (ctx.on('frame')) {
+    if (strip) {
+      // a sáv: oldalanként körvonal nélküli kitöltés (hover / kijelölés), együtt egyetlen szaggatott külső és belső körvonallal
+      const bands = scene.elements.filter(x => x.kind === 'stripFooting');
+      for (const e of bands) {
+        frame += elGroup(e.id, e.kind, kit.rect(e.geom.u, e.geom.v, e.geom.w, e.geom.h, `${kit.fill('concrete', 0.12)} stroke="none"`));
+      }
+      if (bands.length) {
+        const sw = plan.foundation.strip.width;
+        const u0 = Math.min(...bands.map(e => e.geom.u));
+        const v0 = Math.min(...bands.map(e => e.geom.v));
+        const u1 = Math.max(...bands.map(e => e.geom.u + e.geom.w));
+        const v1 = Math.max(...bands.map(e => e.geom.v + e.geom.h));
+        const dash = `fill="none" ${kit.stroke('line', 1, [6, 4])}`;
+        frame += kit.rect(u0, v0, u1 - u0, v1 - v0, dash) + kit.rect(u0 + sw, v0 + sw, u1 - u0 - 2 * sw, v1 - v0 - 2 * sw, dash);
+      }
+      for (const e of scene.elements.filter(x => x.kind === 'plinth')) {
+        frame += elGroup(e.id, e.kind, kit.rect(e.geom.u, e.geom.v, e.geom.w, e.geom.h, `${kit.fill('concrete', 0.6)} ${kit.stroke('line', 1)}`));
+      }
+    }
     // párnafák vékony vonallal, rájuk a főgerendák, legfelül a támaszok
     for (const e of scene.elements.filter(x => x.kind === 'joist')) {
       frame += elGroup(e.id, e.kind, kit.rect(e.geom.u, e.geom.v, e.geom.w, e.geom.h, `${kit.fill('lineMuted', 0.08)} ${kit.stroke('lineMuted', 0.6)}`));
@@ -34,9 +65,11 @@ function drawFrameFoundation(ctx: ViewCtx): string {
         frame += elGroup(e.id, e.kind, kit.circle(e.geom.u + e.geom.w / 2, e.geom.v + e.geom.h / 2, rs, elStyle(kit, e.kind)));
       }
     } else {
-      // talp: szaggatott négyzet (a geom); rajta a pillér (teli négyzet / kör) vagy az oszloptalp (kis teli négyzet)
-      const pier = plan.foundation.type === 'concretePier' ? plan.foundation.pier.kind : null;
-      const pw = pier ? pierWidth(pier) : Math.max(POST_BASE_W, fs * 0.9);
+      // talp: szaggatott négyzet (a geom); rajta a pillér (teli négyzet / kör) vagy az oszloptalp (kis teli négyzet);
+      // sávalapnál a belső pillér a lábazat zsalukövéből
+      const block = plan.foundation.plinth.block;
+      const pier = plan.foundation.type === 'concretePier' ? plan.foundation.pier.kind : strip ? block : null;
+      const pw = strip ? PLINTH_BLOCK_WIDTH[block] : pier ? pierWidth(plan.foundation.pier.kind) : Math.max(POST_BASE_W, fs * 0.9);
       const solid = `${kit.fill('concrete', 0.85)} ${kit.stroke('line', 1.2)}`;
       for (const e of supports) {
         const cx = e.geom.u + e.geom.w / 2;
@@ -67,7 +100,10 @@ function drawFrameFoundation(ctx: ViewCtx): string {
       const dy = b[1] - a[1];
       return Math.sign(-dy * (away[0] - a[0]) + dx * (away[1] - a[1])) || 1;
     };
-    const supports = [0, ...f.supportAxes, f.L].map(l => P(l, 0));
+    const s = strip ? stripLayout(plan) : null;
+    const h = f.beam.width / 2;
+    // sávalapnál a lábazat-tengelyek és a belső pillérek, egyébként a támaszok
+    const supports = (s ? [0, h, ...s.innerSupportAxes, f.L - h, f.L] : [0, ...f.supportAxes, f.L]).map(l => P(l, 0));
     const sOut = out(supports[0], supports[supports.length - 1], P(0, -1));
     dims += kit.chain(supports, sOut * row);
     dims += kit.dim(...supports[0], ...supports[supports.length - 1], sOut * row * 2, cm(f.L));
@@ -75,7 +111,21 @@ function drawFrameFoundation(ctx: ViewCtx): string {
     const rOut = out(rows[0], rows[rows.length - 1], P(-1, 0));
     dims += kit.chain(rows, rOut * row);
     dims += kit.dim(...rows[0], ...rows[rows.length - 1], rOut * row * 2, cm(f.W));
-    if (plan.foundation.type === 'groundScrew') {
+    if (s) {
+      // a sáv szélessége a w = W − h, a lábazaté a w = h sáv végén kifelé, külön mérethúzásokon
+      const { strip: sp, plinth, frame: fr } = plan.foundation;
+      const pw = PLINTH_BLOCK_WIDTH[plinth.block];
+      const across = (width: number, wc: number): string => {
+        const l = f.L - h + width / 2;
+        const a = P(l, wc - width / 2);
+        const b = P(l, wc + width / 2);
+        return kit.dim(...a, ...b, out(a, b, P(l + 1, wc)) * row, cm(width));
+      };
+      dims += across(sp.width, f.W - h) + across(pw, h);
+      dims += kit.text(0, -row * 2 - fs * 2.6,
+        `Sávalap: ${hu(s.P / 1000, 1)} m, ${cm(sp.width)} széles, ${cm(sp.depth)} mély; lábazat ${pw / 10} cm-es zsalukő, ${cm(fr.groundClearance)}`,
+        { anchor: 'start' });
+    } else if (plan.foundation.type === 'groundScrew') {
       const n = f.beamAxes.length * f.supportAxes.length;
       dims += kit.text(0, -row * 2 - fs * 2.6,
         `Talajcsavar: ${n} db Ø${gs.diameter} × ${cm(gs.length)}, fej ${cm(plan.foundation.frame.groundClearance)}-rel a talaj fölött`,

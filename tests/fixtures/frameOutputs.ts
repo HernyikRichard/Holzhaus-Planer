@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createDefaultPlan } from '../../src/model/defaults';
-import type { BeamSectionId, Plan } from '../../src/model/types';
+import type { BeamSectionId, PierKind, Plan } from '../../src/model/types';
 import { calculate } from '../../src/calc';
 import { buildScene } from '../../src/scene/build';
 import { renderView } from '../../src/viewer/render';
@@ -10,7 +10,7 @@ import { buildModel3d } from '../../src/three-d/model';
 import { buildAssembly } from '../../src/assembly/steps';
 import { stepTodo } from '../../src/assembly/todo';
 
-/** A változatlanság-fixture tervei: betonlemez alapterv és három talajcsavaros keret. */
+/** A változatlanság-fixture tervei: betonlemez alapterv, három talajcsavaros keret, egy pontalapos és egy betonpilléres terv. */
 function screw(width: number, length: number, beam: BeamSectionId = 'b100x150', sp: 'auto' | number = 'auto'): Plan {
   const p = createDefaultPlan();
   p.building.width = width; p.building.length = length;
@@ -19,11 +19,26 @@ function screw(width: number, length: number, beam: BeamSectionId = 'b100x150', 
   return p;
 }
 
+function pad(width: number, length: number): Plan {
+  const p = screw(width, length);
+  p.foundation.type = 'padFooting';
+  return p;
+}
+
+function concretePier(width: number, length: number, kind: PierKind): Plan {
+  const p = screw(width, length);
+  p.foundation.type = 'concretePier';
+  p.foundation.pier.kind = kind;
+  return p;
+}
+
 export const FRAME_FIXTURE_PLANS: Record<string, () => Plan> = {
   'slab default': () => createDefaultPlan(),
   'groundScrew 3000x4000': () => screw(3000, 4000),
   'groundScrew 6000x8000 b2x50x150': () => screw(6000, 8000, 'b2x50x150'),
   'groundScrew 3000x3000 sp1200': () => screw(3000, 3000, 'b100x150', 1200),
+  'padFooting 3000x4000': () => pad(3000, 4000),
+  'concretePier 6000x8000 block250': () => concretePier(6000, 8000, 'block250'),
 };
 
 export const DRAWING_VIEWS: ViewId[] = ['floor', 'wall.N', 'wall.E', 'wall.S', 'wall.W', 'section', 'roof', 'gable', 'foundation'];

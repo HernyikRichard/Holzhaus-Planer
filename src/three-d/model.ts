@@ -1,6 +1,6 @@
 import type { Mm, Plan, WallLayerKind, WallSide } from '../model/types';
 import {
-  SCREW_HEAD_H, BATTEN_SECTION, BATTEN_SPACING_WALL, COUNTER_BATTEN_SECTION, DECKING_REQUIRED, FASCIA_SECTION, ROOF_BATTEN_SECTION, STANDING_SEAM_WIDTH,
+  SCREW_HEAD_H, PLINTH_BLOCK_WIDTH, BATTEN_SECTION, BATTEN_SPACING_WALL, COUNTER_BATTEN_SECTION, DECKING_REQUIRED, FASCIA_SECTION, ROOF_BATTEN_SECTION, STANDING_SEAM_WIDTH,
 } from '../catalog';
 import { roofGeometry, studLengthAt, wallGeometry, type WallGeom } from '../calc/geometry';
 import type { Element, ElementKind, Scene } from '../scene/types';
@@ -592,6 +592,39 @@ function frameSolids(plan: Plan, scene: Scene): Solid[] {
         part(e.id, `${e.label} – papucs`, 'metal', alongX ? sq(BRACKET_LEN, f.beam.width + UHEAD_SIDE) : sq(f.beam.width + UHEAD_SIDE, BRACKET_LEN),
           clearance - BRACKET_T, BRACKET_T);
         // két fül: vékony lemez a gerenda két oldalán, a talplemez fölött, a gerendatérfogaton kívül
+        const bw = f.beam.width;
+        const earH = Math.min(100, f.beam.height * 0.6);
+        for (const sgn of [-1, 1]) {
+          const t0 = sgn * bw / 2;
+          const t1 = sgn * (bw / 2 + BRACKET_EAR_T);
+          const [lo, hi] = [Math.min(t0, t1), Math.max(t0, t1)];
+          const outline = alongX
+            ? rect(cx - BRACKET_LEN / 2, cy + lo, cx + BRACKET_LEN / 2, cy + hi)
+            : rect(cx + lo, cy - BRACKET_LEN / 2, cx + hi, cy + BRACKET_LEN / 2);
+          part(e.id, `${e.label} – papucs fül`, 'metal', outline, clearance, earH);
+        }
+      }
+    }
+  }
+  if (type === 'stripFooting') {
+    const { strip, plinth } = plan.foundation;
+    const clearance = f.z.beamBottom;
+    const alongX = f.along === 'x';
+    for (const e of scene.elements) {
+      if (e.kind === 'stripFooting') {
+        part(e.id, e.label, 'concreteBuried', corners(e), -strip.depth, strip.depth);
+      } else if (e.kind === 'plinth') {
+        part(e.id, e.label, 'concrete', corners(e), 0, clearance);
+      } else if (e.kind === 'support') {
+        // belső pillér: a talp a sáv szélességű négyzet, a pillér a lábazati zsalukő szélességű, papucs + fülek
+        const cx = e.geom.u + e.geom.w / 2;
+        const cy = e.geom.v + e.geom.h / 2;
+        const sq = (w: number, h: number): [number, number][] => rect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2);
+        const pw = PLINTH_BLOCK_WIDTH[plinth.block];
+        part(e.id, `${e.label} – talp`, 'concreteBuried', sq(strip.width, strip.width), -strip.depth, strip.depth);
+        part(e.id, `${e.label} – pillér`, 'concrete', sq(pw, pw), 0, clearance - BRACKET_T);
+        part(e.id, `${e.label} – papucs`, 'metal', alongX ? sq(BRACKET_LEN, f.beam.width + UHEAD_SIDE) : sq(f.beam.width + UHEAD_SIDE, BRACKET_LEN),
+          clearance - BRACKET_T, BRACKET_T);
         const bw = f.beam.width;
         const earH = Math.min(100, f.beam.height * 0.6);
         for (const sgn of [-1, 1]) {

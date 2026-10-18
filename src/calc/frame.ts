@@ -77,7 +77,7 @@ export function frameLayout(plan: Plan): FrameLayout {
   };
 }
 
-/** Gerendakeretes-e az alap (talajcsavar, pontalap, betonpillér): támaszrács, főgerendák, padló a kereten. */
+/** Gerendakeretes-e az alap (talajcsavar, pontalap, betonpillér, sávalap): támaszrács, főgerendák, padló a kereten. */
 export function hasFrame(plan: Plan): boolean {
   return isFrameType(plan.foundation.type);
 }

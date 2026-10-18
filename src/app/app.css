@@ -126,7 +126,7 @@ button.cutstrip-piece:hover:not(:disabled) { background: #4a90d9; }
 .hint { color: var(--muted); font-size: 0.85rem; }
 .shape-picker { display: flex; gap: 0.4rem; }
 .shape-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; padding: 0.4rem 0.2rem; font-size: 0.78rem; }
-.foundation-picker { display: grid; grid-template-columns: repeat(4, 1fr); }
+.foundation-picker { display: grid; grid-template-columns: repeat(5, 1fr); }
 @media (max-width: 520px) { .foundation-picker { grid-template-columns: repeat(2, 1fr); } }
 .shape-btn[aria-pressed='true'] { background: var(--accent); border-color: var(--select); color: #fff; }
 

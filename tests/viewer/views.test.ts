@@ -373,6 +373,14 @@ describe('talajcsavaros alap rajzai', () => {
   });
 });
 
+// a metszet-feliratok vezetővonalai: két szakasz valódi metszése
+type Seg = [number, number, number, number];
+const cross = (a: Seg, b: Seg): boolean => {
+  const d = (p: number, q: number, r: number, s: number, t: number, u: number): number => (r - p) * (u - q) - (s - q) * (t - p);
+  return d(a[0], a[1], a[2], a[3], b[0], b[1]) * d(a[0], a[1], a[2], a[3], b[2], b[3]) < 0
+    && d(b[0], b[1], b[2], b[3], a[0], a[1]) * d(b[0], b[1], b[2], b[3], a[2], a[3]) < 0;
+};
+
 describe('pontalap és betonpillér rajzai', () => {
   const mk = (type: 'padFooting' | 'concretePier', mut?: (q: Plan) => void): Plan => {
     const q = createDefaultPlan(); q.foundation.type = type; mut?.(q); return q;
@@ -434,12 +442,6 @@ describe('pontalap és betonpillér rajzai', () => {
     }
   });
   test('metszet: a talp-feliratok vezetővonalai nem metszik egymást', () => {
-    type Seg = [number, number, number, number];
-    const cross = (a: Seg, b: Seg): boolean => {
-      const d = (p: number, q: number, r: number, s: number, t: number, u: number): number => (r - p) * (u - q) - (s - q) * (t - p);
-      return d(a[0], a[1], a[2], a[3], b[0], b[1]) * d(a[0], a[1], a[2], a[3], b[2], b[3]) < 0
-        && d(b[0], b[1], b[2], b[3], a[0], a[1]) * d(b[0], b[1], b[2], b[3], a[2], a[3]) < 0;
-    };
     for (const type of ['padFooting', 'concretePier'] as const) {
       for (const ridge of ['x', 'y'] as const) {
         const s = g(mk(type, q => { q.roof.ridgeDirection = ridge; }), 'section');
@@ -492,6 +494,133 @@ describe('pontalap és betonpillér rajzai', () => {
   test('minden jelenetelem és rögzítés látszik valamelyik nézetben (pontalap, betonpillér)', () => {
     for (const type of ['padFooting', 'concretePier'] as const) {
       const { els, fxs, scene } = drawnIds(mk(type));
+      expect(scene.elements.filter(e => !els.has(e.id)).map(e => e.id)).toEqual([]);
+      expect(scene.fasteners.filter(f => !fxs.has(f.id)).map(f => f.id)).toEqual([]);
+    }
+  });
+});
+
+describe('sávalap rajzai', () => {
+  const mk = (width = 3000, length = 4000, mut?: (q: Plan) => void): Plan => {
+    const q = createDefaultPlan(); q.foundation.type = 'stripFooting';
+    q.building.width = width; q.building.length = length; mut?.(q); return q;
+  };
+  const g = (plan: Plan, v: ViewId, layers = all) => renderView({ plan, scene: buildScene(plan), view: v, layers, palette: SCREEN_PALETTE }).svg;
+
+  test('alapnézet: sáv és lábazat oldalanként, pillérek, felirat', () => {
+    const q = mk(); const qs = buildScene(q);
+    const s = g(q, 'foundation');
+    expect(count(s, /class="el el-stripFooting"/g)).toBe(4);
+    expect(count(s, /class="el el-plinth"/g)).toBe(4);
+    for (const side of ['N', 'E', 'S', 'W']) {
+      expect(s).toContain(`data-el="frame.strip.${side}"`);
+      expect(s).toContain(`data-el="frame.plinth.${side}"`);
+    }
+    const piers = qs.elements.filter(e => e.kind === 'support').length;
+    expect(piers).toBe(2);
+    expect(count(s, /class="el el-support"/g)).toBe(piers);
+    expect(count(s, /data-pier="block250"/g)).toBe(piers);
+    expect(count(s, /class="el el-beam"/g)).toBe(qs.elements.filter(e => e.kind === 'beam').length);
+    expect(count(s, /data-el="floor\.joist\./g)).toBe(qs.elements.filter(e => e.kind === 'joist').length);
+    expect(s).toContain('Sávalap: 13,6 m, 40 cm széles, 80 cm mély; lábazat 25 cm-es zsalukő, 30 cm');
+    expect(s).toContain('>40 cm<'); // a sáv szélessége
+    expect(s).toContain('>25 cm<'); // a lábazat szélessége
+    // a sáv szaggatott, a lábazat teli
+    // az oldalak körvonal nélküliek; a szaggatottak: külső + belső sávkörvonal, az épületkontúr és a pillértalpak
+    expect(s).toMatch(/class="el el-stripFooting"><rect [^>]*stroke="none"/);
+    expect(s).not.toMatch(/class="el el-stripFooting"><rect [^>]*stroke-dasharray/);
+    expect(count(s, /<rect [^>]*fill="none"[^>]*stroke-dasharray="[^"]*"[^>]*\/>/g)).toBe(piers + 3);
+    expect(s).toMatch(/class="el el-plinth"><rect [^>]*fill-opacity/);
+    // a sáv a lábazat, a lábazat a lábazati gerendák alatt
+    expect(s.indexOf('el-stripFooting')).toBeLessThan(s.indexOf('el-plinth'));
+    expect(s.indexOf('el-plinth')).toBeLessThan(s.indexOf('el-beam'));
+    expect(count(s, /data-fx="/g)).toBe(qs.fasteners.filter(f => f.group === 'frame').length);
+    expect(s).not.toContain('Pontalap');
+    const b3 = g(mk(3000, 4000, x => {
+      x.foundation.plinth.block = 'block300'; x.foundation.strip = { width: 500, depth: 1000 }; x.foundation.frame.groundClearance = 450;
+    }), 'foundation');
+    expect(b3).toContain('Sávalap: 13,6 m, 50 cm széles, 100 cm mély; lábazat 30 cm-es zsalukő, 45 cm');
+  });
+
+  test('metszet: sáv, lábazat, vízszigetelés, lábazati gerenda; mélység és lábazat-magasság', () => {
+    for (const [w, l] of [[3000, 4000], [4000, 3000]] as const) {
+      for (const ridge of ['x', 'y'] as const) {
+        const s = g(mk(w, l, q => { q.roof.ridgeDirection = ridge; }), 'section');
+        const k = `${w}×${l} ${ridge}`;
+        for (const layer of ['ground', 'strip', 'plinth', 'dpc', 'beam', 'floor', 'pier']) expect(s, `${k} ${layer}`).toContain(`data-layer="${layer}"`);
+        expect(s, k).toContain('>80 cm<');
+        expect(s, k).toContain('>30 cm<');
+        expect(s, k).toContain('Sávalap 40×80 cm');
+        expect(s, k).toContain('Lábazat 25 cm-es zsalukő');
+        expect(s, k).toContain('Lábazati gerenda 100×150');
+        expect(s, k).not.toContain('data-layer="groundScrew"');
+        expect(s, k).not.toContain('data-layer="footing"');
+        expect(s, k).not.toContain('Betontalp');
+      }
+    }
+    // csak két főgerenda: nincs belső pillér
+    const two = g(mk(2000, 2000), 'section');
+    expect(two).toContain('data-layer="plinth"');
+    expect(two).not.toContain('data-layer="pier"');
+  });
+
+  test('metszet: a feliratok vezetővonalai nem metszik egymást, sorrendjük a szerkezeté', () => {
+    for (const [w, l] of [[3000, 4000], [4000, 3000], [6000, 8000], [3000, 3000]] as const) {
+      for (const ridge of ['x', 'y'] as const) {
+        for (const depth of [600, 1200]) {
+          const s = g(mk(w, l, q => { q.roof.ridgeDirection = ridge; q.foundation.strip.depth = depth; }), 'section');
+          const k = `${w}×${l} ${ridge} ${depth}`;
+          const names = ['Padló', 'Lábazati gerenda', 'Vízszigetelő', 'Lábazat \\d', 'Sávalap', 'Belső pillér'];
+          const leaders = names.map((nm): Seg => {
+            const m = new RegExp(String.raw`<line x1="([-\d.]+)" y1="([-\d.]+)" x2="([-\d.]+)" y2="([-\d.]+)"[^>]*/>\s*<text[^>]*>[^<]*${nm}`).exec(s);
+            expect(m, `${k} ${nm}`).not.toBeNull();
+            return [+m![1], +m![2], +m![3], +m![4]];
+          });
+          for (let i = 1; i < leaders.length; i++) expect(leaders[i][3], `${k} sorrend ${names[i]}`).toBeGreaterThan(leaders[i - 1][3]);
+          for (let i = 0; i < leaders.length; i++) {
+            for (let j = i + 1; j < leaders.length; j++) expect(cross(leaders[i], leaders[j]), `${k} ${names[i]}/${names[j]}`).toBe(false);
+          }
+        }
+      }
+    }
+  });
+
+  test('falnézet: a fal alatti sávban a lábazat és a talpgerenda', () => {
+    const q = mk();
+    for (const side of ['N', 'E', 'S', 'W']) {
+      const s = g(q, `wall.${side}` as ViewId);
+      expect(s, side).toContain('data-layer="frameBand"');
+      expect(s, side).toContain('data-layer="plinth"');
+      expect(s, side).toContain('data-layer="sill"');
+      expect(s, side).toContain(`data-el="frame.plinth.${side}"`);
+    }
+    // a fal méretei nem változnak
+    const dimTexts = (s: string) => [...s.matchAll(/>(\d[\d,]* cm)</g)].map(m => m[1]);
+    expect(dimTexts(g(q, 'wall.E'))).toEqual(dimTexts(r('wall.E')));
+  });
+
+  test('minden nézet jól formált és véges (mindkét tájolás, gerincirány, minden zsalukő)', () => {
+    const plans: Plan[] = [];
+    for (const [w, l] of [[3000, 4000], [4000, 3000], [2000, 2000], [8000, 6000]] as const) {
+      for (const ridge of ['x', 'y'] as const) {
+        for (const block of ['block200', 'block250', 'block300'] as const) {
+          plans.push(mk(w, l, q => { q.roof.ridgeDirection = ridge; q.foundation.plinth.block = block; q.foundation.frame.groundClearance = 600; }));
+        }
+      }
+    }
+    for (const q of plans) {
+      const qs = buildScene(q);
+      for (const v of VIEWS) {
+        const s = renderStandalone({ plan: q, scene: qs, view: v, layers: all, palette: PRINT_PALETTE });
+        expect(new DOMParser().parseFromString(s, 'image/svg+xml').querySelector('parsererror'), v).toBeNull();
+        expect(s, v).not.toMatch(/NaN|Infinity/);
+      }
+    }
+  });
+
+  test('minden jelenetelem és rögzítés látszik valamelyik nézetben (sávalap)', () => {
+    for (const [w, l] of [[3000, 4000], [4000, 3000]] as const) {
+      const { els, fxs, scene } = drawnIds(mk(w, l));
       expect(scene.elements.filter(e => !els.has(e.id)).map(e => e.id)).toEqual([]);
       expect(scene.fasteners.filter(f => !fxs.has(f.id)).map(f => f.id)).toEqual([]);
     }

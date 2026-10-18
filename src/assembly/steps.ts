@@ -56,7 +56,7 @@ const wallStep = (group: string): AssemblyStepId => group as AssemblyStepId;
 export function stepIdOfElement(el: Element): AssemblyStepId {
   switch (el.kind) {
     case 'meshSheet': return 'foundation';
-    case 'support': return 'supports';
+    case 'support': case 'stripFooting': case 'plinth': return 'supports';
     case 'beam': return 'beamFrame';
     case 'joist': return 'floor';
     case 'stud': case 'cornerStud': case 'gableStud': case 'kingStud': case 'jackStud': case 'cripple':
@@ -93,6 +93,8 @@ const LINE_IDS: Record<string, AssemblyStepId> = {
   // talajcsavaros alap: pontos egyezés a `foundation.` előtag előtt
   'foundation.groundScrew': 'supports', 'foundation.screwHead': 'supports',
   'foundation.beamBolts': 'beamFrame', 'foundation.joistHangers': 'floor',
+  // sávalap: a vízszigetelés és a lábazati gerenda horgonyai a gerendakeret lépésében
+  'foundation.dpc': 'beamFrame', 'foundation.sillAnchors': 'beamFrame',
 };
 const LINE_PREFIXES: Array<[string, AssemblyStepId]> = [
   ['foundation.', 'foundation'], ['floor.', 'floor'],

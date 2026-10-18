@@ -2,7 +2,8 @@ import type { Plan, WallSide } from '../../model/types';
 import { roofGeometry, wallGeometry, type WallGeom } from '../../calc/geometry';
 import { frameLayout, hasFrame } from '../../calc/frame';
 import type { Element } from '../../scene/types';
-import { cm, esc, fxCircle, n, type Pt } from '../svgKit';
+import { PIER_ROW_H, PLINTH_BLOCK_WIDTH } from '../../catalog';
+import { cm, elGroup, esc, fxCircle, n, type Pt } from '../svgKit';
 import { drawEl, drawOpening, fxRadius, layerG, type ViewCtx } from './common';
 
 export interface WallMap {
@@ -117,14 +118,29 @@ function rafterPoint(ctx: ViewCtx, group: string, v: number): Pt {
 }
 
 /**
- * A talajcsavaros keret sávja a falnézetben a fal alatt (y > 0): a talajtól a padló tetejéig, a főgerenda és a párnafa
+ * A gerendakeret sávja a falnézetben a fal alatt (y > 0): a talajtól a padló tetejéig, a főgerenda és a párnafa
  * szintjeivel. `ground`: a talaj y koordinátája a nézetben.
  */
-function frameBand(ctx: ViewCtx, x0: number, x1: number): { svg: string; ground: number } {
+function frameBand(ctx: ViewCtx, side: WallSide, x0: number, x1: number): { svg: string; ground: number } {
   const { plan, kit } = ctx;
-  const { beamBottom, beamTop, joistTop, floorTop } = frameLayout(plan).z;
+  const fl = frameLayout(plan);
+  const { beamBottom, beamTop, joistTop, floorTop } = fl.z;
   const a = Math.min(x0, x1);
   const w = Math.abs(x1 - x0);
+  if (plan.foundation.type === 'stripFooting') {
+    // sávalap: a talajon a lábazat (beton, a sorhatárokkal; a sarkokon a falsíkon túl a zsalukő feléig), rajta a
+    // talpgerenda, fölötte a párnafák és a padló halvány sávja
+    const pw = PLINTH_BLOCK_WIDTH[plan.foundation.plinth.block];
+    const ext = pw / 2 - fl.beam.width / 2;
+    const y = (z: number): number => floorTop - z;
+    let plinth = kit.rect(a - ext, y(beamBottom), w + 2 * ext, beamBottom, `${kit.fill('concrete', 0.6)} ${kit.stroke('line', 0.8)}`);
+    for (let z = PIER_ROW_H; z < beamBottom; z += PIER_ROW_H) plinth += kit.line(a - ext, y(z), a + w + ext, y(z), kit.stroke('line', 0.5));
+    let body = kit.rect(a, 0, w, y(beamTop), `${kit.fill('lineMuted', 0.15)} ${kit.stroke('lineMuted', 0.6)}`);
+    body += kit.line(a, y(joistTop), a + w, y(joistTop), kit.stroke('lineMuted', 0.6));
+    body += `<g data-layer="plinth">${elGroup(`frame.plinth.${side}`, 'plinth', plinth)}</g>`;
+    body += `<g data-layer="sill">${kit.rect(a, y(beamTop), w, beamTop - beamBottom, `${kit.fill('wood', 0.55)} ${kit.stroke('line', 0.8)}`)}</g>`;
+    return { svg: `<g data-layer="frameBand">${body}</g>`, ground: floorTop };
+  }
   let body = kit.rect(a, 0, w, floorTop, `${kit.fill('lineMuted', 0.15)} ${kit.stroke('lineMuted', 0.6)}`);
   for (const z of [beamBottom, beamTop, joistTop]) body += kit.line(a, floorTop - z, a + w, floorTop - z, kit.stroke('lineMuted', 0.6));
   return { svg: `<g data-layer="frameBand">${body}</g>`, ground: floorTop };
@@ -150,7 +166,7 @@ export function drawWall(ctx: ViewCtx, side: WallSide, withRoof = false): string
   const xMin = Math.min(...xs);
   const xMax = Math.max(...xs);
   // gerendakeretes alapnál a fal alatt a keret halvány sávja (a fal a padló tetejéről áll), alatta a talajvonal
-  const band = hasFrame(plan) ? frameBand(ctx, C(0, 0)[0], C(A, 0)[0]) : null;
+  const band = hasFrame(plan) ? frameBand(ctx, side, C(0, 0)[0], C(A, 0)[0]) : null;
   if (band) context += band.svg;
   const geom = kit.snapshot();
   kit.scaleTo(geom);
