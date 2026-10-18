@@ -280,3 +280,52 @@ describe('pad footing and concrete pier to-dos', () => {
     expect(build(p => { p.foundation.type = 'groundScrew'; }).title).toBe('Támaszok');
   });
 });
+
+describe('strip footing to-dos', () => {
+  function steps(f: (p: Plan) => void = () => {}, w = 3000, l = 4000) {
+    const plan = createDefaultPlan();
+    plan.building = { ...plan.building, width: w, length: l };
+    plan.foundation.type = 'stripFooting';
+    plan.foundation.frame.groundClearance = 300;
+    f(plan);
+    return buildAssembly(plan, buildScene(plan), calculate(plan));
+  }
+  const get = (ss: AssemblyStep[], id: string) => ss.find(s => s.id === id)!;
+
+  test('3000x4000: supports and beamFrame', () => {
+    const ss = steps();
+    const s = get(ss, 'supports');
+    const t = s.todo.join('\n');
+    expect(s.title).toBe('Sávalap és lábazat');
+    expect(s.todo.length).toBeGreaterThanOrEqual(3);
+    expect(s.todo.length).toBeLessThanOrEqual(6);
+    expect(t).toContain('Tűzd ki a sávalap tengelyét (2,9 × 3,9 m) és a 2 belső pillér helyét.');
+    expect(t).toContain('Ásd ki az árkot 40 cm szélesen, 80 cm mélyre (13,6 m), és a 2 pillér gödrét 40×40 cm-re.');
+    expect(t).toContain('Helyezd be a vasalást (4 db Ø10 hosszvas, Ø6 kengyel 25 cm-enként, a lábazat bekötővasai 50 cm-enként), és öntsd ki betonnal (4,61 m³).');
+    expect(t).toContain('Falazd fel a lábazatot 56 db 25 cm-es zsalukőből 2 sorban 30 cm magasra (a felső sort méretre vágva), soronként 2 db Ø8 vassal; töltsd ki betonnal (1,16 m³). A belső pilléreket ugyanígy.');
+    expect(t).toContain('Hagyd szilárdulni legalább 7 napig, mielőtt terheled.');
+    const b = get(ss, 'beamFrame');
+    const bt = b.todo.join('\n');
+    expect(b.todo.length).toBeGreaterThanOrEqual(3);
+    expect(b.todo.length).toBeLessThanOrEqual(6);
+    expect(bt).toContain('Terítsd le a vízszigetelő lemezt a lábazat tetejére (15 m).');
+    expect(bt).toContain('Rögzítsd a 4 talpgerendát 18 db ragasztott M12 horgonnyal, a rövideket a hosszúak közé illesztve.');
+    expect(bt).toContain('Fektesd a belső főgerendát a papucsokba, a végeit illeszd a rövid talpgerendákhoz.');
+  });
+
+  test('exact plinth height: no cut note', () => {
+    const t = get(steps(p => { p.foundation.frame.groundClearance = 250; }), 'supports').todo.join(' ');
+    expect(t).not.toContain('méretre vágva');
+  });
+
+  test('2000x2000: no piers mentioned', () => {
+    const ss = steps(() => {}, 2000, 2000);
+    const t = get(ss, 'supports').todo.join(' ');
+    expect(t).not.toContain('pillér');
+    expect(t).not.toContain('Pillér');
+    expect(get(ss, 'supports').todo.length).toBeGreaterThanOrEqual(3);
+    const bt = get(ss, 'beamFrame').todo.join(' ');
+    expect(bt).not.toContain('belső főgerenda');
+    expect(bt).not.toContain('papucs');
+  });
+});

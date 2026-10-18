@@ -92,7 +92,7 @@ beforeEach(async () => {
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-function setup(groundScrew = false, type?: 'padFooting') {
+function setup(groundScrew = false, type?: 'padFooting' | 'stripFooting') {
   const plan = createDefaultPlan();
   if (groundScrew) plan.foundation.type = 'groundScrew';
   if (type) { plan.foundation.type = type; plan.foundation.frame.groundClearance = 300; }
@@ -136,6 +136,13 @@ test('padFooting plan: Pontalapok section and its to-dos in the chapter', async 
   await exportPdf(plan, output, OPTS);
   expect(texts()).toContain('1. Pontalapok');
   for (const todo of steps[0].todo) expect(texts().join(' ')).toContain(todo);
+});
+
+test('stripFooting plan: Sávalap és lábazat section and its to-dos in the chapter', async () => {
+  const { plan, output, steps } = setup(false, 'stripFooting');
+  await exportPdf(plan, output, OPTS);
+  expect(texts()).toContain('1. Sávalap és lábazat');
+  for (const s of steps.slice(0, 2)) for (const todo of s.todo) expect(texts().join(' ')).toContain(todo);
 });
 
 test('images added when snapshots available', async () => {

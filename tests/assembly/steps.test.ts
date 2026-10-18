@@ -391,12 +391,12 @@ test('slab plan: step list unchanged', () => {
 });
 
 // pontalapos és betonpilléres tervek: a támasz-lépés teljessége
-function supportPlan(type: 'padFooting' | 'concretePier', kind: 'block200' | 'block250' | 'tube200', w: number, l: number): Plan {
+function supportPlan(type: 'padFooting' | 'concretePier' | 'stripFooting',kind: 'block200' | 'block250' | 'tube200', w: number, l: number): Plan {
   const p = mono4x6Plan();
   p.building = { ...p.building, width: w, length: l };
   p.foundation.type = type;
   p.foundation.pier = { kind };
-  if (type === 'padFooting') p.foundation.frame.groundClearance = 300;
+  if (type === 'padFooting' || type === 'stripFooting') p.foundation.frame.groundClearance = 300;
   return p;
 }
 const SUPPORT_PLANS: Array<[string, Plan, string]> = [
@@ -404,6 +404,8 @@ const SUPPORT_PLANS: Array<[string, Plan, string]> = [
   ['pier block 3000×4000', supportPlan('concretePier', 'block250', 3000, 4000), 'Betonpillérek'],
   ['pier tube 6000×8000', supportPlan('concretePier', 'tube200', 6000, 8000), 'Betonpillérek'],
   ['pier block 12000×12000', supportPlan('concretePier', 'block200', 12000, 12000), 'Betonpillérek'],
+  ['strip 3000×4000', supportPlan('stripFooting', 'block250', 3000, 4000), 'Sávalap és lábazat'],
+  ['strip 2000×2000', supportPlan('stripFooting', 'block250', 2000, 2000), 'Sávalap és lábazat'],
 ];
 
 describe.each(SUPPORT_PLANS)('%s', (_n, plan, title) => {
@@ -422,7 +424,8 @@ describe.each(SUPPORT_PLANS)('%s', (_n, plan, title) => {
     const nonTimber = calc.lines.filter(l => !isTimberStockLine(l));
     expect(steps.flatMap(s => s.lines).map(l => l.lineId).sort()).toEqual(nonTimber.map(l => l.id).sort());
     for (const l of nonTimber.filter(x => x.id.startsWith('foundation.'))) {
-      if (l.id === 'foundation.beamBolts') expect(steps.find(s => s.id === 'beamFrame')!.lines.map(x => x.lineId)).toContain(l.id);
+      if (l.id === 'foundation.dpc' || l.id === 'foundation.sillAnchors') expect(steps.find(s => s.id === 'beamFrame')!.lines.map(x => x.lineId)).toContain(l.id);
+      else if (l.id === 'foundation.beamBolts') expect(steps.find(s => s.id === 'beamFrame')!.lines.map(x => x.lineId)).toContain(l.id);
       else if (l.id === 'foundation.joistHangers') expect(steps.find(s => s.id === 'floor')!.lines.map(x => x.lineId)).toContain(l.id);
       else expect(steps[0].lines.map(x => x.lineId), l.id).toContain(l.id);
     }
