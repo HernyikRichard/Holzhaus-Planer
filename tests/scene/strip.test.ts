@@ -14,7 +14,7 @@ function mk(width = 3000, length = 4000, over: (p: Plan) => void = () => {}): Pl
   return p;
 }
 const kinds = (sc: Scene, k: string): Element[] => sc.elements.filter(e => e.kind === k);
-const sills = (sc: Scene): Element[] => sc.elements.filter(e => e.kind === 'beam' && e.pieceLabel === 'talpgerenda');
+const sills = (sc: Scene): Element[] => sc.elements.filter(e => e.kind === 'beam' && e.pieceLabel === 'lábazati gerenda');
 const inner = (sc: Scene): Element[] => sc.elements.filter(e => e.kind === 'beam' && e.pieceLabel === 'főgerenda');
 const sumCount = (sc: Scene, k: string): number => sc.fasteners.filter(f => f.kind === k).reduce((a, f) => a + f.count, 0);
 const overlapArea = (a: Element, b: Element): number =>
@@ -49,10 +49,10 @@ describe('sávalap scene 3000×4000', () => {
     expect(s.S).toEqual({ u: 250, v: 3750, w: 2500, h: 400 });
   });
 
-  test('talpgerendák: 2 hosszú (4000) és 2 rövid (2800)', () => {
+  test('lábazati gerendák: 2 hosszú (4000) és 2 rövid (2800)', () => {
     const t = sills(sc);
     expect(t.map(e => e.length)).toEqual([4000, 4000, 2800, 2800]);
-    expect(t.map(e => e.label)).toEqual(['Talpgerenda #1', 'Talpgerenda #2', 'Talpgerenda #3', 'Talpgerenda #4']);
+    expect(t.map(e => e.label)).toEqual(['Lábazati gerenda #1', 'Lábazati gerenda #2', 'Lábazati gerenda #3', 'Lábazati gerenda #4']);
     // hosszúak a szélső főgerenda-helyen, rövidek a két hosszú között
     expect(t[0].geom).toEqual({ u: 0, v: 0, w: 100, h: 4000 });
     expect(t[1].geom).toEqual({ u: 2900, v: 0, w: 100, h: 4000 });
@@ -60,7 +60,7 @@ describe('sávalap scene 3000×4000', () => {
     expect(t[3].geom).toEqual({ u: 100, v: 3900, w: 2800, h: 100 });
   });
 
-  test('1 belső főgerenda 3800, a rövid talpgerendák között', () => {
+  test('1 belső főgerenda 3800, a rövid lábazati gerendák között', () => {
     const b = inner(sc);
     expect(b).toHaveLength(1);
     expect(b[0].length).toBe(3800);
@@ -86,10 +86,10 @@ describe('sávalap scene 3000×4000', () => {
     }
   });
 
-  test('gerendasaru: párnafa × hosszú talpgerenda, és × belső gerenda, ahol keresztezi', () => {
+  test('gerendasaru: párnafa × hosszú lábazati gerenda, és × belső gerenda, ahol keresztezi', () => {
     const hangers = sc.fasteners.filter(x => x.kind === 'joistHanger');
     const n = f.joistPositions.length;
-    // a két peremgerenda a rövid talpgerendán fekszik, a belső gerendát nem keresztezi
+    // a két peremgerenda a rövid lábazati gerendán fekszik, a belső gerendát nem keresztezi
     expect(hangers).toHaveLength(2 * n + (n - 2));
     for (const h of hangers) {
       expect(h.elementIds[0]).toMatch(/^floor\.joist\./);
@@ -103,7 +103,7 @@ describe('sávalap scene 3000×4000', () => {
   });
 });
 
-test('8000×6000: a hosszú talpgerenda a legnagyobb szálhossznál toldva (Review Focus 3)', () => {
+test('8000×6000: a hosszú lábazati gerenda a legnagyobb szálhossznál toldva (Review Focus 3)', () => {
   const p = mk(8000, 6000);
   const sc = buildScene(p);
   const long = sills(sc).filter(e => e.geom.h === 100 && e.geom.v === 0); // along x: a hosszúak v = 0 és v = W − bw

@@ -172,7 +172,7 @@ describe('Alaptípus', () => {
     expect(root.textContent).toContain('Gerendakeretes alapnál a padló kötelező.');
     expect(field<HTMLInputElement>('floor.joistSpacing').disabled).toBe(false);
   });
-  test('four picker buttons, exactly one pressed', () => {
+  test('five picker buttons, exactly one pressed', () => {
     const { root } = setup('foundation');
     const btns = Array.from(root.querySelectorAll('[data-section="foundation-type"] button'));
     expect(btns.map(b => b.textContent)).toEqual(['Betonlemez', 'Talajcsavar', 'Pontalap', 'Betonpillér', 'Sávalap']);
@@ -205,7 +205,7 @@ describe('Alaptípus', () => {
     fireEvent.change(field('foundation.pier.kind'), { target: { value: 'tube200' } });
     expect(store.get().plan.foundation.pier.kind).toBe('tube200');
   });
-  test('floor toggle is locked for all three frame types', () => {
+  test('floor toggle is locked for all four frame types', () => {
     const { root, field } = setup('foundation');
     for (const name of ['Talajcsavar', 'Pontalap', 'Betonpillér', 'Sávalap']) {
       fireEvent.click(screen.getByRole('button', { name }));

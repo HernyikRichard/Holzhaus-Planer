@@ -46,11 +46,11 @@ describe('stripLayout 3×4 m, alapértékek', () => {
     expect(s.blocksPerRow).toBe(28);
     expect(s.topRowCut).toBe(true); // 300 nem többszöröse 250-nek
   });
-  test('talpgerendák és belső tengelyek', () => {
+  test('lábazati gerendák és belső tengelyek', () => {
     expect(s.longSills).toEqual([{ w: 50 }, { w: 2950 }]);
     expect(s.shortSills).toEqual([{ l: 50 }, { l: 3950 }]);
     const f = frameLayout(mk());
-    expect(f.W - 2 * f.beam.width).toBe(2800); // a rövid talpgerendák hossza
+    expect(f.W - 2 * f.beam.width).toBe(2800); // a rövid lábazati gerendák hossza
     expect(s.innerBeamAxes).toEqual([1500]);
     expect(s.innerSupportAxes).toEqual([1383, 2617]);
     expect(s.pierCount).toBe(2);
@@ -95,7 +95,7 @@ test('fordított tájolás 4×3 m: a főgerendák x mentén, a tengely a teljes 
     [[50, 2950], [3950, 2950]],
     [[50, 50], [50, 2950]],
   ]);
-  // keret-koordináták: a hosszú talpgerendák w (= y), a rövidek l (= x) mentén
+  // keret-koordináták: a hosszú lábazati gerendák w (= y), a rövidek l (= x) mentén
   expect(s.longSills).toEqual([{ w: 50 }, { w: 2950 }]);
   expect(s.shortSills).toEqual([{ l: 50 }, { l: 3950 }]);
   expect(s.innerBeamAxes).toEqual([1500]);
@@ -169,6 +169,7 @@ describe('anyaglista 3×4 m, alapértékek (spec táblázat)', () => {
     expect(qty(p, 'foundation.plinthBlock')).toBe(56);      // 2 sor × 28
     expect(qty(p, 'foundation.pierBlock')).toBe(4);         // 2 pillér × 2 sor
     expect(qty(p, 'foundation.pierBracket')).toBe(2);
+    expect(lineOf(p, 'foundation.sillAnchors')?.explanation).toContain('2 × 5 + 2 × 4 = 18 db');
     expect(qty(p, 'foundation.sillAnchors')).toBe(18);      // 2 × (4000/1000 → 5) + 2 × (2800/1000 → 3 + 1 = 4)
     expect(qty(p, 'foundation.dpc')).toBe(15);              // 13,6 × 1,1 = 14,96 → 15,0
     expect(qty(p, 'foundation.excavation')).toBe(4.61);     // 4,352 + 0,256 = 4,608
@@ -205,7 +206,7 @@ describe('anyaglista 3×4 m, alapértékek (spec táblázat)', () => {
 });
 
 describe('gerendasaru magyarázata a jelenet darabszámaiból', () => {
-  test('3×4 m: a magyarázat összege a darabszám, a peremi párnafák csak a talpgerendákon', () => {
+  test('3×4 m: a magyarázat összege a darabszám, a peremi párnafák csak a lábazati gerendákon', () => {
     const p = mk();
     const l = lineOf(p, 'foundation.joistHangers')!;
     expect(hangerSum(l.explanation!)).toBe(l.quantity);

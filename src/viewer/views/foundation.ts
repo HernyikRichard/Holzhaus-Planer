@@ -35,9 +35,19 @@ function drawFrameFoundation(ctx: ViewCtx): string {
   let frame = '';
   if (ctx.on('frame')) {
     if (strip) {
-      // a sáv szaggatott körvonallal (az oldalak téglalapjai együtt a külső és a belső élt adják), rajta a lábazat
-      for (const e of scene.elements.filter(x => x.kind === 'stripFooting')) {
-        frame += elGroup(e.id, e.kind, kit.rect(e.geom.u, e.geom.v, e.geom.w, e.geom.h, `${kit.fill('concrete', 0.12)} ${kit.stroke('line', 1, [6, 4])}`));
+      // a sáv: oldalanként körvonal nélküli kitöltés (hover / kijelölés), együtt egyetlen szaggatott külső és belső körvonallal
+      const bands = scene.elements.filter(x => x.kind === 'stripFooting');
+      for (const e of bands) {
+        frame += elGroup(e.id, e.kind, kit.rect(e.geom.u, e.geom.v, e.geom.w, e.geom.h, `${kit.fill('concrete', 0.12)} stroke="none"`));
+      }
+      if (bands.length) {
+        const sw = plan.foundation.strip.width;
+        const u0 = Math.min(...bands.map(e => e.geom.u));
+        const v0 = Math.min(...bands.map(e => e.geom.v));
+        const u1 = Math.max(...bands.map(e => e.geom.u + e.geom.w));
+        const v1 = Math.max(...bands.map(e => e.geom.v + e.geom.h));
+        const dash = `fill="none" ${kit.stroke('line', 1, [6, 4])}`;
+        frame += kit.rect(u0, v0, u1 - u0, v1 - v0, dash) + kit.rect(u0 + sw, v0 + sw, u1 - u0 - 2 * sw, v1 - v0 - 2 * sw, dash);
       }
       for (const e of scene.elements.filter(x => x.kind === 'plinth')) {
         frame += elGroup(e.id, e.kind, kit.rect(e.geom.u, e.geom.v, e.geom.w, e.geom.h, `${kit.fill('concrete', 0.6)} ${kit.stroke('line', 1)}`));
@@ -102,17 +112,16 @@ function drawFrameFoundation(ctx: ViewCtx): string {
     dims += kit.chain(rows, rOut * row);
     dims += kit.dim(...rows[0], ...rows[rows.length - 1], rOut * row * 2, cm(f.W));
     if (s) {
-      // a sáv és a lábazat szélessége a túlsó sarokban (l = L, w = W), a hosszú sáv végén kifelé
+      // a sáv szélessége a w = W − h, a lábazaté a w = h sáv végén kifelé, külön mérethúzásokon
       const { strip: sp, plinth, frame: fr } = plan.foundation;
       const pw = PLINTH_BLOCK_WIDTH[plinth.block];
-      const wc = f.W - h;
-      const across = (width: number, k: number): string => {
+      const across = (width: number, wc: number): string => {
         const l = f.L - h + width / 2;
         const a = P(l, wc - width / 2);
         const b = P(l, wc + width / 2);
-        return kit.dim(...a, ...b, out(a, b, P(l + 1, wc)) * row * k, cm(width));
+        return kit.dim(...a, ...b, out(a, b, P(l + 1, wc)) * row, cm(width));
       };
-      dims += across(sp.width, 1) + across(pw, 2);
+      dims += across(sp.width, f.W - h) + across(pw, h);
       dims += kit.text(0, -row * 2 - fs * 2.6,
         `Sávalap: ${hu(s.P / 1000, 1)} m, ${cm(sp.width)} széles, ${cm(sp.depth)} mély; lábazat ${pw / 10} cm-es zsalukő, ${cm(fr.groundClearance)}`,
         { anchor: 'start' });

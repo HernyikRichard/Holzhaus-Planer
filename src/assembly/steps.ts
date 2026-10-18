@@ -93,7 +93,7 @@ const LINE_IDS: Record<string, AssemblyStepId> = {
   // talajcsavaros alap: pontos egyezés a `foundation.` előtag előtt
   'foundation.groundScrew': 'supports', 'foundation.screwHead': 'supports',
   'foundation.beamBolts': 'beamFrame', 'foundation.joistHangers': 'floor',
-  // sávalap: a vízszigetelés és a talpgerenda-horgonyok a gerendakeret lépésében
+  // sávalap: a vízszigetelés és a lábazati gerenda horgonyai a gerendakeret lépésében
   'foundation.dpc': 'beamFrame', 'foundation.sillAnchors': 'beamFrame',
 };
 const LINE_PREFIXES: Array<[string, AssemblyStepId]> = [

@@ -145,7 +145,7 @@ test('a támasz buboréka pontalapnál és betonpillérnél', () => {
 test('a sávalap elemeinek buboréka', () => {
   const p = createDefaultPlan(); p.foundation.type = 'stripFooting'; const sc = buildScene(p);
   const t = tooltipLines(sc, p, { el: 'frame.sill.1' });
-  expect(t[0]).toBe('Talpgerenda #1 · gerendakeret');
+  expect(t[0]).toBe('Lábazati gerenda #1 · gerendakeret');
   expect(t[1]).toBe('10×15 cm · hossza 400 cm');
   const pl = tooltipLines(sc, p, { el: 'frame.plinth.N' });
   expect(pl[0]).toBe('Lábazat: É · gerendakeret');
@@ -160,4 +160,15 @@ test('a sávalap elemeinek buboréka', () => {
   for (const f of sc.fasteners.filter(x => x.group === 'frame')) expect(tooltipLines(sc, p, { fx: f.id }).length, f.id).toBe(4);
   p.foundation.plinth.block = 'block300';
   expect(tooltipLines(buildScene(p), p, { el: 'frame.support.1' })[1]).toBe('Talp 40×40 cm · 80 cm mélyen · 30×30 cm-es zsalukő pillér');
+});
+
+test('a rövid lábazati gerendának nincs szomszédja, a hosszúé és a belső gerendáé értelmes', () => {
+  const p = createDefaultPlan(); p.foundation.type = 'stripFooting'; const sc = buildScene(p);
+  const line = (id: string): string => tooltipLines(sc, p, { el: id })[3];
+  expect(line('frame.sill.3')).toBe('Szomszédok: ← — · — →');
+  expect(line('frame.sill.4')).toBe('Szomszédok: ← — · — →');
+  expect(line('frame.sill.1')).not.toMatch(/NaN|undefined|-\d/);
+  expect(line('frame.sill.1')).toMatch(/→$/);
+  const inner = sc.elements.find(e => e.kind === 'beam' && e.id.startsWith('frame.beam.'));
+  if (inner) expect(tooltipLines(sc, p, { el: inner.id })[3]).not.toMatch(/NaN|undefined|-\d/);
 });

@@ -301,7 +301,7 @@ describe('strip footing to-dos', () => {
     expect(s.todo.length).toBeLessThanOrEqual(6);
     expect(t).toContain('Tűzd ki a sávalap tengelyét (2,9 × 3,9 m) és a 2 belső pillér helyét.');
     expect(t).toContain('Ásd ki az árkot 40 cm szélesen, 80 cm mélyre (13,6 m), és a 2 pillér gödrét 40×40 cm-re.');
-    expect(t).toContain('Helyezd be a vasalást (4 db Ø10 hosszvas, Ø6 kengyel 25 cm-enként, a lábazat bekötővasai 50 cm-enként), és öntsd ki betonnal (4,61 m³).');
+    expect(t).toContain('Helyezd be a vasalást (4 db Ø10 hosszvas, Ø6 kengyel 25 cm-enként, a lábazat bekötővasai 50 cm-enként, a pillértalpakban 4 db Ø10 hosszvas), és öntsd ki betonnal (4,61 m³).');
     expect(t).toContain('Falazd fel a lábazatot 56 db 25 cm-es zsalukőből 2 sorban 30 cm magasra (a felső sort méretre vágva), soronként 2 db Ø8 vassal; töltsd ki betonnal (1,16 m³). A belső pilléreket ugyanígy.');
     expect(t).toContain('Hagyd szilárdulni legalább 7 napig, mielőtt terheled.');
     const b = get(ss, 'beamFrame');
@@ -309,8 +309,19 @@ describe('strip footing to-dos', () => {
     expect(b.todo.length).toBeGreaterThanOrEqual(3);
     expect(b.todo.length).toBeLessThanOrEqual(6);
     expect(bt).toContain('Terítsd le a vízszigetelő lemezt a lábazat tetejére (15 m).');
-    expect(bt).toContain('Rögzítsd a 4 talpgerendát 18 db ragasztott M12 horgonnyal, a rövideket a hosszúak közé illesztve.');
-    expect(bt).toContain('Fektesd a belső főgerendát a papucsokba, a végeit illeszd a rövid talpgerendákhoz.');
+    expect(bt).toContain('Rögzítsd a 4 lábazati gerendát 18 db ragasztott M12 horgonnyal, a rövideket a hosszúak közé illesztve.');
+    expect(bt).toContain('Fektesd a belső főgerendát a papucsokba, a végeit illeszd a rövid lábazati gerendákhoz, és rögzítsd szögvassal.');
+  });
+
+  test('beamFrame és padló: kétrétegű gerenda, szögvas, a párnafák alátámasztása', () => {
+    const ss = steps(p => { p.foundation.frame.beamSection = 'b2x50x150'; });
+    expect(get(ss, 'beamFrame').todo.join(' ')).toContain('A 2×50×150-es lábazati gerenda és főgerenda két összeszegezett pallóból áll.');
+    expect(get(ss, 'floor').todo.join(' ')).toContain('a lábazati gerendákra és a belső főgerendákra');
+    expect(get(steps(), 'beamFrame').todo.join(' ')).not.toContain('pallóból');
+    const none = steps(p => { p.floor.joistSection = { t: 50, w: 150 }; }, 2000, 2000);
+    expect(get(none, 'floor').todo.join(' ')).toMatch(/a lábazati gerendákra, a két/);
+    expect(get(none, 'supports').todo.join(' ')).not.toContain('pillértalp');
+    expect(get(steps(p => { p.foundation.type = 'padFooting'; }), 'floor').todo.join(' ')).toContain('a főgerendákra, a két');
   });
 
   test('exact plinth height: no cut note', () => {

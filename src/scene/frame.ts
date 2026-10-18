@@ -135,12 +135,12 @@ function linkFasteners(elements: Element[], fasteners: FastenerRef[]): { element
 
 const SIDE_NAME: Record<WallSide, string> = { N: 'É', E: 'K', S: 'D', W: 'Ny' };
 
-/** Egy L-irányú gerenda (talpgerenda vagy belső főgerenda): w-tengelye, szegmensei [l0, l1] és rétegenkénti elem-id-i. */
+/** Egy L-irányú gerenda (lábazati gerenda vagy belső főgerenda): w-tengelye, szegmensei [l0, l1] és rétegenkénti elem-id-i. */
 interface LongBeam { w: Mm; segs: Array<[Mm, Mm]>; ids: string[][] }
 
 /**
  * Sávalap: a sáv és a lábazat oldalanként (a hosszú oldalak viszik a sarkokat), a belső pillérek, a négy
- * talpgerenda (a hosszúak a legnagyobb szálhossznál toldva), a belső főgerendák (toldás a pillérek fölött),
+ * lábazati gerenda (a hosszúak a legnagyobb szálhossznál toldva), a belső főgerendák (toldás a pillérek fölött),
  * a párnafák és a rögzítések.
  */
 function stripFrameElements(plan: Plan): { elements: Element[]; fasteners: FastenerRef[] } {
@@ -187,15 +187,15 @@ function stripFrameElements(plan: Plan): { elements: Element[]; fasteners: Faste
     }
   });
 
-  // talpgerendák: a két hosszú (a szélső főgerenda-helyen, folyamatos alátámasztás: toldás a legnagyobb
+  // lábazati gerendák: a két hosszú (a szélső főgerenda-helyen, folyamatos alátámasztás: toldás a legnagyobb
   // szálhossznál), majd a két rövid a hosszúak között; szegmensenként, rétegenként
   let tn = 0;
   const sill = (geom: Geom, length: Mm): string => {
     tn++;
     const id = `frame.sill.${tn}`;
     elements.push({
-      id, kind: 'beam', label: `Talpgerenda #${tn}`, group: 'frame', category: 'Alap',
-      pieceLabel: 'talpgerenda', section: beam.ply, length, geom, fasteners: [],
+      id, kind: 'beam', label: `Lábazati gerenda #${tn}`, group: 'frame', category: 'Alap',
+      pieceLabel: 'lábazati gerenda', section: beam.ply, length, geom, fasteners: [],
     });
     return id;
   };
@@ -216,7 +216,7 @@ function stripFrameElements(plan: Plan): { elements: Element[]; fasteners: Faste
     }
   }
 
-  // belső főgerendák: a rövid talpgerendák között (bw … L − bw), toldás a belső pillérek fölött
+  // belső főgerendák: a rövid lábazati gerendák között (bw … L − bw), toldás a belső pillérek fölött
   let bn = 0;
   const innerSegs = beamSegments(f.L - 2 * bw, s.innerSupportAxes.map(a => a - bw), stock)
     .map(([s0, s1]): [Mm, Mm] => [s0 + bw, s1 + bw]);
@@ -253,8 +253,8 @@ function stripFrameElements(plan: Plan): { elements: Element[]; fasteners: Faste
     });
   });
 
-  // joistHanger: párnafa × (hosszú talpgerenda | belső főgerenda) kereszteződésenként, a w-tengely sorrendjében;
-  // a rövid talpgerendán fekvő peremgerenda a belső főgerendát nem keresztezi
+  // joistHanger: párnafa × (hosszú lábazati gerenda | belső főgerenda) kereszteződésenként, a w-tengely sorrendjében;
+  // a rövid lábazati gerendán fekvő peremgerenda a belső főgerendát nem keresztezi
   const beams = [longSills[0], ...inner, longSills[1]];
   n = 0;
   f.joistPositions.forEach((p, ji) => {

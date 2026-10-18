@@ -110,7 +110,7 @@ function stripSupports(c: Ctx): string[] {
   return [
     `Tűzd ki a sávalap tengelyét (${formatQty(s.sides[0].length / 1000)} × ${formatQty(s.sides[1].length / 1000)} m)${piers ? ` és a ${s.pierCount} belső pillér helyét` : ''}.`,
     `Ásd ki az árkot ${w} cm szélesen, ${formatCm(strip.depth)} mélyre (${formatQty(s.P / 1000)} m)${piers ? `, és a ${s.pierCount} pillér gödrét ${w}×${formatCm(strip.width)}-re` : ''}.`,
-    `Helyezd be a vasalást (${STRIP_LONG_BARS} db Ø10 hosszvas, Ø6 kengyel ${formatCm(STRIP_STIRRUP_SPACING)}-enként, a lábazat bekötővasai ${formatCm(PLINTH_DOWEL_SPACING)}-enként), és öntsd ki betonnal (${formatQty(ceilTo(q.stripM3 + q.footingM3, 0.01))} m³).`,
+    `Helyezd be a vasalást (${STRIP_LONG_BARS} db Ø10 hosszvas, Ø6 kengyel ${formatCm(STRIP_STIRRUP_SPACING)}-enként, a lábazat bekötővasai ${formatCm(PLINTH_DOWEL_SPACING)}-enként${piers ? `, a pillértalpakban ${LONG_BARS_PER_SUPPORT} db Ø10 hosszvas` : ''}), és öntsd ki betonnal (${formatQty(ceilTo(q.stripM3 + q.footingM3, 0.01))} m³).`,
     `Falazd fel a lábazatot ${q.plinthBlocks} db ${cm} cm-es zsalukőből ${s.rows} sorban ${formatCm(frame.groundClearance)} magasra${s.topRowCut ? ' (a felső sort méretre vágva)' : ''}, soronként ${PLINTH_ROW_BARS} db Ø8 vassal; töltsd ki betonnal (${formatQty(ceilTo(q.plinthM3, 0.01))} m³).${piers ? ' A belső pilléreket ugyanígy.' : ''}`,
     `Hagyd szilárdulni legalább ${CURE_DAYS} napig, mielőtt terheled.`,
   ];
@@ -151,21 +151,22 @@ function supports(c: Ctx): string[] {
   return out;
 }
 
-/** Sávalapnál a gerendakeret: vízszigetelő lemez, talpgerendák horgonyokkal, belső főgerendák. */
+/** Sávalapnál a gerendakeret: vízszigetelő lemez, lábazati gerendák horgonyokkal, belső főgerendák. */
 function stripBeamFrame(c: Ctx): string[] {
   const s = stripLayout(c.plan);
   const dpc = line(c, 'foundation.dpc');
   const anchors = line(c, 'foundation.sillAnchors');
   const out: string[] = [];
   if (dpc) out.push(`Terítsd le a vízszigetelő lemezt a lábazat tetejére (${qty(dpc)}).`);
-  out.push(`Rögzítsd a ${s.longSills.length + s.shortSills.length} talpgerendát${anchors ? ` ${qty(anchors)} ragasztott M12 horgonnyal` : ''}, a rövideket a hosszúak közé illesztve.`);
+  out.push(`Rögzítsd a ${s.longSills.length + s.shortSills.length} lábazati gerendát${anchors ? ` ${qty(anchors)} ragasztott M12 horgonnyal` : ''}, a rövideket a hosszúak közé illesztve.`);
   const n = s.innerBeamAxes.length;
   if (n > 0) {
-    const ends = 'a végeit illeszd a rövid talpgerendákhoz';
+    const ends = 'a végeit illeszd a rövid lábazati gerendákhoz, és rögzítsd szögvassal';
     out.push(s.innerSupportAxes.length > 0
       ? `Fektesd ${n > 1 ? `a ${n} belső főgerendát` : 'a belső főgerendát'} a papucsokba, ${ends}.`
       : `Fektesd ${n > 1 ? `a ${n} belső főgerendát` : 'a belső főgerendát'}, ${ends}.`);
   }
+  if (BEAM_SECTIONS[c.plan.foundation.frame.beamSection].plies === 2) out.push('A 2×50×150-es lábazati gerenda és főgerenda két összeszegezett pallóból áll.');
   out.push('Ellenőrizd az átlókat: a keret derékszögű legyen.');
   return out;
 }
@@ -182,12 +183,18 @@ function beamFrame(c: Ctx): string[] {
   return out;
 }
 
+/** A padló párnafáinak alátámasztása: sávalapnál a lábazati gerendák (és a belső főgerendák), egyébként a főgerendák. */
+function floorBearers(c: Ctx): string {
+  if (c.plan.foundation.type !== 'stripFooting') return 'a főgerendákra';
+  return stripLayout(c.plan).innerBeamAxes.length > 0 ? 'a lábazati gerendákra és a belső főgerendákra' : 'a lábazati gerendákra';
+}
+
 function floor(c: Ctx): string[] {
   const fl = c.plan.floor;
   const out: string[] = [];
   const joists = c.els.filter(e => e.kind === 'joist').sort((a, b) => a.geom.u - b.geom.u);
   if (hasFrame(c.plan) && joists.length) {
-    out.push(`Fektesd ${az(joists.length)} párnafát ${formatCm(fl.joistSpacing)}-es kiosztással a főgerendákra, a két szélső párnafa a peremgerenda, a rövid falak alatt fut.`);
+    out.push(`Fektesd ${az(joists.length)} párnafát ${formatCm(fl.joistSpacing)}-es kiosztással ${floorBearers(c)}, a két szélső párnafa a peremgerenda, a rövid falak alatt fut.`);
     out.push(`Rögzítsd minden kereszteződést gerendasaruval (${fasteners(c, 'joistHanger')} db).`);
   } else if (joists.length) {
     const u0 = joists[0].geom.u;

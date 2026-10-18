@@ -526,9 +526,12 @@ describe('sávalap rajzai', () => {
     expect(s).toContain('>40 cm<'); // a sáv szélessége
     expect(s).toContain('>25 cm<'); // a lábazat szélessége
     // a sáv szaggatott, a lábazat teli
-    expect(s).toMatch(/class="el el-stripFooting"><rect [^>]*stroke-dasharray/);
+    // az oldalak körvonal nélküliek; a szaggatottak: külső + belső sávkörvonal, az épületkontúr és a pillértalpak
+    expect(s).toMatch(/class="el el-stripFooting"><rect [^>]*stroke="none"/);
+    expect(s).not.toMatch(/class="el el-stripFooting"><rect [^>]*stroke-dasharray/);
+    expect(count(s, /<rect [^>]*fill="none"[^>]*stroke-dasharray="[^"]*"[^>]*\/>/g)).toBe(piers + 3);
     expect(s).toMatch(/class="el el-plinth"><rect [^>]*fill-opacity/);
-    // a sáv a lábazat, a lábazat a talpgerendák alatt
+    // a sáv a lábazat, a lábazat a lábazati gerendák alatt
     expect(s.indexOf('el-stripFooting')).toBeLessThan(s.indexOf('el-plinth'));
     expect(s.indexOf('el-plinth')).toBeLessThan(s.indexOf('el-beam'));
     expect(count(s, /data-fx="/g)).toBe(qs.fasteners.filter(f => f.group === 'frame').length);
@@ -539,7 +542,7 @@ describe('sávalap rajzai', () => {
     expect(b3).toContain('Sávalap: 13,6 m, 50 cm széles, 100 cm mély; lábazat 30 cm-es zsalukő, 45 cm');
   });
 
-  test('metszet: sáv, lábazat, vízszigetelés, talpgerenda; mélység és lábazat-magasság', () => {
+  test('metszet: sáv, lábazat, vízszigetelés, lábazati gerenda; mélység és lábazat-magasság', () => {
     for (const [w, l] of [[3000, 4000], [4000, 3000]] as const) {
       for (const ridge of ['x', 'y'] as const) {
         const s = g(mk(w, l, q => { q.roof.ridgeDirection = ridge; }), 'section');
@@ -549,7 +552,7 @@ describe('sávalap rajzai', () => {
         expect(s, k).toContain('>30 cm<');
         expect(s, k).toContain('Sávalap 40×80 cm');
         expect(s, k).toContain('Lábazat 25 cm-es zsalukő');
-        expect(s, k).toContain('Talpgerenda 100×150');
+        expect(s, k).toContain('Lábazati gerenda 100×150');
         expect(s, k).not.toContain('data-layer="groundScrew"');
         expect(s, k).not.toContain('data-layer="footing"');
         expect(s, k).not.toContain('Betontalp');
@@ -567,7 +570,7 @@ describe('sávalap rajzai', () => {
         for (const depth of [600, 1200]) {
           const s = g(mk(w, l, q => { q.roof.ridgeDirection = ridge; q.foundation.strip.depth = depth; }), 'section');
           const k = `${w}×${l} ${ridge} ${depth}`;
-          const names = ['Padló', 'Talpgerenda', 'Vízszigetelő', 'Lábazat', 'Sávalap', 'Belső pillér'];
+          const names = ['Padló', 'Lábazati gerenda', 'Vízszigetelő', 'Lábazat \\d', 'Sávalap', 'Belső pillér'];
           const leaders = names.map((nm): Seg => {
             const m = new RegExp(String.raw`<line x1="([-\d.]+)" y1="([-\d.]+)" x2="([-\d.]+)" y2="([-\d.]+)"[^>]*/>\s*<text[^>]*>[^<]*${nm}`).exec(s);
             expect(m, `${k} ${nm}`).not.toBeNull();

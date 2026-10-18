@@ -26,7 +26,7 @@ export interface SupportQuantities {
 export interface SupportSpec {
   type: Exclude<FoundationType, 'slab'>;
   label: string;                 // „Talajcsavar” | „Pontalap” | „Betonpillér” | „Sávalap”
-  stepTitle: string;             // „Támaszok” | „Pontalapok” | „Betonpillérek”
+  stepTitle: string;             // „Támaszok” | „Pontalapok” | „Betonpillérek” | „Sávalap és lábazat”
   lines(plan: Plan, layout: FrameLayout): MaterialLine[];
 }
 
@@ -135,7 +135,7 @@ function rebarLine(id: string, name: string, totalMm: number, kgPerM: number, ex
   };
 }
 
-const COUNT_EXPL =(l: FrameLayout, n: number): string => `${l.beamAxes.length} főgerenda × ${l.supportAxes.length} támasz = ${n} db`;
+const COUNT_EXPL = (l: FrameLayout, n: number): string => `${l.beamAxes.length} főgerenda × ${l.supportAxes.length} támasz = ${n} db`;
 
 function groundScrewLines(plan: Plan, f: FrameLayout): MaterialLine[] {
   const gs = plan.foundation.groundScrew;
@@ -217,7 +217,7 @@ export interface StripQuantities {
   stripStirrups: number; stripStirrupMm: Mm;
   pierLongBarMm: Mm; pierFootStirrups: number; pierPierStirrups: number; pierFootStirrupMm: Mm; pierPierStirrupMm: Mm;
   plinthBlocks: number; pierBlocks: number;
-  dpcM: number; sillAnchors: number;
+  dpcM: number; sillAnchors: number; sillAnchorCounts: number[];
 }
 
 /** Sávalap: a sáv, a lábazat és a belső pillérek mennyiségei (az anyaglista közös forrása). */
@@ -247,6 +247,7 @@ export function stripQuantities(plan: Plan): StripQuantities {
   const stripStirrups = Math.ceil(s.P / STRIP_STIRRUP_SPACING - 1e-9);
   const stripStirrupMm = 2 * (width - 100) + 2 * (depth - 100) + 100;
   const sills = [...s.longSills.map(() => fl.L), ...s.shortSills.map(() => fl.W - 2 * fl.beam.width)];
+  const sillAnchorCounts = sills.map(len => Math.ceil(len / SILL_ANCHOR_SPACING - 1e-9) + 1);
   return {
     P: s.P, rows: s.rows, laps, lapped, piers: s.pierCount, pierSide: pierSideMm,
     stripM3, plinthM3, footingM3, pierFillM3, concreteM3: stripM3 + plinthM3 + footingM3 + pierFillM3,
@@ -258,7 +259,7 @@ export function stripQuantities(plan: Plan): StripQuantities {
     stripStirrups, stripStirrupMm, pierLongBarMm, pierFootStirrups, pierPierStirrups, pierFootStirrupMm, pierPierStirrupMm,
     plinthBlocks: s.rows * s.blocksPerRow, pierBlocks: s.pierCount * s.rows,
     dpcM: ceilTo((s.P / 1000) * (1 + DPC_OVERLAP), 0.1),
-    sillAnchors: sills.reduce((a, len) => a + Math.ceil(len / SILL_ANCHOR_SPACING - 1e-9) + 1, 0),
+    sillAnchors: sillAnchorCounts.reduce((a, n) => a + n, 0), sillAnchorCounts,
   };
 }
 
@@ -301,9 +302,16 @@ function stripLines(plan: Plan): MaterialLine[] {
     id: 'foundation.dpc', name: 'Vízszigetelő lemez a lábazat tetejére', quantity: q.dpcM, unit: 'm',
     explanation: `${m(q.P)} m × ${hu(1 + DPC_OVERLAP)} = ${hu((q.P / 1000) * (1 + DPC_OVERLAP), 2)} m → ${hu(q.dpcM, 1)} m`,
   });
+  // egyforma darabszámú gerendák összevonva, a gerendák sorrendjében: „2 × 5 + 2 × 4”
+  const groups: Array<[number, number]> = [];
+  for (const n of q.sillAnchorCounts) {
+    const g = groups.find(x => x[0] === n);
+    if (g) g[1]++; else groups.push([n, 1]);
+  }
+  const anchorSum = groups.map(([n, k]) => `${k} × ${n}`).join(' + ');
   add({
     id: 'foundation.sillAnchors', name: 'Ragasztott betonhorgony (M12 menetes szár + ragasztó)', quantity: q.sillAnchors, unit: 'db',
-    explanation: `talpgerendánként ⌈hossz / ${m(SILL_ANCHOR_SPACING)} m⌉ + 1 (2 hosszú + 2 rövid) = ${q.sillAnchors} db`,
+    explanation: `lábazati gerendánként ⌈hossz / ${m(SILL_ANCHOR_SPACING)} m⌉ + 1: ${anchorSum} = ${q.sillAnchors} db`,
   });
   if (q.piers > 0) {
     add({
@@ -318,7 +326,7 @@ function stripLines(plan: Plan): MaterialLine[] {
   return out;
 }
 
-const SPECS:Record<Exclude<FoundationType, 'slab'>, SupportSpec> = {
+const SPECS: Record<Exclude<FoundationType, 'slab'>, SupportSpec> = {
   groundScrew: { type: 'groundScrew', label: 'Talajcsavar', stepTitle: 'Támaszok', lines: groundScrewLines },
   padFooting: { type: 'padFooting', label: 'Pontalap', stepTitle: 'Pontalapok', lines: concretePartLines },
   concretePier: { type: 'concretePier', label: 'Betonpillér', stepTitle: 'Betonpillérek', lines: concretePartLines },

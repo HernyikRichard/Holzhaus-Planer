@@ -55,7 +55,7 @@ export const PLINTH_DOWEL_SPACING: Mm = 500; // lábazat-bekötővas távolsága
 export const PLINTH_DOWEL_EMBED: Mm = 400; // a bekötővas beágyazása a sávba
 export const PLINTH_ROW_BARS = 2; // Ø8 vas soronként a lábazatban
 export const DPC_OVERLAP = 0.1; // vízszigetelő lemez átfedési ráhagyása
-export const SILL_ANCHOR_SPACING: Mm = 1000; // talpgerenda-horgonyok távolsága
+export const SILL_ANCHOR_SPACING: Mm = 1000; // lábazati gerenda-horgonyok távolsága
 
 // Lemezek
 export const OSB_SHEET = { w: 1250, l: 2500 };

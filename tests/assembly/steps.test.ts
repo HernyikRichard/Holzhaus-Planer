@@ -391,7 +391,7 @@ test('slab plan: step list unchanged', () => {
 });
 
 // pontalapos és betonpilléres tervek: a támasz-lépés teljessége
-function supportPlan(type: 'padFooting' | 'concretePier' | 'stripFooting',kind: 'block200' | 'block250' | 'tube200', w: number, l: number): Plan {
+function supportPlan(type: 'padFooting' | 'concretePier' | 'stripFooting', kind: 'block200' | 'block250' | 'tube200', w: number, l: number): Plan {
   const p = mono4x6Plan();
   p.building = { ...p.building, width: w, length: l };
   p.foundation.type = type;

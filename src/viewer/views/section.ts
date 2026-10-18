@@ -53,6 +53,8 @@ interface FrameSection {
   svg: string; so: number; bottom: number; beamBottom: number; axes: number[]; footingDepth: number | null;
   /** Sávalapnál a belső pillér felirata: a többi alatt, külön elhelyezve, hogy a vezetővonala ne keresztezzen. */
   tail: Label | null;
+  /** A betűméret ismeretében kirajzolandó elemek (a sáv hosszvasai): a méretezés (`scaleTo`) után hívandó. */
+  late: ((fs: number) => string) | null;
 }
 
 const GROUND_MARGIN = 300; // a talajsáv túlnyúlása a ház két oldalán (mm)
@@ -62,7 +64,7 @@ const POST_ROD = 40;       // az oszloptalp menetes szára a rajzon (mm)
 const POST_EMBED = 150;    // az oszloptalp beágyazása a talpba (mm)
 const BRACKET_T = 10;      // a gerendapapucs talplemeze (mm), a 3D-vel egyezően
 const DPC_T = 10;          // a vízszigetelő lemez vastagsága a rajzon (mm), hogy látsszon
-const BAR_R = 6;           // a hosszvas keresztmetszete a rajzon (mm)
+const STRIP_BAR_R = (fs: number): number => Math.max(12, fs * 0.25); // a sáv hosszvasa: a betűmérettel arányos, hogy látszódjon
 
 /**
  * Pontalap / betonpillér a metszetben: a talp a talaj alatt (beton, a hosszvasak szaggatottan), fölötte az oszloptalp
@@ -116,7 +118,7 @@ function concreteSupports(ctx: ViewCtx, axes: number[], lengthwise: boolean, box
  * sorhatárokkal, tetején a vízszigetelő lemez. Ahol a metszet belső főgerendát metsz (keresztben a belső gerendák,
  * hosszában a belső főgerenda mentén a pillértengelyek), a belső pillér a talpával és a gerendapapuccsal.
  */
-function stripSupports(ctx: ViewCtx, S: number, lengthwise: boolean, box: Box, labels: Label[]): { svg: string; axes: number[]; piers: number[]; tail: Label | null } {
+function stripSupports(ctx: ViewCtx, S: number, lengthwise: boolean, box: Box, labels: Label[]): { svg: string; axes: number[]; piers: number[]; tail: Label | null; bars: (fs: number) => string } {
   const { plan, kit } = ctx;
   const fl = frameLayout(plan);
   const sl = stripLayout(plan);
@@ -140,11 +142,12 @@ function stripSupports(ctx: ViewCtx, S: number, lengthwise: boolean, box: Box, l
   let plinth = '';
   let dpc = '';
   let rebar = '';
+  const barPts: Pt[] = [];
   for (const x of axes) {
     strip += box(x - sw / 2, x + sw / 2, -depth, 0, concrete);
     rebar += kit.rect(x - sw / 2 + c, c, sw - 2 * c, depth - 2 * c, `fill="none" ${dashed}`);
     for (const bx of [x - sw / 2 + c, x + sw / 2 - c]) {
-      for (const by of [c, depth - c]) rebar += kit.circle(bx, by, BAR_R, kit.fill('line'));
+      for (const by of [c, depth - c]) barPts.push([bx, by]);
     }
     rebar += kit.line(x, PLINTH_DOWEL_EMBED, x, -(bb - c), dashed);
     plinth += box(x - pw / 2, x + pw / 2, 0, bb - DPC_T, kit.fill('concrete', 0.85)) + rows(x, bb - DPC_T);
@@ -173,7 +176,8 @@ function stripSupports(ctx: ViewCtx, S: number, lengthwise: boolean, box: Box, l
     + `<g data-layer="dpc">${dpc}</g>`
     + (pier ? `<g data-layer="pier">${pier}</g>` : '')
     + `<g data-layer="rebar">${rebar}</g>`;
-  return { svg, axes, piers, tail };
+  const bars = (fs: number): string => barPts.map(([bx, by]) => kit.circle(bx, by, STRIP_BAR_R(fs), kit.fill('line'))).join('');
+  return { svg, axes, piers, tail, bars };
 }
 
 /**
@@ -225,7 +229,7 @@ function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): Frame
   if (sl) svg += sl.svg;
   else if (!screw) svg += concreteSupports(ctx, axes, lengthwise, box, concreteLabels);
 
-  // főgerenda(k); sávalapnál hosszában a két rövid talpgerenda keresztmetszetben, köztük a belső főgerenda
+  // főgerenda(k); sávalapnál hosszában a két rövid lábazati gerenda keresztmetszetben, köztük a belső főgerenda
   let beams = '';
   if (strip && lengthwise) {
     const bw = fl.beam.width;
@@ -259,13 +263,13 @@ function frameSection(ctx: ViewCtx, S: number, box: Box, labels: Label[]): Frame
   const sw = plan.walls.studSection.w;
   labels.push({ ax: sw + 100, az: (bt + ft) / 2, text: `Padló – ${ft - bt} mm` });
   const beamLabel = BEAM_SECTIONS[plan.foundation.frame.beamSection].label;
-  if (strip) labels.push({ ax: fl.beam.width / 2, az: (bb + bt) / 2, text: `Talpgerenda ${beamLabel}` });
+  if (strip) labels.push({ ax: fl.beam.width / 2, az: (bb + bt) / 2, text: `Lábazati gerenda ${beamLabel}` });
   else labels.push({ ax: lengthwise ? sw / 2 : axes[0], az: (bb + bt) / 2, text: `Főgerenda ${beamLabel}` });
   if (screw) labels.push({ ax: axes[0], az: -len / 2, text: GROUND_SCREW_LABEL(d, len) });
   labels.push(...concreteLabels);
   // a méretlánc sávalapnál a lábazat-tengelyeken és a belső pillérekén
   const chain = sl ? [...sl.axes, ...sl.piers].sort((a, b) => a - b) : axes;
-  return { svg, so, bottom, beamBottom: bb, axes: chain, footingDepth, tail: sl?.tail ?? null };
+  return { svg, so, bottom, beamBottom: bb, axes: chain, footingDepth, tail: sl?.tail ?? null, late: sl ? (fs: number) => `<g data-layer="rebarBars">${sl.bars(fs)}</g>` : null };
 }
 
 /** Metszet a gerincre merőlegesen: alap, padló, falak rétegrendje, tető rétegrendje (a régi metszet logikája). */
@@ -380,6 +384,7 @@ export function drawSection(ctx: ViewCtx): string {
   // a betűméret a szerkezet méretéből; utána a címkék és a méretek
   kit.scaleTo(kit.snapshot());
   const fs = kit.fs;
+  if (frame?.late) body += frame.late(fs);
   const reach = Math.max(oe, so) + fs * 2;
   const gap = fs * 1.7;
   const left = [...wallLabels, ...foundationLabels];

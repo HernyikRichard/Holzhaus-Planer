@@ -49,7 +49,7 @@ function calcFrameFoundation(plan: Plan): ModuleResult {
   }
   let hangerExpl = `${f.joistPositions.length} párnafa × ${f.beamAxes.length} főgerenda = ${hangers} db; csavar: ${hangers} × ${JOIST_HANGER_SCREWS} db`;
   if (strip) {
-    // a rövid talpgerendán fekvő peremi párnafák csak a hosszú talpgerendákra akasztanak: a darabszám a jelenetből
+    // a rövid lábazati gerendán fekvő peremi párnafák csak a hosszú lábazati gerendákra akasztanak: a darabszám a jelenetből
     const perJoist = new Map<string, number>();
     for (const x of fasteners) {
       if (x.kind === 'joistHanger') perJoist.set(x.elementIds[0], (perJoist.get(x.elementIds[0]) ?? 0) + x.count);

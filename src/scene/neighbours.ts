@@ -71,10 +71,14 @@ function candidates(scene: Scene, el: Element): { list: Cand[]; mine: Cand } | n
   if (el.group === 'floor' && el.kind === 'joist') return same(o => o.kind === 'joist', joistAxis(el));
   if (el.group === 'frame' && (el.kind === 'support' || el.kind === 'beam')) {
     const axis = frameAxis(scene, el);
+    // sávalapnál a rövid lábazati gerendák a főgerendákra merőlegesek: nekik nincs értelmezhető szomszédjuk
+    const lengthU = (o: Element): boolean => o.geom.w >= o.geom.h;
+    const first = scene.elements.find(o => o.group === 'frame' && o.kind === 'beam');
+    if (el.kind === 'beam' && first && lengthU(el) !== lengthU(first)) return null;
     const across = (o: Element): boolean => (axis === 'u'
       ? Math.min(o.geom.v + o.geom.h, g.v + g.h) - Math.max(o.geom.v, g.v) >= 1
       : Math.min(o.geom.u + o.geom.w, g.u + g.w) - Math.max(o.geom.u, g.u) >= 1);
-    return same(o => o.kind === el.kind && across(o), axis);
+    return same(o => o.kind === el.kind && across(o) && (el.kind !== 'beam' || lengthU(o) === lengthU(el)), axis);
   }
   return null;
 }
