@@ -273,3 +273,32 @@ test('floor plan L at W and N corners (N full on a wide building)', () => {
   wide.openings = [];
   expect(rectOf(wide, 'floor', 'wall.N.cornerStud.1')).toEqual([50, 50, 100, 50]);
 });
+
+describe('állókorcos alumíniumlemez rajzai', () => {
+  const seamPlan = (shape: Plan['roof']['shape'] = 'gable'): Plan => {
+    const q = createDefaultPlan(); q.roof.covering = 'standingSeam'; q.roof.shape = shape;
+    q.roof.pitch = shape === 'gable' ? 30 : shape === 'mono' ? 10 : 3;
+    return q;
+  };
+  const view = (q: Plan, v: ViewId, layers = all) => renderView({ plan: q, scene: buildScene(q), view: v, layers, palette: SCREEN_PALETTE }).svg;
+  test('metszet: 25 mm-es héjazat, címkével; léc nélkül', () => {
+    const s = view(seamPlan(), 'section');
+    expect(s).toContain('Állókorcos alumíniumlemez – 25 mm');
+    expect(s).not.toContain('data-layer="batten"');
+    expect(s).not.toContain('data-layer="counterBatten"');
+    expect(s).toContain('data-layer="decking"');
+  });
+  test('tetőnézet: korcvonalak 500 mm-enként (sávok + 1 síkonként), a lécezés réteggel kapcsolható', () => {
+    for (const [shape, n] of [['gable', 22], ['mono', 11], ['flat', 11]] as const) {
+      const s = view(seamPlan(shape), 'roof');
+      expect(count(s, /class="seam"/g), shape).toBe(n);
+      expect(s).not.toContain('el-roofBatten');
+      expect(s).not.toMatch(/NaN|Infinity/);
+    }
+    expect(view(seamPlan(), 'roof', { ...all, battens: false })).not.toContain('class="seam"');
+  });
+  test('más héjazatnál nincs korcvonal, a cserép metszete változatlan', () => {
+    expect(r('roof')).not.toContain('class="seam"');
+    expect(r('section')).toContain('Cserép – 40 mm');
+  });
+});

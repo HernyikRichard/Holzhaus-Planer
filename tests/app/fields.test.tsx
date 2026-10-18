@@ -214,3 +214,47 @@ test('toStored rounds length fields to whole mm', async () => {
   expect(toStored({ unit: '°' }, '12,5')).toBe(12.5);
   expect(toStored({ unit: '%' }, '12,5')).toBe(0.125);
 });
+
+describe('lapostetőre váltás és a héjazat', () => {
+  test.each(['tile', 'shingle'] as const)('%s → EPDM, rövid tájékoztatással', covering => {
+    const { store, root } = setup('building');
+    act(() => store.update(p => { p.roof.covering = covering; }));
+    expect(root.querySelector('[data-notice="flat-covering"]')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Lapos' }));
+    expect(store.get().plan.roof.covering).toBe('epdm');
+    expect(root.querySelector('[data-notice="flat-covering"]')?.textContent).toMatch(/EPDM/);
+  });
+  test.each(['trapezoid', 'epdm'] as const)('%s változatlan, tájékoztatás nélkül', covering => {
+    const { store, root } = setup('building');
+    act(() => store.update(p => { p.roof.covering = covering; }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lapos' }));
+    expect(store.get().plan.roof.covering).toBe(covering);
+    expect(root.querySelector('[data-notice="flat-covering"]')).toBeNull();
+  });
+  test('betöltött lapos + cserép terv nem alakul át, csak figyelmeztet', () => {
+    const { store } = setup('roof');
+    const p = createDefaultPlan(); p.roof.shape = 'flat'; p.roof.pitch = 3;
+    act(() => store.replace(p));
+    expect(store.get().plan.roof.covering).toBe('tile');
+    expect(store.get().output.warnings.some(w => w.includes('tetőhajlást igényel'))).toBe(true);
+  });
+  test('a Tető lépés mutatja a hajlás-figyelmeztetést', () => {
+    const { store, root } = setup('roof');
+    expect(root.querySelector('[data-notice="pitch"]')).toBeNull();
+    act(() => store.update(p => { p.roof.pitch = 12; }));
+    expect(root.querySelector('[data-notice="pitch"]')?.textContent).toContain('legalább 22°-os');
+  });
+});
+
+test('héjazat-választó: állókorcos lemez, és a gerinccserép kapcsoló gerincfedőként jelenik meg', () => {
+  const { store, root, field } = setup('roof');
+  const sel = field<HTMLSelectElement>('roof.covering');
+  expect(Array.from(sel.options).map(o => o.value)).toContain('standingSeam');
+  expect(Array.from(sel.options).find(o => o.value === 'standingSeam')!.textContent).toBe('Állókorcos alumíniumlemez');
+  const caption = () => field('accessories.ridgeTiles').closest('label')!.querySelector('.caption')!.textContent;
+  expect(caption()).toBe('Gerinccserép');
+  sel.value = 'standingSeam'; fireEvent.change(sel);
+  expect(store.get().plan.roof.covering).toBe('standingSeam');
+  expect(caption()).toBe('Gerincfedő');
+  expect(root.querySelector('[data-notice="pitch"]')).toBeNull();
+});

@@ -92,7 +92,7 @@ function checkShape(plan: Plan): string | null {
     ['floor.osbThickness', oneOf(plan.floor.osbThickness, [18, 22])],
     ['walls.topPlate', oneOf(plan.walls.topPlate, ['single', 'double'])],
     ['roof.shape', oneOf(plan.roof.shape, ['flat', 'mono', 'gable'])],
-    ['roof.covering', oneOf(plan.roof.covering, ['tile', 'trapezoid', 'shingle', 'epdm'])],
+    ['roof.covering', oneOf(plan.roof.covering, ['tile', 'trapezoid', 'shingle', 'epdm', 'standingSeam'])],
     ['roof.ridgeDirection', oneOf(plan.roof.ridgeDirection, ['x', 'y'])],
   ];
   const ins = plan.floor.insulation;

@@ -186,6 +186,7 @@ const KIND_BY_ID: Record<string, ProductKind> = {
   'wall.vaporBarrier': 'foil', 'floor.vaporBarrier': 'foil', 'wall.breatherMembrane': 'foil', 'roof.underlay': 'foil',
   'wall.exteriorCladding': 'cladding',
   'roof.tiles': 'roofing', 'roof.trapezoid': 'roofing', 'roof.shingles': 'roofing', 'acc.ridgeTiles': 'roofing',
+  'roof.standingSeam': 'roofing', 'roof.seamEaveFlashing': 'roofing', 'roof.seamRakeFlashing': 'roofing', 'acc.ridgeCap': 'roofing',
 };
 
 /** A sorhoz várt termékfajta (a termékválasztóhoz, ha nincs párosított termék); az alapozásnál nincs. */
@@ -283,7 +284,7 @@ function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan, meta: { warni
     case 'wall.breatherMembrane':
       return foilCandidates(pl, line, [/páraáteresztő/]) || none('Nincs páraáteresztő fólia az árlistában');
     case 'roof.underlay':
-      if (line.name !== 'Alátétfólia') {
+      if (plan.roof.layers.find(l => l.kind === 'underlay')?.material === 'bitumen') {
         return cheapest(ps.filter(p => p.kind === 'roofing' && /alátét/i.test(p.name) && coverM2(p)), perM2)
           || none('Bitumenes alátétlemez nincs az árlistában');
       }
@@ -312,6 +313,11 @@ function pickByRule(line: MaterialLine, pl: PriceList, plan: Plan, meta: { warni
     case 'roof.tiles':
     case 'acc.ridgeTiles':
       return none('Cserép nincs az árlistában');
+    case 'roof.standingSeam':
+    case 'roof.seamEaveFlashing':
+    case 'roof.seamRakeFlashing':
+    case 'acc.ridgeCap':
+      return none('Állókorcos lemez és szegélyei nincsenek az árlistában');
     case 'acc.gutter':
     case 'acc.gutterEnds':
     case 'acc.gutterJoiners':

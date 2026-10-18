@@ -1,5 +1,9 @@
+import type { Plan } from '../model/types';
+
 export interface FieldDef {
   path: string; label: string;
+  /** A tervtől függő felirat (pl. héjazat szerint); ha nincs, a `label`. */
+  labelFor?: (plan: Plan) => string;
   kind: 'number' | 'select' | 'checkbox' | 'section';
   unit?: 'm' | 'cm' | 'mm' | '°' | '%';
   options?: { value: string; label: string }[];
@@ -110,14 +114,16 @@ export const SECTIONS: SectionDef[] = [
     num('roof.gableOverhang', 'Oromkinyúlás', 'cm'),
     ...roofLayerFields,
     select('roof.covering', 'Tetőfedés',
-      opts(['tile', 'Cserép'], ['trapezoid', 'Trapézlemez'], ['shingle', 'Zsindely'], ['epdm', 'EPDM'])),
+      opts(['tile', 'Cserép'], ['trapezoid', 'Trapézlemez'], ['shingle', 'Zsindely'], ['epdm', 'EPDM'],
+        ['standingSeam', 'Állókorcos alumíniumlemez'])),
   ] },
   { id: 'accessories', title: 'Kiegészítők', fields: [
     check('accessories.gutter', 'Ereszcsatorna'),
     check('accessories.downpipe', 'Lefolyócső'),
     check('accessories.fascia', 'Homlokdeszka'),
     check('accessories.bargeBoard', 'Oromdeszka'),
-    check('accessories.ridgeTiles', 'Gerinccserép'),
+    { ...check('accessories.ridgeTiles', 'Gerinccserép'),
+      labelFor: p => (p.roof.covering === 'standingSeam' ? 'Gerincfedő' : 'Gerinccserép') },
     check('accessories.ridgeVent', 'Gerincszellőző'),
   ] },
   { id: 'settings', title: 'Beállítások', fields: [

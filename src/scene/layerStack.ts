@@ -4,7 +4,7 @@ import { BATTEN_SECTION } from '../catalog';
 // Sematikus rajzi vastagságok (mm); a tetőrétegeknek nincs vastagsága a modellben.
 export const DECKING_T = 22;
 export const FOIL_T = 3;
-export const COVERING_T: Record<RoofCovering, number> = { tile: 40, trapezoid: 20, shingle: 10, epdm: 5 };
+export const COVERING_T: Record<RoofCovering, number> = { tile: 40, trapezoid: 20, shingle: 10, epdm: 5, standingSeam: 25 };
 
 const FOILS = new Set<WallLayerKind>(['vaporBarrier', 'breatherMembrane']);
 

@@ -51,6 +51,7 @@ const MATERIALS: Record<string, MatSpec> = {
   trapezoid: { color: '#5e6a76', metalness: 0.4, roughness: 0.5 },
   shingle: { color: '#4b5058' },
   epdm: { color: '#33373c' },
+  standingSeam: { color: '#8f979f', metalness: 0.6, roughness: 0.35 }, // alumínium, fémes szürke
 };
 const FALLBACK: MatSpec = { color: '#c6cad0' };
 /** Élvonalak ezeken a fa/OSB anyagokon (küszöbszög 30°). */
