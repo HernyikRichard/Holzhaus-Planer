@@ -4,7 +4,7 @@ export function createDefaultPlan(): Plan {
   const width = 3000;
   const length = 4000;
   return {
-    version: 4,
+    version: 5,
     name: 'Új terv',
     building: { width, length, wallHeight: 2400 },
     foundation: {
@@ -15,6 +15,8 @@ export function createDefaultPlan(): Plan {
       groundScrew: { length: 1000, diameter: 76 },
       footing: { size: 400, depth: 800 },
       pier: { kind: 'block250' },
+      strip: { width: 400, depth: 800 },
+      plinth: { block: 'block250' },
     },
     floor: {
       enabled: false, joistSection: { t: 50, w: 100 }, joistSpacing: 600,

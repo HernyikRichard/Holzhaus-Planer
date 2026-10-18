@@ -23,7 +23,7 @@ export interface SupportQuantities {
 
 export interface SupportSpec {
   type: Exclude<FoundationType, 'slab'>;
-  label: string;                 // „Talajcsavar” | „Pontalap” | „Betonpillér”
+  label: string;                 // „Talajcsavar” | „Pontalap” | „Betonpillér” | „Sávalap”
   stepTitle: string;             // „Támaszok” | „Pontalapok” | „Betonpillérek”
   lines(plan: Plan, layout: FrameLayout): MaterialLine[];
 }
@@ -205,6 +205,8 @@ const SPECS: Record<Exclude<FoundationType, 'slab'>, SupportSpec> = {
   groundScrew: { type: 'groundScrew', label: 'Talajcsavar', stepTitle: 'Támaszok', lines: groundScrewLines },
   padFooting: { type: 'padFooting', label: 'Pontalap', stepTitle: 'Pontalapok', lines: concretePartLines },
   concretePier: { type: 'concretePier', label: 'Betonpillér', stepTitle: 'Betonpillérek', lines: concretePartLines },
+  // a sáv, a lábazat és a pillérek anyagsorai a sávalap anyaglistájával érkeznek; addig a közös keret fut
+  stripFooting: { type: 'stripFooting', label: 'Sávalap', stepTitle: 'Sávalap és lábazat', lines: () => [] },
 };
 
 /** A gerendakeretes alap támaszának leírója (a `hasFrame` terveken). */

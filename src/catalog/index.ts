@@ -1,4 +1,4 @@
-import type { BeamSectionId, ConcreteGrade, MeshTypeId, Mm, RoofCovering, Section } from '../model/types';
+import type { BeamSectionId, ConcreteGrade, MeshTypeId, Mm, PlinthBlock, RoofCovering, Section } from '../model/types';
 
 // Alap
 export const CEMENT_KG_PER_M3: Record<ConcreteGrade, number> = { C16: 300, C20: 340 };
@@ -36,13 +36,26 @@ export const GROUND_SCREW_LABEL = (d: Mm, len: Mm): string => `Talajcsavar Ø${d
 export const REBAR_COVER: Mm = 50; // betontakarás
 export const STIRRUP_SPACING: Mm = 200; // kengyeltávolság
 export const REBAR_BAR_LENGTH: Mm = 6000; // betonacél szálhossza
-export const REBAR_KG_PER_M = { d10: 0.617, d6: 0.222 }; // folyóméter-tömeg (kg/m)
+export const REBAR_KG_PER_M = { d10: 0.617, d8: 0.395, d6: 0.222 }; // folyóméter-tömeg (kg/m)
 export const LONG_BARS_PER_SUPPORT = 4; // Ø10 hosszvas támaszonként
 export const PIER_ROW_H: Mm = 250; // zsalukő-sor magassága
-export const PIER_FILL_M3_PER_ROW = { block200: 0.0042, block250: 0.0072 }; // kitöltő beton soronként (m³)
+export const PIER_FILL_M3_PER_ROW = { block200: 0.0042, block250: 0.0072, block300: 0.0110 }; // kitöltő beton soronként (m³)
 export const PIER_TUBE_D: Mm = 200; // zsalucső átmérője
 export const PIER_TUBE_EMBED: Mm = 100; // a zsalucső beágyazása a talpba
 export const CURE_DAYS = 7; // kötési idő terhelés előtt (nap)
+
+// Sávalap és lábazat
+export const PLINTH_BLOCK_WIDTH: Record<PlinthBlock, Mm> = { block200: 200, block250: 250, block300: 300 }; // zsalukő szélessége
+export const PLINTH_BLOCK_LEN: Mm = 500; // a lábazati zsalukő hossza
+export const PLINTH_FILL_M3_PER_M_ROW: Record<PlinthBlock, number> = { block200: 0.030, block250: 0.0425, block300: 0.055 }; // kitöltő beton folyóméterenként és soronként (m³)
+export const STRIP_LONG_BARS = 4; // Ø10 hosszvas a sávban
+export const STRIP_STIRRUP_SPACING: Mm = 250; // Ø6 kengyel a sávban
+export const REBAR_LAP: Mm = 500; // betonacél toldási átfedése
+export const PLINTH_DOWEL_SPACING: Mm = 500; // lábazat-bekötővas távolsága
+export const PLINTH_DOWEL_EMBED: Mm = 400; // a bekötővas beágyazása a sávba
+export const PLINTH_ROW_BARS = 2; // Ø8 vas soronként a lábazatban
+export const DPC_OVERLAP = 0.1; // vízszigetelő lemez átfedési ráhagyása
+export const SILL_ANCHOR_SPACING: Mm = 1000; // talpgerenda-horgonyok távolsága
 
 // Lemezek
 export const OSB_SHEET = { w: 1250, l: 2500 };

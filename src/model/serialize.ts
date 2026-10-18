@@ -1,7 +1,7 @@
 import type { Plan } from './types';
 import { createDefaultPlan, DEFAULT_PRICING } from './defaults';
 
-export const CURRENT_VERSION = 4;
+export const CURRENT_VERSION = 5;
 
 /** MIGRATIONS[v] a v verziójú nyers adatot v+1 verzióra alakítja. */
 export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {
@@ -17,6 +17,12 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record
     const def = createDefaultPlan().foundation;
     const old = isPlainObject(raw.foundation) ? raw.foundation : {};
     return { ...raw, version: 4, foundation: { ...old, footing: structuredClone(def.footing), pier: structuredClone(def.pier) } };
+  },
+  // v4 -> v5: a típus változatlan, a sávalap és a lábazat mezői alapértéket kapnak
+  4: raw => {
+    const def = createDefaultPlan().foundation;
+    const old = isPlainObject(raw.foundation) ? raw.foundation : {};
+    return { ...raw, version: 5, foundation: { ...old, strip: structuredClone(def.strip), plinth: structuredClone(def.plinth) } };
   },
 };
 
@@ -108,12 +114,14 @@ function checkShape(plan: Plan): string | null {
   const checks: [string, boolean][] = [
     ['foundation.concreteGrade', oneOf(plan.foundation.concreteGrade, ['C16', 'C20'])],
     ['foundation.meshType', oneOf(plan.foundation.meshType, ['d4_150', 'd5_150', 'd6_150'])],
-    ['foundation.type', oneOf(plan.foundation.type, ['slab', 'groundScrew', 'padFooting', 'concretePier'])],
+    ['foundation.type', oneOf(plan.foundation.type, ['slab', 'groundScrew', 'padFooting', 'concretePier', 'stripFooting'])],
     ['foundation.frame.beamSection', oneOf(plan.foundation.frame.beamSection, ['b100x150', 'b120x120', 'b2x50x150'])],
     ['foundation.groundScrew.length', oneOf(plan.foundation.groundScrew.length, [800, 1000, 1200])],
     ['foundation.groundScrew.diameter', oneOf(plan.foundation.groundScrew.diameter, [76])],
     ['foundation.footing.size', oneOf(plan.foundation.footing.size, [300, 400, 500])],
     ['foundation.pier.kind', oneOf(plan.foundation.pier.kind, ['block200', 'block250', 'tube200'])],
+    ['foundation.strip.width', oneOf(plan.foundation.strip.width, [300, 400, 500])],
+    ['foundation.plinth.block', oneOf(plan.foundation.plinth.block, ['block200', 'block250', 'block300'])],
     ['floor.osbThickness', oneOf(plan.floor.osbThickness, [18, 22])],
     ['walls.topPlate', oneOf(plan.walls.topPlate, ['single', 'double'])],
     ['roof.shape', oneOf(plan.roof.shape, ['flat', 'mono', 'gable'])],

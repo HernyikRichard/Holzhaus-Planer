@@ -13,9 +13,11 @@ test('createDefaultPlan returns independent copies', () => {
   expect(createDefaultPlan().openings).toHaveLength(2);
 });
 
-test('default plan is v4 slab with default frame, screw, footing and pier', () => {
+test('default plan is v5 slab with default frame, screw, footing, pier, strip and plinth', () => {
   const p = createDefaultPlan();
-  expect(p.version).toBe(4);
+  expect(p.version).toBe(5);
+  expect(p.foundation.strip).toEqual({ width: 400, depth: 800 });
+  expect(p.foundation.plinth).toEqual({ block: 'block250' });
   expect(p.foundation.footing).toEqual({ size: 400, depth: 800 });
   expect(p.foundation.pier).toEqual({ kind: 'block250' });
   expect(p.foundation.type).toBe('slab');

@@ -105,7 +105,7 @@ test('floorOn és floorTopZ', () => {
   expect(floorTopZ(p)).toBe(frameLayout(p).z.floorTop);
 });
 
-test.each([['slab', false], ['groundScrew', true], ['padFooting', true], ['concretePier', true]] as const)('hasFrame %s -> %s', (type, want) => {
+test.each([['slab', false], ['groundScrew', true], ['padFooting', true], ['concretePier', true], ['stripFooting', true]] as const)('hasFrame %s -> %s', (type, want) => {
   const p = createDefaultPlan(); p.foundation.type = type;
   expect(hasFrame(p)).toBe(want);
 });

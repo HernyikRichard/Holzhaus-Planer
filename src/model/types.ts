@@ -19,9 +19,10 @@ export type RoofCovering = 'tile' | 'trapezoid' | 'shingle' | 'epdm' | 'standing
 export type RoofLayerKind = 'decking' | 'underlay' | 'counterBatten' | 'batten';
 export interface RoofLayer { kind: RoofLayerKind; enabled: boolean; material: string }
 // decking: 'osb'|'boards'; underlay: 'foil'|'bitumen'
-// betonlemez | talajcsavar, pontalap, betonpillér (mindhárom gerendakerettel)
-export type FoundationType = 'slab' | 'groundScrew' | 'padFooting' | 'concretePier';
+// betonlemez | talajcsavar, pontalap, betonpillér, sávalap (a négy utóbbi gerendakerettel)
+export type FoundationType = 'slab' | 'groundScrew' | 'padFooting' | 'concretePier' | 'stripFooting';
 export type PierKind = 'block200' | 'block250' | 'tube200'; // zsalukő 20, zsalukő 25, zsalucső Ø200
+export type PlinthBlock = 'block200' | 'block250' | 'block300'; // lábazati zsalukő 20, 25, 30 cm
 export type BeamSectionId = 'b100x150' | 'b120x120' | 'b2x50x150'; // főgerenda keresztmetszete
 export interface Plan {
   version: number; name: string;
@@ -32,7 +33,9 @@ export interface Plan {
     frame: { beamSection: BeamSectionId; supportSpacing: 'auto' | Mm; groundClearance: Mm }; // csak gerendakeretes alapnál számít
     groundScrew: { length: 800 | 1000 | 1200; diameter: 76 };
     footing: { size: 300 | 400 | 500; depth: Mm }; // pontalap és betonpillér betontalpa
-    pier: { kind: PierKind } }; // csak betonpillérnél számít
+    pier: { kind: PierKind }; // csak betonpillérnél számít
+    strip: { width: 300 | 400 | 500; depth: Mm }; // csak sávalapnál számít (a sáv szélessége és mélysége)
+    plinth: { block: PlinthBlock } }; // sávalap lábazata; magassága a frame.groundClearance
   floor: { enabled: boolean; joistSection: Section; joistSpacing: Mm;
     insulation: Insulation | null; osbThickness: 18 | 22; vaporBarrier: boolean };
   walls: { studSection: Section; studSpacing: Mm; topPlate: 'single' | 'double'; layers: WallLayer[] };

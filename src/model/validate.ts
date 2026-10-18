@@ -8,9 +8,9 @@ const PITCH_RANGE: Record<RoofShape, [number, number]> = {
   flat: [1, 10], mono: [5, 45], gable: [10, 60],
 };
 
-// a talaj feletti magasság típusfüggő: pontalapnál az állítható oszloptalp tartománya (betonlemeznél nem számít)
+// a talaj feletti magasság típusfüggő: pontalapnál az állítható oszloptalp, sávalapnál a lábazat tartománya (betonlemeznél nem számít)
 const GROUND_CLEARANCE_RANGE: Record<FoundationType, [number, number]> = {
-  slab: [150, 800], groundScrew: [150, 800], padFooting: [150, 300], concretePier: [150, 800],
+  slab: [150, 800], groundScrew: [150, 800], padFooting: [150, 300], concretePier: [150, 800], stripFooting: [150, 600],
 };
 
 export function validatePlan(plan: Plan): ValidationError[] {
@@ -26,9 +26,13 @@ export function validatePlan(plan: Plan): ValidationError[] {
   range('foundation.slabThickness', 'Lemezvastagság', plan.foundation.slabThickness, 50, 300);
   range('foundation.gravelBedThickness', 'Sóderágy vastagsága', plan.foundation.gravelBedThickness, 0, 500);
   const [gcMin, gcMax] = GROUND_CLEARANCE_RANGE[plan.foundation.type] ?? GROUND_CLEARANCE_RANGE.groundScrew;
-  range('foundation.frame.groundClearance', 'Talaj feletti magasság', plan.foundation.frame.groundClearance, gcMin, gcMax);
+  const gcLabel = plan.foundation.type === 'stripFooting' ? 'Lábazat magassága' : 'Talaj feletti magasság';
+  range('foundation.frame.groundClearance', gcLabel, plan.foundation.frame.groundClearance, gcMin, gcMax);
   if (plan.foundation.type === 'padFooting' || plan.foundation.type === 'concretePier') {
     range('foundation.footing.depth', 'Alapozási mélység', plan.foundation.footing.depth, 600, 1200);
+  }
+  if (plan.foundation.type === 'stripFooting') {
+    range('foundation.strip.depth', 'Alapozási mélység', plan.foundation.strip.depth, 600, 1200);
   }
   if (plan.foundation.frame.supportSpacing !== 'auto') {
     range('foundation.frame.supportSpacing', 'Támaszköz', plan.foundation.frame.supportSpacing, 800, 2500);
