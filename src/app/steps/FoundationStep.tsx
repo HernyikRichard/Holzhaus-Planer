@@ -8,6 +8,7 @@ const TYPES: { id: FoundationType; label: string }[] = [
   { id: 'groundScrew', label: 'Talajcsavar' },
   { id: 'padFooting', label: 'Pontalap' },
   { id: 'concretePier', label: 'Betonpillér' },
+  { id: 'stripFooting', label: 'Sávalap' },
 ];
 
 export function FoundationStep({ store }: { store: Store }) {

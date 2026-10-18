@@ -74,7 +74,8 @@ const CONCRETE_GRADE = select('foundation.concreteGrade', 'Beton szilárdsági o
 
 // a gerendakeretes alaptípusok közös mezői: egy helyen definiálva, a szakaszok használják
 const FRAME_FIELDS: FieldDef[] = [
-  num('foundation.frame.groundClearance', 'Talaj feletti magasság', 'cm'),
+  { ...num('foundation.frame.groundClearance', 'Talaj feletti magasság', 'cm'),
+    labelFor: p => (p.foundation.type === 'stripFooting' ? 'Lábazat magassága' : 'Talaj feletti magasság') },
   select('foundation.frame.beamSection', 'Főgerenda keresztmetszete',
     opts(['b100x150', '100×150'], ['b120x120', '120×120'], ['b2x50x150', '2×50×150'])),
   select('foundation.frame.supportSpacing', 'Támaszköz',
@@ -114,6 +115,15 @@ export const SECTIONS: SectionDef[] = [
     select('foundation.pier.kind', 'Pillér',
       opts(['block200', '20×20 cm zsalukő'], ['block250', '25×25 cm zsalukő'], ['tube200', 'Ø20 cm zsalucső'])),
     ...FRAME_FIELDS,
+  ] },
+  { id: 'stripFooting', title: 'Sávalap és gerendakeret', fields: [
+    select('foundation.strip.width', 'Sáv szélessége', opts(['300', '30 cm'], ['400', '40 cm'], ['500', '50 cm'])),
+    num('foundation.strip.depth', 'Alapozási mélység', 'cm'),
+    select('foundation.plinth.block', 'Lábazat zsalukő',
+      opts(['block200', '20 cm-es zsalukő'], ['block250', '25 cm-es zsalukő'], ['block300', '30 cm-es zsalukő'])),
+    FRAME_FIELDS[0],
+    CONCRETE_GRADE,
+    ...FRAME_FIELDS.slice(1),
   ] },
   { id: 'floor', title: 'Padló', fields: [
     check('floor.enabled', 'Padlószerkezet'),

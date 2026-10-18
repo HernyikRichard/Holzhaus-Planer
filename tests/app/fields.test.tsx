@@ -175,8 +175,8 @@ describe('Alaptípus', () => {
   test('four picker buttons, exactly one pressed', () => {
     const { root } = setup('foundation');
     const btns = Array.from(root.querySelectorAll('[data-section="foundation-type"] button'));
-    expect(btns.map(b => b.textContent)).toEqual(['Betonlemez', 'Talajcsavar', 'Pontalap', 'Betonpillér']);
-    for (const name of ['Betonlemez', 'Talajcsavar', 'Pontalap', 'Betonpillér']) {
+    expect(btns.map(b => b.textContent)).toEqual(['Betonlemez', 'Talajcsavar', 'Pontalap', 'Betonpillér', 'Sávalap']);
+    for (const name of ['Betonlemez', 'Talajcsavar', 'Pontalap', 'Betonpillér', 'Sávalap']) {
       fireEvent.click(screen.getByRole('button', { name }));
       expect(root.querySelectorAll('[data-section="foundation-type"] [aria-pressed="true"]')).toHaveLength(1);
       expect(pressed(name)).toBe('true');
@@ -207,7 +207,7 @@ describe('Alaptípus', () => {
   });
   test('floor toggle is locked for all three frame types', () => {
     const { root, field } = setup('foundation');
-    for (const name of ['Talajcsavar', 'Pontalap', 'Betonpillér']) {
+    for (const name of ['Talajcsavar', 'Pontalap', 'Betonpillér', 'Sávalap']) {
       fireEvent.click(screen.getByRole('button', { name }));
       expect(field<HTMLInputElement>('floor.enabled').disabled).toBe(true);
       expect(field<HTMLInputElement>('floor.enabled').checked).toBe(true);
@@ -226,6 +226,52 @@ describe('Alaptípus', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Talajcsavar' }));
     expect(err()).toBe('');
     expect(store.get().errors).toHaveLength(0);
+  });
+  test('strip footing section: fields, labels, options', () => {
+    const { store, root, field } = setup('foundation');
+    fireEvent.click(screen.getByRole('button', { name: 'Sávalap' }));
+    expect(store.get().plan.foundation.type).toBe('stripFooting');
+    const paths = ['foundation.strip.width', 'foundation.strip.depth', 'foundation.plinth.block',
+      'foundation.frame.groundClearance', 'foundation.concreteGrade', 'foundation.frame.beamSection',
+      'foundation.frame.supportSpacing'];
+    const order = Array.from(root.querySelectorAll('[data-section="stripFooting"] [data-path]')).map(e => e.getAttribute('data-path'));
+    expect(order).toEqual(paths);
+    const opts = (p: string) => Array.from(field<HTMLSelectElement>(p).options).map(o => [o.value, o.textContent]);
+    expect(opts('foundation.strip.width')).toEqual([['300', '30 cm'], ['400', '40 cm'], ['500', '50 cm']]);
+    expect(opts('foundation.plinth.block')).toEqual([['block200', '20 cm-es zsalukő'],
+      ['block250', '25 cm-es zsalukő'], ['block300', '30 cm-es zsalukő']]);
+    fireEvent.change(field('foundation.strip.width'), { target: { value: '500' } });
+    expect(store.get().plan.foundation.strip.width).toBe(500);
+    fireEvent.change(field('foundation.plinth.block'), { target: { value: 'block300' } });
+    expect(store.get().plan.foundation.plinth.block).toBe('block300');
+    const label = (p: string) => field(p).closest('.field')!.textContent;
+    expect(label('foundation.strip.depth')).toContain('Alapozási mélység');
+    expect(label('foundation.frame.groundClearance')).toContain('Lábazat magassága');
+    expect(label('foundation.frame.groundClearance')).not.toContain('Talaj feletti');
+    fireEvent.click(screen.getByRole('button', { name: 'Talajcsavar' }));
+    expect(label('foundation.frame.groundClearance')).toContain('Talaj feletti magasság');
+  });
+  test('strip footing to pad footing at 50 cm: field error, and back clears it', () => {
+    const { store, field } = setup('foundation');
+    fireEvent.click(screen.getByRole('button', { name: 'Sávalap' }));
+    const err = () => field('foundation.frame.groundClearance').closest('.field')!.querySelector('.field-error')!.textContent;
+    act(() => store.update(p => { p.foundation.frame.groundClearance = 500; }));
+    expect(err()).toBe('');
+    fireEvent.click(screen.getByRole('button', { name: 'Pontalap' }));
+    expect(err()).toMatch(/150–300/);
+    fireEvent.click(screen.getByRole('button', { name: 'Sávalap' }));
+    expect(err()).toBe('');
+    expect(store.get().errors).toHaveLength(0);
+  });
+  test('a v4 plan loaded shows the saved type selected', () => {
+    const { store } = setup('foundation');
+    const v4: any = createDefaultPlan(); v4.version = 4; v4.foundation.type = 'concretePier';
+    delete v4.foundation.strip; delete v4.foundation.plinth;
+    const r = parsePlan(JSON.stringify(v4));
+    if (!r.ok) throw new Error(r.error);
+    act(() => store.replace(r.plan));
+    expect(pressed('Betonpillér')).toBe('true');
+    expect(pressed('Sávalap')).toBe('false');
   });
   test('a v3 ground screw plan loaded shows Talajcsavar selected', () => {
     const { store } = setup('foundation');
@@ -302,7 +348,7 @@ test('step panels together cover exactly the SECTIONS fields (roof.shape on Buil
     const { root } = setup(step);
     if (step === 'foundation') {
       // a talajcsavar-szakasz csak talajcsavaros típusnál látszik
-      for (const name of ['Talajcsavar', 'Pontalap', 'Betonpillér']) {
+      for (const name of ['Talajcsavar', 'Pontalap', 'Betonpillér', 'Sávalap']) {
         fireEvent.click(screen.getByRole('button', { name }));
         collect(root);
       }

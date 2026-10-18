@@ -50,7 +50,7 @@ test('every numeric/section panel field has a range check', () => {
     for (const t of targets) {
       const p = createDefaultPlan();
       // a típusfüggő szakaszok mezői csak a saját alaptípusukon érvényesek
-      if (s.id === 'groundScrew' || s.id === 'padFooting' || s.id === 'concretePier') p.foundation.type = s.id;
+      if (s.id === 'groundScrew' || s.id === 'padFooting' || s.id === 'concretePier' || s.id === 'stripFooting') p.foundation.type = s.id;
       expect(getPath(p, t), t).toEqual(expect.any(Number));
       setPath(p, t, absurd);
       expect(paths(p), t).toContain(t);
