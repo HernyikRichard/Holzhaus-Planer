@@ -4,7 +4,7 @@ import type { Category } from '../calc/types';
 export type ElementKind = 'stud' | 'cornerStud' | 'gableStud' | 'kingStud' | 'jackStud' | 'cripple'
   | 'sill' | 'header' | 'bottomPlate' | 'topPlate' | 'joist' | 'rafter' | 'ridge' | 'collar'
   | 'counterBatten' | 'roofBatten' | 'fascia' | 'barge' | 'osbSheet' | 'meshSheet' | 'opening'
-  | 'support' | 'beam';
+  | 'support' | 'beam' | 'stripFooting' | 'plinth';
 export interface Geom { u: Mm; v: Mm; w: Mm; h: Mm; angle?: number } // angle fokban, (u,v) körül, a pozitív irány a +u-ból a +v felé
 export interface Element {
   id: string; kind: ElementKind; label: string; group: string;

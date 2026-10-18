@@ -56,7 +56,7 @@ const wallStep = (group: string): AssemblyStepId => group as AssemblyStepId;
 export function stepIdOfElement(el: Element): AssemblyStepId {
   switch (el.kind) {
     case 'meshSheet': return 'foundation';
-    case 'support': return 'supports';
+    case 'support': case 'stripFooting': case 'plinth': return 'supports';
     case 'beam': return 'beamFrame';
     case 'joist': return 'floor';
     case 'stud': case 'cornerStud': case 'gableStud': case 'kingStud': case 'jackStud': case 'cripple':
