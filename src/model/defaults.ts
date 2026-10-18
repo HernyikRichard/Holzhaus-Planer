@@ -4,12 +4,15 @@ export function createDefaultPlan(): Plan {
   const width = 3000;
   const length = 4000;
   return {
-    version: 2,
+    version: 3,
     name: 'Új terv',
     building: { width, length, wallHeight: 2400 },
     foundation: {
       slabThickness: 120, slabOverhang: 100, concreteGrade: 'C16',
       meshType: 'd5_150', gravelBedThickness: 150, peFoil: true,
+      type: 'slab',
+      frame: { beamSection: 'b100x150', supportSpacing: 'auto', groundClearance: 300 },
+      groundScrew: { length: 1000, diameter: 76 },
     },
     floor: {
       enabled: false, joistSection: { t: 50, w: 100 }, joistSpacing: 600,

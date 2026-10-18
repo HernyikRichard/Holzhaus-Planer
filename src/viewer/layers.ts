@@ -10,7 +10,7 @@ export const VIEW_LAYERS: Record<ViewId, LayerId[]> = {
   section: ['dims', 'grid'],
   roof: ['frame', 'battens', 'fasteners', 'dims', 'grid'],
   gable: ['frame', 'sheathing', 'fasteners', 'dims'],
-  foundation: ['mesh', 'dims', 'grid'],
+  foundation: ['frame', 'mesh', 'fasteners', 'dims', 'grid'],
   table: [],
   cutplan: [],
   cost: [],

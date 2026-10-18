@@ -101,3 +101,44 @@ describe('stepOfSolid fallbacks', () => {
     expect(f.bounds).toEqual({ min: [0, 0, 0], max: [0, 0, 0] });
   });
 });
+
+describe('groundScrew stepOfSolid', () => {
+  const plan = mono4x6Plan();
+  plan.foundation.type = 'groundScrew';
+  const scene = buildScene(plan);
+  const steps = buildAssembly(plan, scene, calculate(plan));
+  const model = buildModel3d(plan, scene);
+  const idx = (id: AssemblyStepId) => steps.findIndex(s => s.id === id);
+
+  test('ground → supports, support → supports, beam → beamFrame', () => {
+    const ground = model.solids.find(s => s.layer === 'ground')!;
+    expect(stepOfSolid(ground, scene, steps)).toBe(idx('supports'));
+    const beam = model.solids.find(s => s.elementId?.startsWith('frame.beam.'))!;
+    expect(stepOfSolid(beam, scene, steps)).toBe(idx('beamFrame'));
+    for (const s of model.solids) {
+      if (s.layer === 'supports') expect(stepOfSolid(s, scene, steps)).toBe(idx('supports'));
+      if (s.layer === 'beamFrame') expect(stepOfSolid(s, scene, steps)).toBe(idx('beamFrame'));
+    }
+  });
+
+  test('ground solid without supports step falls to the earliest step', () => {
+    const without = steps.filter(s => s.id !== 'supports' && s.id !== 'beamFrame');
+    const ground = model.solids.find(s => s.layer === 'ground')!;
+    expect(stepOfSolid(ground, scene, without)).toBe(0);
+  });
+});
+
+describe('slab plan has no ground solid', () => {
+  const plan = createDefaultPlan();
+  const scene = buildScene(plan);
+  const steps = buildAssembly(plan, scene, calculate(plan));
+  const model = buildModel3d(plan, scene);
+  test('foundation solids map to the foundation step', () => {
+    expect(model.solids.some(s => s.layer === 'ground')).toBe(false);
+    const f = steps.findIndex(s => s.id === 'foundation');
+    expect(f).toBe(0);
+    const found = model.solids.filter(s => s.layer === 'foundation');
+    expect(found.length).toBeGreaterThan(0);
+    for (const s of found) expect(stepOfSolid(s, scene, steps)).toBe(f);
+  });
+});

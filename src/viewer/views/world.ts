@@ -25,7 +25,7 @@ export function toWorld(plan: Plan, view: ViewId, group: string, u: number, v: n
     if (group === 'roof.collar') return roofMap(plan).xy(v, -plan.roof.gableOverhang + u);
     return group === 'roof.L' || group === 'roof.R' || group === 'roof.M' ? roofMap(plan).pt(group, u, v) : null;
   }
-  if (view === 'foundation') return group === 'foundation' ? [u, v] : null;
+  if (view === 'foundation') return group === 'foundation' || group === 'frame' ? [u, v] : null;
   return null;
 }
 
@@ -59,6 +59,10 @@ export function elementPoly(plan: Plan, view: ViewId, e: Element): Pt[] | null {
     const pts = corners(e).map(([a, b]) => toWorld(plan, view, e.group, a, b));
     return pts.every(p => p !== null) ? (pts as Pt[]) : null;
   }
-  if (view === 'foundation') return e.group === 'foundation' ? corners(e) : null;
+  if (view === 'foundation') {
+    // talajcsavarnál a keret és a párnafák is az alapnézetben
+    const frame = e.group === 'frame' || (e.kind === 'joist' && plan.foundation.type === 'groundScrew');
+    return e.group === 'foundation' || frame ? corners(e) : null;
+  }
   return null;
 }

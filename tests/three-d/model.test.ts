@@ -1,12 +1,13 @@
 import { createDefaultPlan } from '../../src/model/defaults';
 import type { Plan, WallSide } from '../../src/model/types';
 import { roofGeometry, wallGeometry } from '../../src/calc/geometry';
-import { COUNTER_BATTEN_SECTION, ROOF_BATTEN_SECTION } from '../../src/catalog';
+import { COUNTER_BATTEN_SECTION, ROOF_BATTEN_SECTION, SCREW_HEAD_H } from '../../src/catalog';
 import { buildScene } from '../../src/scene/build';
 import {
   buildModel3d, FRAME_ONLY, LAYER3D_GROUPS, LAYER3D_NAMES, solidBounds, wallBaseZ, wallFrameOf, type Solid,
 } from '../../src/three-d/model';
-import { COVERING_T, DECKING_T, FOIL_T } from '../../src/scene/layerStack';
+import { COVERING_T, DECKING_T, FOIL_T, floorTopZ } from '../../src/scene/layerStack';
+import { frameLayout } from '../../src/calc/frame';
 import { mono4x6Plan } from '../fixtures';
 
 const FRAME_KINDS = new Set(['stud', 'cornerStud', 'gableStud', 'kingStud', 'jackStud', 'cripple', 'sill', 'header', 'bottomPlate', 'topPlate']);
@@ -264,7 +265,7 @@ test('layer metadata', () => {
   expect(LAYER3D_NAMES.wallFrame).toBe('Falváz');
   expect(LAYER3D_GROUPS.map(g => g.name)).toEqual(['Alap', 'Fal', 'Tető', 'Egyéb']);
   expect(LAYER3D_GROUPS.flatMap(g => g.layers)).toHaveLength(Object.keys(LAYER3D_NAMES).length);
-  expect(FRAME_ONLY).toEqual(['foundation', 'floor', 'wallFrame', 'roofFrame', 'openings']);
+  expect(FRAME_ONLY).toEqual(['foundation', 'supports', 'beamFrame', 'floor', 'wallFrame', 'roofFrame', 'openings']);
 });
 
 // ---- fali réteglapok ----
@@ -840,4 +841,95 @@ describe('állókorcos alumíniumlemez 3D', () => {
       expect(m.solids.filter(s => s.elementId && !ids.has(s.elementId))).toEqual([]);
     });
   }
+});
+
+describe('talajcsavaros alap', () => {
+  const screwPlan = (): Plan => { const p = createDefaultPlan(); p.foundation.type = 'groundScrew'; return p; };
+  const plan = screwPlan();
+  const scene = buildScene(plan);
+  const m = buildModel3d(plan, scene);
+  const f = frameLayout(plan);
+  const zr = (s: Solid): [number, number] => { const b = solidBounds(s); return [b.min[2], b.max[2]]; };
+
+  it('rétegek: talaj, támaszok, gerendakeret, padló; nincs betonlemez', () => {
+    for (const l of ['ground', 'supports', 'beamFrame', 'floor'] as const) expect(m.layers).toContain(l);
+    expect(m.layers).not.toContain('foundation');
+    expect(LAYER3D_NAMES.ground).toBe('Talaj');
+    expect(LAYER3D_NAMES.supports).toBe('Támaszok');
+    expect(LAYER3D_NAMES.beamFrame).toBe('Gerendakeret');
+    expect(FRAME_ONLY).toEqual(expect.arrayContaining(['supports', 'beamFrame']));
+  });
+
+  it('a talaj lap a ház körül 1000 mm-rel, Z −20…0, elem nélkül', () => {
+    const g = m.solids.filter(s => s.layer === 'ground');
+    expect(g).toHaveLength(1);
+    expect(g[0].elementId).toBeUndefined();
+    const b = solidBounds(g[0]);
+    expect(b.min).toEqual([-1000, -1000, -20]);
+    expect(b.max).toEqual([plan.building.width + 1000, plan.building.length + 1000, 0]);
+  });
+
+  it('support, beam, joist elemenként van test; minden elementId létező elem (darabra pontos)', () => {
+    const ids = new Set(scene.elements.map(e => e.id));
+    for (const e of scene.elements.filter(x => ['support', 'beam', 'joist'].includes(x.kind))) {
+      const n = byId(m.solids, e.id).length;
+      expect(n).toBe(e.kind === 'support' ? 3 : 1);
+    }
+    for (const s of m.solids) if (s.elementId) expect(ids.has(s.elementId)).toBe(true);
+  });
+
+  it('a támaszok három testből állnak: talaj alatti cső, orsó, U-fej', () => {
+    const sup = scene.elements.find(e => e.kind === 'support')!;
+    const parts = byId(m.solids, sup.id);
+    expect(parts.every(s => s.layer === 'supports')).toBe(true);
+    const buried = parts.find(s => s.material === 'metalBuried')!;
+    expect(solidBounds(buried).min[2]).toBe(-plan.foundation.groundScrew.length);
+    expect(solidBounds(buried).max[2]).toBe(0);
+    expect(buried.outline).toHaveLength(16);
+    const head = plan.foundation.frame.groundClearance;
+    const shaft = parts.find(s => s.material === 'metal' && s.outline.length === 16)!;
+    expect(zr(shaft)).toEqual([0, head - SCREW_HEAD_H]);
+    const u = parts.find(s => s.material === 'metal' && s.outline.length === 4)!;
+    expect(zr(u)).toEqual([head - SCREW_HEAD_H, head]);
+    const ub = solidBounds(u);
+    expect(ub.max[f.along === 'x' ? 1 : 0] - ub.min[f.along === 'x' ? 1 : 0]).toBe(f.beam.width + 10);
+  });
+
+  it('a főgerendák alja = groundClearance, a párnafák alja = beamTop, a talpgerenda alja = floorTopZ', () => {
+    for (const e of scene.elements.filter(x => x.kind === 'beam')) {
+      const [s] = byId(m.solids, e.id);
+      expect(s.layer).toBe('beamFrame');
+      expect(s.material).toBe('timber');
+      expect(Math.abs(zr(s)[0] - plan.foundation.frame.groundClearance)).toBeLessThan(1e-6);
+      expect(zr(s)[1]).toBeCloseTo(f.z.beamTop, 6);
+    }
+    for (const e of scene.elements.filter(x => x.kind === 'joist')) {
+      const [s] = byId(m.solids, e.id);
+      expect(zr(s)).toEqual([f.z.beamTop, f.z.joistTop]);
+    }
+    const osb = m.solids.find(s => s.label === 'Padló OSB')!;
+    expect(zr(osb)).toEqual([f.z.joistTop, f.z.floorTop]);
+    const b = solidBounds(osb);
+    expect([b.min[0], b.min[1], b.max[0], b.max[1]]).toEqual([0, 0, plan.building.width, plan.building.length]);
+    const plate = m.solids.find(s => s.elementId?.includes('bottomPlate'))!;
+    expect(zr(plate)[0]).toBe(floorTopZ(plan));
+    expect(wallBaseZ(plan)).toBe(f.z.floorTop);
+  });
+
+  it('a bounds a talaj alatti részt is tartalmazza', () => {
+    expect(m.bounds.min[2]).toBe(-plan.foundation.groundScrew.length);
+  });
+
+  it('a vágási terv darabszáma = a gerenda-testek száma', () => {
+    const beams = scene.elements.filter(e => e.kind === 'beam');
+    const cutPieces = beams.filter(e => scene.cut[e.id]).length;
+    expect(cutPieces).toBe(beams.length);
+    expect(beams.reduce((n, e) => n + byId(m.solids, e.id).length, 0)).toBe(cutPieces);
+  });
+
+  it('betonlemeznél nincs talaj, támasz, gerendakeret', () => {
+    const s = model(createDefaultPlan());
+    for (const l of ['ground', 'supports', 'beamFrame'] as const) expect(s.layers).not.toContain(l);
+    expect(s.layers).toContain('foundation');
+  });
 });

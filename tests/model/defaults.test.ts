@@ -12,3 +12,11 @@ test('createDefaultPlan returns independent copies', () => {
   const a = createDefaultPlan(); a.openings.pop();
   expect(createDefaultPlan().openings).toHaveLength(2);
 });
+
+test('default plan is v3 slab with default frame and screw', () => {
+  const p = createDefaultPlan();
+  expect(p.version).toBe(3);
+  expect(p.foundation.type).toBe('slab');
+  expect(p.foundation.frame).toEqual({ beamSection: 'b100x150', supportSpacing: 'auto', groundClearance: 300 });
+  expect(p.foundation.groundScrew).toEqual({ length: 1000, diameter: 76 });
+});

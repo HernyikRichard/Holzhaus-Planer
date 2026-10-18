@@ -1,5 +1,6 @@
 import type { Plan, WallSide } from '../../model/types';
 import { roofGeometry, wallGeometry, type WallGeom } from '../../calc/geometry';
+import { frameLayout } from '../../calc/frame';
 import type { Element } from '../../scene/types';
 import { cm, esc, fxCircle, n, type Pt } from '../svgKit';
 import { drawEl, drawOpening, fxRadius, layerG, type ViewCtx } from './common';
@@ -115,6 +116,20 @@ function rafterPoint(ctx: ViewCtx, group: string, v: number): Pt {
   return [p, z];
 }
 
+/**
+ * A talajcsavaros keret sávja a falnézetben a fal alatt (y > 0): a talajtól a padló tetejéig, a főgerenda és a párnafa
+ * szintjeivel. `ground`: a talaj y koordinátája a nézetben.
+ */
+function frameBand(ctx: ViewCtx, x0: number, x1: number): { svg: string; ground: number } {
+  const { plan, kit } = ctx;
+  const { beamBottom, beamTop, joistTop, floorTop } = frameLayout(plan).z;
+  const a = Math.min(x0, x1);
+  const w = Math.abs(x1 - x0);
+  let body = kit.rect(a, 0, w, floorTop, `${kit.fill('lineMuted', 0.15)} ${kit.stroke('lineMuted', 0.6)}`);
+  for (const z of [beamBottom, beamTop, joistTop]) body += kit.line(a, floorTop - z, a + w, floorTop - z, kit.stroke('lineMuted', 0.6));
+  return { svg: `<g data-layer="frameBand">${body}</g>`, ground: floorTop };
+}
+
 /** Falnézet (és az oromfal-nézet, ha `withRoof`). */
 export function drawWall(ctx: ViewCtx, side: WallSide, withRoof = false): string {
   const { plan, scene, kit } = ctx;
@@ -134,10 +149,14 @@ export function drawWall(ctx: ViewCtx, side: WallSide, withRoof = false): string
   const xs = [...outline, ...roof].map(p => p[0]);
   const xMin = Math.min(...xs);
   const xMax = Math.max(...xs);
+  // talajcsavarnál a fal alatt a keret halvány sávja (a fal a padló tetejéről áll), alatta a talajvonal
+  const band = plan.foundation.type === 'groundScrew' ? frameBand(ctx, C(0, 0)[0], C(A, 0)[0]) : null;
+  if (band) context += band.svg;
   const geom = kit.snapshot();
   kit.scaleTo(geom);
   const fs = kit.fs;
   context += kit.line(xMin - fs * 2, 0, xMax + fs * 2, 0, kit.stroke('lineMuted', 1, [8, 4]));
+  if (band) context += kit.line(xMin - fs * 2, band.ground, xMax + fs * 2, band.ground, kit.stroke('line', 1.2));
 
   // OSB (a fal körvonalára vágva)
   let sheathing = '';
@@ -197,16 +216,17 @@ export function drawWall(ctx: ViewCtx, side: WallSide, withRoof = false): string
   let dims = '';
   if (ctx.on('dims')) {
     const row = fs * 2.4;
+    const below = band ? band.ground : 0; // talajcsavarnál a vízszintes méretsorok a keretsáv alatt
     const xOf = (u: number): number => P([u, 0])[0];
     const sortX = (us: number[]): Pt[] => [...new Set(us.map(u => Math.round(xOf(u) * 10) / 10))].sort((a, b) => a - b).map(x => [x, 0]);
     let k = 1;
     const openings = els.filter(e => e.kind === 'opening');
     if (openings.length > 0) {
-      dims += kit.chain(sortX([0, len, ...openings.flatMap(o => [o.geom.u, o.geom.u + o.geom.w])]), row * k++);
+      dims += kit.chain(sortX([0, len, ...openings.flatMap(o => [o.geom.u, o.geom.u + o.geom.w])]), below + row * k++);
     }
     const studs = els.filter(e => e.kind === 'stud').map(e => e.geom.u + e.geom.w / 2);
-    if (studs.length > 1) dims += kit.chain(sortX(studs), row * k++);
-    dims += kit.dim(Math.min(xOf(0), xOf(len)), 0, Math.max(xOf(0), xOf(len)), 0, row * k, cm(len));
+    if (studs.length > 1) dims += kit.chain(sortX(studs), below + row * k++);
+    dims += kit.dim(Math.min(xOf(0), xOf(len)), 0, Math.max(xOf(0), xOf(len)), 0, below + row * k, cm(len));
 
     // magasságok: a két falvég, oromfalnál a csúcs is
     const hLeft = map.mirror ? wall.hEnd : wall.hStart;

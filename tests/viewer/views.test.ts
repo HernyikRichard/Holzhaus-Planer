@@ -302,3 +302,73 @@ describe('állókorcos alumíniumlemez rajzai', () => {
     expect(r('section')).toContain('Cserép – 40 mm');
   });
 });
+
+describe('talajcsavaros alap rajzai', () => {
+  const gsPlan = (mut?: (q: Plan) => void): Plan => { const q = createDefaultPlan(); q.foundation.type = 'groundScrew'; mut?.(q); return q; };
+  const gp = gsPlan(); const gsc = buildScene(gp);
+  const g = (v: ViewId, layers = all, plan = gp, scene = gsc) => renderView({ plan, scene, view: v, layers, palette: SCREEN_PALETTE }).svg;
+
+  test('alap nézet: támaszok, főgerendák, rögzítési pontok, méretek és felirat', () => {
+    const s = g('foundation');
+    const supports = gsc.elements.filter(e => e.kind === 'support').length;
+    expect(supports).toBe(12);
+    expect(count(s, /data-el="frame\.support\./g)).toBe(supports);
+    expect(count(s, /class="el el-beam"/g)).toBe(gsc.elements.filter(e => e.kind === 'beam').length);
+    expect(count(s, /data-fx="/g)).toBe(gsc.fasteners.filter(f => f.group === 'frame').length);
+    expect(s).toContain('>15 cm<'); // sarokpont – első támasz (cm(150))
+    expect(s).toContain('Talajcsavar: 12 db Ø76 × 100 cm, fej 30 cm-rel a talaj fölött');
+    expect(count(s, /data-el="floor\.joist\./g)).toBe(gsc.elements.filter(e => e.kind === 'joist').length);
+    expect(s).not.toContain('el-meshSheet');
+    expect(g('foundation', { ...all, fasteners: false })).not.toContain('data-fx=');
+  });
+  test('alap nézet betonlemeznél: háló, keret és rögzítés nélkül', () => {
+    const s = r('foundation');
+    expect(s).toContain('el-meshSheet');
+    expect(s).not.toContain('el-support');
+    expect(s).not.toContain('el-beam');
+    expect(s).not.toContain('data-fx=');
+  });
+  test('metszet: talaj, talajcsavar, főgerenda, 30 cm-es méret; betonlemeznél egyik sincs', () => {
+    for (const ridge of ['x', 'y'] as const) {
+      const q = gsPlan(x => { x.roof.ridgeDirection = ridge; });
+      const s = g('section', all, q, buildScene(q));
+      expect(s, ridge).toContain('data-layer="ground"');
+      expect(s, ridge).toContain('data-layer="groundScrew"');
+      expect(s, ridge).toContain('data-layer="beam"');
+      expect(s, ridge).toContain('>30 cm<');
+      expect(s, ridge).toContain('Talajcsavar Ø76 × 100 cm');
+      expect(s, ridge).toContain('Főgerenda 100×150');
+      expect(s, ridge).toContain('Padló – 118 mm');
+      expect(s, ridge).not.toContain('data-layer="slab"');
+    }
+    const slab = r('section');
+    for (const l of ['ground', 'groundScrew', 'beam']) expect(slab).not.toContain(`data-layer="${l}"`);
+    expect(slab).not.toContain('>30 cm<');
+  });
+  test('falnézet: keretsáv a fal alatt csak talajcsavarnál', () => {
+    for (const side of ['N', 'E', 'S', 'W']) {
+      expect(g(`wall.${side}` as ViewId)).toContain('data-layer="frameBand"');
+      expect(r(`wall.${side}` as ViewId)).not.toContain('data-layer="frameBand"');
+    }
+  });
+  test('falnézet: a fal méretei nem változnak', () => {
+    const dimTexts = (s: string) => [...s.matchAll(/>(\d[\d,]* cm)</g)].map(m => m[1]);
+    expect(dimTexts(g('wall.E'))).toEqual(dimTexts(r('wall.E')));
+  });
+  test('minden nézet jól formált és véges (talajcsavar, mindkét gerincirány)', () => {
+    for (const ridge of ['x', 'y'] as const) {
+      const q = gsPlan(x => { x.roof.ridgeDirection = ridge; });
+      const qs = buildScene(q);
+      for (const v of VIEWS) {
+        const s = renderStandalone({ plan: q, scene: qs, view: v, layers: all, palette: PRINT_PALETTE });
+        expect(new DOMParser().parseFromString(s, 'image/svg+xml').querySelector('parsererror'), v).toBeNull();
+        expect(s, v).not.toMatch(/NaN|Infinity/);
+      }
+    }
+  });
+  test('minden jelenetelem és rögzítés látszik valamelyik nézetben (talajcsavar)', () => {
+    const { els, fxs, scene } = drawnIds(gsPlan());
+    expect(scene.elements.filter(e => !els.has(e.id)).map(e => e.id)).toEqual([]);
+    expect(scene.fasteners.filter(f => !fxs.has(f.id)).map(f => f.id)).toEqual([]);
+  });
+});

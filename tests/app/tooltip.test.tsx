@@ -111,3 +111,17 @@ test('hover clears on view change and the canvas is marked while hovering', () =
   expect(ui.get().hovered).toBeNull();
   expect(root.querySelector('.viewer-canvas svg')!.getAttribute('class') ?? '').not.toContain('hovering');
 });
+
+test('a gerendakeret elemeinek buboréka (talajcsavar)', () => {
+  const p = createDefaultPlan(); p.foundation.type = 'groundScrew'; const sc = buildScene(p);
+  const s = tooltipLines(sc, p, { el: 'frame.support.1' });
+  expect(s[0]).toBe('Talajcsavar #1 · gerendakeret');
+  expect(s[1]).toBe('Ø7,6 cm · hossza 100 cm');
+  expect(s.join('\n')).toContain('M12 menetes szár');
+  const b = tooltipLines(sc, p, { el: 'frame.beam.1' });
+  expect(b[0]).toBe('Főgerenda #1 · gerendakeret');
+  expect(b[1]).toBe('10×15 cm · hossza 400 cm');
+  expect(b.join('\n')).toContain('Gerendasaru');
+  const f = sc.fasteners.find(x => x.kind === 'beamBolt')!;
+  expect(tooltipLines(sc, p, { fx: f.id })[3]).toBe('Elem: Főgerenda #1, Talajcsavar #1');
+});

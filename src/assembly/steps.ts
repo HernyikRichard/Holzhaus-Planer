@@ -5,11 +5,12 @@ import { wallGeometry } from '../calc/geometry';
 import { wallBattenPieces } from '../calc/walls';
 import { elementsToPieces } from '../scene/toPieces';
 import type { CutRef, Element, FastenerKind, Scene } from '../scene/types';
-import { DECKING_REQUIRED, HURRICANE_TIE_LABEL } from '../catalog';
+import { floorOn } from '../calc/frame';
+import { DECKING_REQUIRED, FRAME_ANCHOR_LABEL, HURRICANE_TIE_LABEL } from '../catalog';
 import { formatQty, sectionLabelWithUnit } from '../ui/format';
 import { stepTodo } from './todo';
 
-export type AssemblyStepId = 'foundation' | 'floor' | 'wall.N' | 'wall.E' | 'wall.S' | 'wall.W' | 'wallTop'
+export type AssemblyStepId = 'foundation' | 'supports' | 'beamFrame' | 'floor' | 'wall.N' | 'wall.E' | 'wall.S' | 'wall.W' | 'wallTop'
   | 'roofFrame' | 'roofLayers' | 'covering' | 'accessories' | 'openings' | 'exterior' | 'interior';
 
 export interface AssemblyPiece { label: string; section: string; length: Mm; count: number; elementIds: string[]; cut: string }
@@ -28,20 +29,21 @@ export interface AssemblyStep {
 }
 
 export const ASSEMBLY_TITLES: Record<AssemblyStepId, string> = {
-  foundation: 'Alap', floor: 'Padló',
+  foundation: 'Alap', supports: 'Támaszok', beamFrame: 'Gerendakeret', floor: 'Padló',
   'wall.N': 'Fal: É', 'wall.E': 'Fal: K', 'wall.S': 'Fal: D', 'wall.W': 'Fal: Ny',
   wallTop: 'Felső koszorú és fali OSB', roofFrame: 'Tetőváz', roofLayers: 'Tetőrétegek', covering: 'Héjazat',
   accessories: 'Kiegészítők', openings: 'Nyílászárók', exterior: 'Külső rétegek', interior: 'Belső rétegek',
 };
 
 /** Alapsorrend; a falak sorrendjét a buildAssembly a terv szerint állítja (futó falak előbb). */
-const ORDER: AssemblyStepId[] = ['foundation', 'floor', 'wall.N', 'wall.E', 'wall.S', 'wall.W', 'wallTop',
+const ORDER: AssemblyStepId[] = ['foundation', 'supports', 'beamFrame', 'floor', 'wall.N', 'wall.E', 'wall.S', 'wall.W', 'wallTop',
   'roofFrame', 'roofLayers', 'covering', 'accessories', 'openings', 'exterior', 'interior'];
 const LAST: AssemblyStepId = 'interior';
 
 const FASTENER_LABELS: Record<FastenerKind, string> = {
   anchor: 'Talpgerenda-rögzítő (dübel / ászokcsavar)', frameScrew: 'Vázszerkezeti csavar',
   osbScrew: 'OSB-csavar', hurricaneTie: HURRICANE_TIE_LABEL,
+  beamBolt: 'M12 menetes szár', joistHanger: 'Gerendasaru',
 };
 
 const wallStep = (group: string): AssemblyStepId => group as AssemblyStepId;
@@ -53,6 +55,8 @@ const wallStep = (group: string): AssemblyStepId => group as AssemblyStepId;
 export function stepIdOfElement(el: Element): AssemblyStepId {
   switch (el.kind) {
     case 'meshSheet': return 'foundation';
+    case 'support': return 'supports';
+    case 'beam': return 'beamFrame';
     case 'joist': return 'floor';
     case 'stud': case 'cornerStud': case 'gableStud': case 'kingStud': case 'jackStud': case 'cripple':
     case 'sill': case 'header': case 'bottomPlate': case 'topPlate':
@@ -84,7 +88,10 @@ const LINE_IDS: Record<string, AssemblyStepId> = {
   'fix.osbScrews': 'wallTop', 'fix.hurricaneTies': 'roofFrame',
   'fix.seamClips': 'covering', 'fix.seamClipScrews': 'covering', 'fix.tileClips': 'covering',
   'fix.counterBattenNails': 'roofLayers', 'fix.battenNails': 'roofLayers',
-  'fix.claddingNails': 'exterior',
+  'fix.claddingNails': 'exterior', 'fix.connectorScrews': 'floor',
+  // talajcsavaros alap: pontos egyezés a `foundation.` előtag előtt
+  'foundation.groundScrew': 'supports', 'foundation.screwHead': 'supports',
+  'foundation.beamBolts': 'beamFrame', 'foundation.joistHangers': 'floor',
 };
 const LINE_PREFIXES: Array<[string, AssemblyStepId]> = [
   ['foundation.', 'foundation'], ['floor.', 'floor'],
@@ -125,7 +132,7 @@ function osbScrewStep(plan: Plan): AssemblyStepId {
   const wall = (kind: string) => plan.walls.layers.find(l => l.kind === kind && l.enabled);
   if (wall('osb')) return 'wallTop';
   if (wall('interiorCladding')?.material === 'osb') return 'interior';
-  if (plan.floor.enabled) return 'floor';
+  if (floorOn(plan)) return 'floor';
   const decking = plan.roof.layers.find(l => l.kind === 'decking');
   if (decking?.material === 'osb' && (decking.enabled || DECKING_REQUIRED.has(plan.roof.covering))) return 'roofLayers';
   return 'wallTop';
@@ -173,7 +180,7 @@ function mergePieces(pieces: TimberPiece[], scene: Scene): AssemblyPiece[] {
 export function buildAssembly(plan: Plan, scene: Scene, calc: CalcOutput): AssemblyStep[] {
   const walls = wallOrder(plan);
   const order: AssemblyStepId[] = [
-    'foundation', 'floor', ...walls, ...ORDER.slice(ORDER.indexOf('wallTop')),
+    'foundation', 'supports', 'beamFrame', 'floor', ...walls, ...ORDER.slice(ORDER.indexOf('wallTop')),
   ];
   const els = new Map<AssemblyStepId, Element[]>(order.map(id => [id, []]));
   const lines = new Map<AssemblyStepId, AssemblyLine[]>(order.map(id => [id, []]));
@@ -203,7 +210,7 @@ export function buildAssembly(plan: Plan, scene: Scene, calc: CalcOutput): Assem
       : f.kind === 'hurricaneTie' ? 'roofFrame'
         : stepOf.get(f.elementIds[0]) ?? wallStep(f.group);
     const m = fx.get(s) ?? fx.set(s, new Map()).get(s)!;
-    const cur = m.get(f.kind) ?? { kind: f.kind, label: FASTENER_LABELS[f.kind], count: 0, elementIds: [] };
+    const cur = m.get(f.kind) ?? { kind: f.kind, label: f.kind === 'anchor' && plan.foundation.type === 'groundScrew' ? FRAME_ANCHOR_LABEL : FASTENER_LABELS[f.kind], count: 0, elementIds: [] };
     cur.count += f.count;
     for (const id of f.elementIds) if (!cur.elementIds.includes(id)) cur.elementIds.push(id);
     m.set(f.kind, cur);

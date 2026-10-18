@@ -92,8 +92,9 @@ beforeEach(async () => {
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-function setup() {
+function setup(groundScrew = false) {
   const plan = createDefaultPlan();
+  if (groundScrew) plan.foundation.type = 'groundScrew';
   const output = calculate(plan, supplyFor(plan));
   const scene = buildScene(plan, supplyFor(plan));
   const steps = buildAssembly(plan, scene, output);
@@ -115,6 +116,18 @@ test('assembly chapter has one section per step', async () => {
   });
   expect(stepPages.size).toBeGreaterThanOrEqual(steps.length);
   expect(rec.pages).toBeGreaterThanOrEqual(steps.length + 1);
+});
+
+test('groundScrew plan: supports and beam frame sections in the chapter', async () => {
+  const { plan, output, steps } = setup(true);
+  await exportPdf(plan, output, OPTS);
+  expect(steps.map(s => s.id).slice(0, 3)).toEqual(['supports', 'beamFrame', 'floor']);
+  steps.forEach((s, i) => {
+    expect(texts()).toContain(`${i + 1}. ${s.title}`);
+    for (const todo of s.todo) expect(texts().join(' ')).toContain(todo);
+  });
+  expect(texts()).toContain('1. Támaszok');
+  expect(texts()).toContain('2. Gerendakeret');
 });
 
 test('images added when snapshots available', async () => {

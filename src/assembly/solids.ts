@@ -5,7 +5,7 @@ import { stepIdOfElement, type AssemblyStep, type AssemblyStepId } from './steps
 
 /** Elem nélküli (szintetizált) 3D test lépése a rétege szerint. */
 const LAYER_STEP: Record<Layer3dId, AssemblyStepId> = {
-  foundation: 'foundation', floor: 'floor', wallFrame: 'wallTop', wallOsb: 'wallTop',
+  ground: 'supports', foundation: 'foundation', supports: 'supports', beamFrame: 'beamFrame', floor: 'floor', wallFrame: 'wallTop', wallOsb: 'wallTop',
   interiorCladding: 'interior', vaporBarrier: 'interior', insulation: 'interior',
   breatherMembrane: 'exterior', wallBattens: 'exterior', exteriorCladding: 'exterior',
   roofFrame: 'roofFrame', decking: 'roofLayers', underlay: 'roofLayers', counterBatten: 'roofLayers', roofBatten: 'roofLayers',
@@ -14,8 +14,8 @@ const LAYER_STEP: Record<Layer3dId, AssemblyStepId> = {
 
 /** Az alapsorrend (a falak egy rangon): a hiányzó cél-lépés helyett az utána következő meglévő lépés. */
 const RANK: Record<AssemblyStepId, number> = {
-  foundation: 0, floor: 1, 'wall.N': 2, 'wall.E': 2, 'wall.S': 2, 'wall.W': 2, wallTop: 3, roofFrame: 4, roofLayers: 5,
-  covering: 6, accessories: 7, openings: 8, exterior: 9, interior: 10,
+  foundation: 0, supports: 1, beamFrame: 2, floor: 3, 'wall.N': 4, 'wall.E': 4, 'wall.S': 4, 'wall.W': 4, wallTop: 5, roofFrame: 6,
+  roofLayers: 7, covering: 8, accessories: 9, openings: 10, exterior: 11, interior: 12,
 };
 
 /** Lépéslistánként: elem-id → lépésindex (a dupla koszorú felső sora csak a lépés `elementIds`-éből látszik). */
@@ -48,6 +48,8 @@ export function stepOfSolid(solid: Solid, scene: Scene, steps: AssemblyStep[]): 
     const el = scene.elements.find(e => e.id === solid.elementId);
     if (el) return nearestStep(stepIdOfElement(el), steps);
   }
+  // talaj: csak talajcsavaros tervben van; ha a támaszok lépése hiányzik, a legkorábbi lépés (nem egy későbbi)
+  if (solid.layer === 'ground' && !steps.some(s => s.id === 'supports')) return 0;
   return nearestStep(LAYER_STEP[solid.layer], steps);
 }
 

@@ -47,6 +47,8 @@ const MATERIALS: Record<string, MatSpec> = {
   foil: { color: '#cfe4ff', opacity: 0.4 },
   insulation: { color: '#ecd679', opacity: 0.45 },
   metal: { color: '#a3abb4', metalness: 0.6, roughness: 0.4 },
+  metalBuried: { color: '#a3abb4', metalness: 0.6, roughness: 0.4, opacity: 0.35 }, // talaj alatti csavarrész
+  ground: { color: '#8a9a6b', opacity: 0.35 },
   tile: { color: '#b4553c' },
   trapezoid: { color: '#5e6a76', metalness: 0.4, roughness: 0.5 },
   shingle: { color: '#4b5058' },

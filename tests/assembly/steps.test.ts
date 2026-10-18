@@ -207,6 +207,14 @@ describe('missing parts drop steps', () => {
     expect(steps.find(s => s.lines.some(l => l.lineId === 'fix.osbScrews'))!.id).toBe('floor');
   });
 
+  test('groundScrew, stored floor flag off, wall OSB and interior off → OSB screws in the floor step', () => {
+    const p = createDefaultPlan();
+    p.foundation.type = 'groundScrew'; p.floor.enabled = false;
+    for (const l of p.walls.layers) if (['osb', 'insulation', 'vaporBarrier', 'interiorCladding'].includes(l.kind)) l.enabled = false;
+    const steps = buildAssembly(p, buildScene(p), calculate(p));
+    expect(steps.find(s => s.lines.some(l => l.lineId === 'fix.osbScrews'))!.id).toBe('floor');
+  });
+
   test('wall OSB off, gypsum interior, OSB roof decking → OSB screws in roof layers', () => {
     const p = createDefaultPlan();
     for (const l of p.walls.layers) {
@@ -308,4 +316,76 @@ describe('mapping helpers', () => {
     expect(studs.cut).toMatch(/m-es szál$/);
     expect(studs.section).toBe('5×10 cm');
   });
+});
+
+// talajcsavaros változatok: a támaszok és a gerendakeret saját lépés, nincs „alap” lépés
+function gsPlan(width: number, length: number, beam: 'b100x150' | 'b120x120' | 'b2x50x150'): Plan {
+  const p = mono4x6Plan();
+  p.building = { ...p.building, width, length };
+  p.foundation.type = 'groundScrew';
+  p.foundation.frame.beamSection = beam;
+  return p;
+}
+const GS_PLANS: Array<[string, Plan]> = [
+  ['3000×4000 b100x150', gsPlan(3000, 4000, 'b100x150')],
+  ['6000×8000 b120x120', gsPlan(6000, 8000, 'b120x120')],
+  ['6000×8000 b2x50x150', gsPlan(6000, 8000, 'b2x50x150')],
+];
+
+describe.each(GS_PLANS)('groundScrew %s', (_n, plan) => {
+  const scene = buildScene(plan);
+  const calc = calculate(plan);
+  const steps = buildAssembly(plan, scene, calc);
+
+  test('anchor label matches the material line', () => {
+    const l = calc.lines.find(x => x.id === 'fix.anchors')!.name;
+    const a = steps.flatMap(s => s.fasteners).filter(f => f.kind === 'anchor');
+    expect(a.length).toBeGreaterThan(0);
+    for (const f of a) expect(f.label).toBe(l);
+    expect(scene.fasteners.filter(f => f.kind === 'anchor').every(f => f.label === l)).toBe(true);
+  });
+
+  test('step order starts with supports, beamFrame, floor; no foundation', () => {
+    const ids = steps.map(s => s.id);
+    expect(ids.slice(0, 3)).toEqual(['supports', 'beamFrame', 'floor']);
+    expect(ids).not.toContain('foundation');
+    expect(steps.map(s => s.title).slice(0, 2)).toEqual(['Támaszok', 'Gerendakeret']);
+  });
+
+  test('every element and every non-timber line in exactly one step, no warnings', () => {
+    const seen = steps.flatMap(s => s.elementIds);
+    expect(new Set(seen).size).toBe(seen.length);
+    expect([...seen].sort()).toEqual(scene.elements.map(e => e.id).sort());
+    const want = elementsToPieces(scene.elements).concat(wallBattenPieces(plan)).map(p => p.id!);
+    const got = steps.flatMap(s => s.pieces.flatMap(p => p.elementIds));
+    expect([...got].sort()).toEqual([...want].sort());
+    const nonTimber = calc.lines.filter(l => !isTimberStockLine(l));
+    expect(steps.flatMap(s => s.lines).map(l => l.lineId).sort()).toEqual(nonTimber.map(l => l.id).sort());
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  test('lines and fasteners land in the right step', () => {
+    const lineStep = (id: string) => steps.find(s => s.lines.some(l => l.lineId === id))?.id;
+    expect(lineStep('foundation.groundScrew')).toBe('supports');
+    expect(lineStep('foundation.screwHead')).toBe('supports');
+    expect(lineStep('foundation.beamBolts')).toBe('beamFrame');
+    expect(lineStep('foundation.joistHangers')).toBe('floor');
+    expect(lineStep('fix.connectorScrews')).toBe('floor');
+    const sum = (k: FastenerKind) => scene.fasteners.filter(f => f.kind === k).reduce((a, f) => a + f.count, 0);
+    const inStep = (id: string, k: FastenerKind) => steps.find(s => s.id === id)!.fasteners.filter(f => f.kind === k).reduce((a, f) => a + f.count, 0);
+    expect(inStep('beamFrame', 'beamBolt')).toBe(sum('beamBolt'));
+    expect(inStep('floor', 'joistHanger')).toBe(sum('joistHanger'));
+    const bolts = calc.lines.find(l => l.id === 'foundation.beamBolts')!.quantity;
+    expect(sum('beamBolt')).toBe(bolts);
+    const kinds = (id: string) => steps.find(s => s.id === id)!.elementIds.map(e => scene.elements.find(x => x.id === e)!.kind);
+    expect(new Set(kinds('supports'))).toEqual(new Set(['support']));
+    expect(new Set(kinds('beamFrame'))).toEqual(new Set(['beam']));
+  });
+});
+
+test('slab plan: step list unchanged', () => {
+  const ids = buildAssembly(mono4x6Plan(), buildScene(mono4x6Plan()), calculate(mono4x6Plan())).map(s => s.id);
+  expect(ids[0]).toBe('foundation');
+  expect(ids).not.toContain('supports');
+  expect(ids).not.toContain('beamFrame');
 });
